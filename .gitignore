@@ -81,7 +81,7 @@ web_modules/
 # dotenv environment variable files
 bs/.env
 bs/.env.example
-fs/.env
+
 
 
 # parcel-bundler cache (https://parceljs.org/)
