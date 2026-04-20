@@ -78,7 +78,71 @@ const deactiveACustomerAccount = asyncHandler (async (req, res, next ) => {
 })
 
 const updateACustomerDetails = asyncHandler(async (req, res, next) => {
-    //details to be updated
+    //details to be updated should be taken
+})
+
+const addCustomerPaymentDetail = asyncHandler(async(req, res) => {
+    const {customer_id, pay_amount, payment_mode, payers_name, payment_date } = req?.body;
+
+    if(!customer_id)throw new ApiError(400, "Customer is not selected")
+
+    if(!pay_amount || pay_amount <= 0){
+        throw new ApiError(400, "Amount is required and must be greater than 0")
+    }
+
+    if(payment_mode?.trim() === "") throw new ApiError(400, "Payment mode is required")
+    
+
+    const [customer] = await connectPool.execute(
+        `SELECT 1 FROM customer_personal_details_tbh WHERE id = ?` , [customer_id]
+    );
+
+    if(customer.length === 0 ){
+        throw new ApiError(400, "Invalid customer id");
+    }
+    // console.log(customer);
+
+    const [result] = await connectPool.execute(
+        `INSERT INTO customer_payment_details_tbh (customer_id, pay_amount, payment_mode, payers_name, payment_date) VALUES (?, ?, ?, ?, ?)` , [customer_id, pay_amount, payment_mode, payers_name, payment_date]
+    )
+    
+    // console.log(result);
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,  
+            "Customer payment details added successfully!",
+            result
+        )
+    )
+    
+})
+
+const getACustomerPaymentDetails = asyncHandler(async(req, res) => {
+    const {customer_id} = req?.params;
+
+    if(!customer_id) throw new ApiError(400, "Customer Id is required")
+
+    const [customer] = await connectPool.execute(
+        `SELECT 1 FROM customer_personal_details_tbh WHERE id = ?` , [customer_id]
+    );
+
+    if(customer.length === 0 ){
+        throw new ApiError(400, "Invalid customer id");
+    }
+    
+    const [result] = await connectPool.execute(
+        `SELECT * FROM customer_payment_details_tbh WHERE customer_id = ?`, [customer_id]
+    )
+
+    return res.status(200).json(
+        new ApiResponse(
+            200, "Customer payments data fetched successfully!", 
+            result
+        )
+
+    )
+
 })
 
 export {
@@ -86,5 +150,7 @@ export {
     getACustomer,
     getAllCustomers,
     deactiveACustomerAccount,
-    updateACustomerDetails
+    updateACustomerDetails,
+    addCustomerPaymentDetail,
+    getACustomerPaymentDetails
 }
