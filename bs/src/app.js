@@ -3,11 +3,8 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 
 
-
 const app = express()
 
-
-//
 app.use(
     cors({
         origin : process.env.CORS_ORIGIN,
@@ -15,10 +12,25 @@ app.use(
     })
     
 )
+console.log(process.env.CORS_ORIGIN);
+console.log(process.env.DB_NAME);
+
+app.use(express.json())
 
 app.use(express.urlencoded({extended : true , limit : "16kb"}))
 
 app.use(cookieParser())
+
+import { customerRouter } from './routes/customer.route.js'
+
+app.use("/api/v1/customer", customerRouter)
+
+
+app.use((err, req, res, next) => {
+    res.status(err.statusCode || 500).json({
+        message: err.message || "Internal Server Error"
+    });
+});
 
 
 export {app}
