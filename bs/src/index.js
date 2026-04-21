@@ -6,17 +6,7 @@ dotenv.config({
     path : './.env'
 });
 
-(async () => {
-    try {
-        const connection = await connectPool.getConnection();
-        console.log("DB connected successfully!");
-        connection.release();
-        
-    } catch (error) {
-        console.log("Error occured", error.message);
-        
-    }
-} )()
+
 
 
 app.listen(process.env.PORT, () => {
