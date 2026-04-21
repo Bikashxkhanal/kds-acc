@@ -22,8 +22,10 @@ app.use(express.urlencoded({extended : true , limit : "16kb"}))
 app.use(cookieParser())
 
 import { customerRouter } from './routes/customer.route.js'
+import { staffRouter } from './routes/staff.route.js'
 
 app.use("/api/v1/customer", customerRouter)
+app.use("/api/v1/staff", staffRouter);
 
 
 app.use((err, req, res, next) => {
