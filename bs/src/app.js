@@ -23,9 +23,11 @@ app.use(cookieParser())
 
 import { customerRouter } from './routes/customer.route.js'
 import { staffRouter } from './routes/staff.route.js'
+import { billingsRouter } from './routes/billings.route.js'
 
 app.use("/api/v1/customer", customerRouter)
 app.use("/api/v1/staff", staffRouter);
+app.use("/api/v1/billings", billingsRouter);
 
 
 app.use((err, req, res, next) => {
