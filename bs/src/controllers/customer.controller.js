@@ -20,7 +20,7 @@ const isCustomerExist = async ({customer_id, phone_number}) => {
     const [result] =  await connectPool.execute(
         `SELECT 1 FROM customer_personal_details_tbh WHERE id = ? OR phone_number = ?` , [customer_id, phone_number]
     );
-    console.log(result);
+    // console.log(result);
     return result
     
 }
@@ -37,7 +37,7 @@ const getACustomer = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Customer Id is required");
     }
 
-    if(typeof(customerId) !== 'int'){
+    if(isNaN(customerId)){
         throw new ApiError(400, "Id must be valid");
     }
 
@@ -58,10 +58,10 @@ const getAllCustomers = asyncHandler(async (req, res, next) => {
     const limitNum = Number(limit) ||15;
 
 
-    console.log(typeof(pageNum), typeof(limitNum));
+    // console.log(typeof(pageNum), typeof(limitNum));
     
     const offset = (pageNum-1 ) * limitNum;
-    console.log(offset);
+    // console.log(offset);
     
 
     const [rows] = await connectPool.execute(
@@ -77,7 +77,7 @@ const getAllCustomers = asyncHandler(async (req, res, next) => {
 })
 
 const addACustomer = asyncHandler(async (req, res, next) => {
-    console.log("Here");
+    // console.log("Here");
     const {name, phone_number, address } = req?.body;
 
     if(name?.trim() === "" || phone_number.trim() === "" || address?.trim() === ""){
@@ -89,7 +89,7 @@ const addACustomer = asyncHandler(async (req, res, next) => {
         `INSERT INTO customer_personal_details_tbh (name, phone_number, address) VALUES
         (?, ?, ?)`, [name, phone_number, address]
     )
-    console.log(result);
+    // console.log(result);
     res.status(200).json(
         new ApiResponse(200, "Customer created successfully")
     )
@@ -122,13 +122,13 @@ const addCustomerPaymentDetail = asyncHandler(async(req, res) => {
     if(customer.length === 0 ){
         throw new ApiError(400, "Invalid customer id");
     }
-    // console.log(customer);
+    console.log(customer);
 
     const [result] = await connectPool.execute(
         `INSERT INTO customer_payment_details_tbh (customer_id, pay_amount, payment_mode, payers_name, payment_date) VALUES (?, ?, ?, ?, ?)` , [customer_id, pay_amount, payment_mode, payers_name, payment_date]
     )
     
-    // console.log(result);
+    console.log(result);
 
     return res.status(200).json(
         new ApiResponse(
@@ -177,20 +177,20 @@ const addCustomerWorkDetails = asyncHandler(async(req, res) => {
 
     if(title == null || !quantity || quantity_unit_notation == null || !rate ) throw new ApiError(400, "All work details of customer is required");
 
-    console.log(customer_id, vehicle_id, title, quantity, quantity_unit_notation, rate, f_work_date);
+    // console.log(customer_id, vehicle_id, title, quantity, quantity_unit_notation, rate, f_work_date);
     
 
     const customer = await isCustomerExist({customer_id})
 
     if(customer.length == 0) throw new ApiError(400, "Invalid customer Id");
 
-    console.log("here");
+    // console.log("here");
     
 
     const vehicle =await isVehicleExists({vehicle_id});
     
     
-    console.log(vehicle);
+    // console.log(vehicle);
     
     if(vehicle.length == 0) throw new ApiError(400, "Invalid Vehicle Id")
     
@@ -223,7 +223,7 @@ const getCustomerWorkDetails = asyncHandler(async(req, res) => {
         WHERE customer_id = ?`, [customer_id]
     );
 
-    // console.log(result);
+    console.log(result);
 
     res.status(200).json(
        new ApiResponse(200, "Customer Work Details fetched successfully", result)

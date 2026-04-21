@@ -33,7 +33,7 @@ const createABill = asyncHandler(async (req, res) => {
 
     // must be added to add creator of the bill
     // const user = req?.user;
-    // console.log(req?.body);
+    console.log(req?.body);
     
     if(!bill_issuing_company_id || customer_name?.trim() == null || address?.trim() == null || bill_created_date?.trim() == null) throw new ApiError(400, "All meta data of billings are required")
 
@@ -61,12 +61,12 @@ const createABill = asyncHandler(async (req, res) => {
   const connection = await connectPool.getConnection()
   try {
     await connection.beginTransaction()
-    console.log("here");
+    // console.log("here");
     
 
     const [billingInsertion] = await connection.execute(`INSERT INTO billings (bill_issuing_company_id, customer_name, address, bill_created_date, work_completed_data) VALUES (?,?,?,?,?)`, [bill_issuing_company_id, customer_name, address, bill_created_date, new_work_completed_date]);
 
-    console.log(billingInsertion?.insertId);
+    // console.log(billingInsertion?.insertId);
     
     if(billingInsertion?.insertId){
         bill_info_data.forEach((bill) => {
@@ -76,7 +76,7 @@ const createABill = asyncHandler(async (req, res) => {
             
         })
     }
-    console.log(bill_info_data);
+    // console.log(bill_info_data);
     
 
     await connection.query(
@@ -93,7 +93,7 @@ const createABill = asyncHandler(async (req, res) => {
 
   } catch (error) {
     
-        console.log(error);
+        // console.log(error);
       await connection.rollback()
       throw error
         
@@ -122,20 +122,20 @@ const getABillDetails = asyncHandler(async (req, res) => {
            await connection.beginTransaction()
 
           const [bill] = await  connection.execute(`SELECT bill_issuing_company_id, customer_name, address, bill_created_date, work_completed_data FROM billings WHERE id = ? `, [billing_id]);
-          console.log(bill);
+        //   console.log(bill);
           
 
          const [companyInfo] = await connection.execute(
                 `SELECT name, address, pan FROM company_info WHERE id  = ? `, [bill?.[0]?.bill_issuing_company_id]
          );
 
-         console.log(companyInfo);
+        //  console.log(companyInfo);
          
 
          const [bill_details] = await connection.execute(
             `SELECT * FROM bill_info WHERE billing_id = ?`, [billing_id]
             );
-        console.log(bill_details);
+        // console.log(bill_details);
         
         connection.commit();
 
