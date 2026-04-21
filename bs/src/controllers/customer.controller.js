@@ -2,10 +2,33 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import connectPool from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { isVehicleExists } from "./vehicle.controller.js";
+
+
+const isCustomerExist = async ({customer_id, phone_number}) => {
+    //returns array of [1 => 1] if exist , retuns empty array if not
+
+    //undefined should be handled
+    if(customer_id === undefined){
+        customer_id = null
+    }
+
+    if(phone_number === undefined){
+        phone_number = null
+    }
+
+    const [result] =  await connectPool.execute(
+        `SELECT 1 FROM customer_personal_details_tbh WHERE id = ? OR phone_number = ?` , [customer_id, phone_number]
+    );
+    console.log(result);
+    return result
+    
+}
+
 
 
 const getACustomer = asyncHandler(async (req, res) => {
-    console.log("Customer get");
+    // console.log("Customer get");
     
     const { customerId } = req.params;
       
@@ -61,6 +84,7 @@ const addACustomer = asyncHandler(async (req, res, next) => {
         throw new ApiError(400, "All data is requied");
     }
 
+
     const [result] = await connectPool.execute(
         `INSERT INTO customer_personal_details_tbh (name, phone_number, address) VALUES
         (?, ?, ?)`, [name, phone_number, address]
@@ -93,9 +117,7 @@ const addCustomerPaymentDetail = asyncHandler(async(req, res) => {
     if(payment_mode?.trim() === "") throw new ApiError(400, "Payment mode is required")
     
 
-    const [customer] = await connectPool.execute(
-        `SELECT 1 FROM customer_personal_details_tbh WHERE id = ?` , [customer_id]
-    );
+    const customer = isCustomerExist({ customer_id})
 
     if(customer.length === 0 ){
         throw new ApiError(400, "Invalid customer id");
@@ -123,9 +145,7 @@ const getACustomerPaymentDetails = asyncHandler(async(req, res) => {
 
     if(!customer_id) throw new ApiError(400, "Customer Id is required")
 
-    const [customer] = await connectPool.execute(
-        `SELECT 1 FROM customer_personal_details_tbh WHERE id = ?` , [customer_id]
-    );
+    const customer = isCustomerExist({customer_id : customer_id})
 
     if(customer.length === 0 ){
         throw new ApiError(400, "Invalid customer id");
@@ -145,6 +165,74 @@ const getACustomerPaymentDetails = asyncHandler(async(req, res) => {
 
 })
 
+const addCustomerWorkDetails = asyncHandler(async(req, res) => {
+    //update it for multiple insertion at once
+    const {customer_id, vehicle_id, title, quantity, quantity_unit_notation, rate, work_date} = req?.body;
+
+    if(!customer_id) throw new ApiError(400, "Customer Id is required")
+    
+    if(!vehicle_id) throw new ApiError(400, "Vehicle Id is required")
+    
+    const f_work_date = work_date ?? null;
+
+    if(title == null || !quantity || quantity_unit_notation == null || !rate ) throw new ApiError(400, "All work details of customer is required");
+
+    console.log(customer_id, vehicle_id, title, quantity, quantity_unit_notation, rate, f_work_date);
+    
+
+    const customer = await isCustomerExist({customer_id})
+
+    if(customer.length == 0) throw new ApiError(400, "Invalid customer Id");
+
+    console.log("here");
+    
+
+    const vehicle =await isVehicleExists({vehicle_id});
+    
+    
+    console.log(vehicle);
+    
+    if(vehicle.length == 0) throw new ApiError(400, "Invalid Vehicle Id")
+    
+
+    if(quantity <= 0) throw new ApiError(400, "Quantity must be greater than 0")
+
+    if(rate <= 0) throw new ApiError(400, "rate must be greater than 0")
+    
+    const [result]  = await connectPool.execute(
+        `INSERT INTO customer_work_details_tbh (customer_id, vehicle_id, title, quantity, quantity_unit_notation, rate, work_date) VALUES (?,?,?,?,?,?,?)`, [customer_id, vehicle_id, title, quantity, quantity_unit_notation, rate, f_work_date]
+    );
+
+    return res.status(200).json(
+        new ApiResponse(200, "Customer work details added successfully")
+    )
+    
+})
+
+const getCustomerWorkDetails = asyncHandler(async(req, res) => {
+    const {customer_id} = req?.params;
+
+    if(!customer_id) throw new ApiError(400, "Customer Id is requied")
+
+    const customer =await isCustomerExist({customer_id});
+    if(customer.length ==0) throw new ApiError(400, "Invalid customer id")
+    
+    const [result] = await connectPool.execute(
+        `SELECT customer_id, vehicle_id, title, quantity,
+        quantity_unit_notation, rate, work_date FROM customer_work_details_tbh
+        WHERE customer_id = ?`, [customer_id]
+    );
+
+    // console.log(result);
+
+    res.status(200).json(
+       new ApiResponse(200, "Customer Work Details fetched successfully", result)
+
+    )
+    
+
+})
+
 export {
     addACustomer,
     getACustomer,
@@ -152,5 +240,7 @@ export {
     deactiveACustomerAccount,
     updateACustomerDetails,
     addCustomerPaymentDetail,
-    getACustomerPaymentDetails
+    getACustomerPaymentDetails,
+    addCustomerWorkDetails,
+    getCustomerWorkDetails
 }

@@ -4,7 +4,9 @@ import {
         getAllCustomers,
         addACustomer,
         addCustomerPaymentDetail,
-        getACustomerPaymentDetails
+        getACustomerPaymentDetails,
+        addCustomerWorkDetails,
+        getCustomerWorkDetails
 
  } from "../controllers/customer.controller.js";
 
@@ -17,6 +19,8 @@ customerRouter.route("").get(getAllCustomers)
 customerRouter.route("").post(addACustomer)
 customerRouter.route("/payment").post(addCustomerPaymentDetail)
 customerRouter.route("/payment/:customer_id").get(getACustomerPaymentDetails)
+customerRouter.route("/work-details").post(addCustomerWorkDetails)
+customerRouter.route("/:work-details/:customer_id").get(getCustomerWorkDetails)
 
 
 export {
