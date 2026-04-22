@@ -3,6 +3,16 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const verifyMe = asyncHandler((req, res)=>{
+    res.status(200).json(
+        new ApiResponse(
+            200,
+            "User is still logged in", 
+            req?.user
+        )
+    )
+})
+
 const isStaffExists = async({phone_number, staff_id}) =>{
     if(phone_number === undefined) phone_number = null
     if(staff_id === undefined) staff_id = null

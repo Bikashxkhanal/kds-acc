@@ -4,6 +4,10 @@ import App from './App'
 import { createBrowserRouter, RouterProvider} from 'react-router-dom'
 import LoginPage from './page/auth/login'
 import ProtectedRoute from './utils/protectedRoute'
+import Dashboard from './features/dashboard/ui/dashbaord.ui'
+import { Provider } from 'react-redux'
+import store from './store/store'
+import PublicRoute from './utils/publicRoute'
 
 
 const router = createBrowserRouter([
@@ -13,13 +17,16 @@ const router = createBrowserRouter([
     children : [
       {
         path : '/',
-        element : <ProtectedRoute>
-                    <LoginPage />
+        element : <ProtectedRoute >
+                {/* direclty a dashboard remove when dashboard is made */}
+                    <Dashboard />
                   </ProtectedRoute>
       },
       {
         path : '/login', 
-        element : <LoginPage />
+        element : <PublicRoute >
+               <LoginPage />
+              </PublicRoute> 
         
       }
     ]
@@ -27,7 +34,9 @@ const router = createBrowserRouter([
 ])
 
 createRoot(document.getElementById('root')).render(
+  <Provider store={store}>
   <RouterProvider router={router} >
   </RouterProvider>
+  </Provider>
 
 )

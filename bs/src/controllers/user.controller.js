@@ -6,6 +6,19 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt';
 import { options } from "../constants.js";
 
+
+const verifyMe = asyncHandler((req, res)=>{
+    // console.log(req?.user);
+
+   return res.status(200).json(
+        new ApiResponse(
+            200,
+            "User is still logged in", 
+            req?.user
+        )
+    )
+})
+
 const findSysUser = async ({phone_number, id}) => {
         if(phone_number === undefined) phone_number = null;
         if(id === undefined) id = null;
@@ -150,7 +163,8 @@ const logout = asyncHandler(async (req, res) => {
 export {
     login, 
     logout,
-    findSysUser
+    findSysUser, 
+    verifyMe
 }
 
 
