@@ -25,8 +25,6 @@ const isCustomerExist = async ({customer_id, phone_number}) => {
     
 }
 
-
-
 const getACustomer = asyncHandler(async (req, res) => {
     // console.log("Customer get");
     
