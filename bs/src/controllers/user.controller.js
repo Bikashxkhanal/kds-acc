@@ -133,7 +133,7 @@ const logout = asyncHandler(async (req, res) => {
 
      const sys_user = await findSysUser({id : user?.id})
 
-        if(sys_user.length == 0) throw new ApiError(401, "Unauthorized Access 2");
+        if(sys_user.length == 0) throw new ApiError(404, "Unauthorized Request");
 
         const [response] = await connectPool.execute(
          `UPDATE sys_user 

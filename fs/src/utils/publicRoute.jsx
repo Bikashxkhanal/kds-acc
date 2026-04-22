@@ -8,7 +8,11 @@ const PublicRoute = ({children}) => {
     // console.log(user, authStatus);
     
 
-         if(user?.id && authStatus === 'authenticated'){
+         if(user.id && authStatus === 'authenticated'){
+            console.log("Navigating back");
+            console.log(user.id, authStatus);
+            
+            
             return <Navigate to='/' replace />
             
     }  

@@ -47,7 +47,6 @@ const LoginForm = () => {
     const handlePhnChange = (value) => setFormData({...formData, phone_number : value});
     const handlePwdChange = (value) => setFormData({...formData, password : value});
 
-    if(user && authStatus== 'authenticated') navigate('/')
  
     return <div className="w-90 px-10 py-12 flex flex-col jusity-center items-center gap-4 
                 border border-white rounded-xl shadow-lg">

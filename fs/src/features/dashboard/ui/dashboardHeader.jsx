@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react"
-import { useSelector } from "react-redux";
+import { useSelector , useDispatch} from "react-redux";
 import { getCurrentTime } from "../../../helpers/date";
-
+import { logoutSysUser } from "../../../services/auth/auth";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { clearAuthState } from "../../../store/authSlice.js";
 const DashboardHeader = ({
     isSideBarRequired
 }) => {
@@ -13,6 +16,9 @@ const DashboardHeader = ({
 
     //passing data to parent
     useEffect(() => {isSideBarRequired(!isActiveBrgIcn)}, [isActiveBrgIcn])
+
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
     
     
     window.addEventListener('resize', () => {
@@ -28,6 +34,31 @@ const DashboardHeader = ({
         setCurrentTime(curTime);
        
     }, 1000);
+
+
+const handleLogout = async () => {
+  try {
+    const res = await logoutSysUser();
+
+    dispatch(clearAuthState());
+    // toast.success(res?.message || "Logged out successfully");
+    console.log(user);
+    
+    navigate("/login", {replace : true});
+  } catch (error) {
+    dispatch(clearAuthState());
+    console.log(user);
+
+    if (error?.status === 401) {
+        console.log("erroring");
+        
+      navigate("/login", {replace : true});
+      return;
+    }
+
+    toast.error(error?.data?.message || "Logout failed");
+  }
+};
 
     return <header className="w-dvw bg-purple-700 font-bold flex flex-row justify-between items-center px-12 py-4" >
             {/* logo or name or both on the left side */}
@@ -58,7 +89,7 @@ const DashboardHeader = ({
 
             {!isActiveBrgIcn && (
                 <button className="w-20 flex flex-row gap-2 justify-center items-center cursor-pointer">
-                    <i class="bi bi-box-arrow-right text-white text-2xl"  />
+                    <i class="bi bi-box-arrow-right text-white text-2xl" onClick={handleLogout} />
                     <span className="text-white text-[14px]">Welcome {user?.name.split(" ")?.[0] || "Guest"}</span>
                 </button>
             )}

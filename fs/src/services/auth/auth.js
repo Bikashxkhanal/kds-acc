@@ -30,7 +30,21 @@ const verifyUser = async () => {
     }
 }
 
+const logoutSysUser = async () => {
+        try {
+           const response = await api.post('/api/v1/sysuser/logout');
+           return response?.data;
+           
+        } catch (error) {
+            console.log(error?.response?.data?.message);
+            
+            throw error;
+
+        }
+}
+
 export {
     loginSysUser,
-    verifyUser
+    verifyUser, 
+    logoutSysUser
 }
