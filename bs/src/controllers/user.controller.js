@@ -60,12 +60,12 @@ const login = asyncHandler(async(req, res) => {
     const {phone_number , password } =  req.body;
 
     if(!phone_number?.trim() || !password?.trim()){
-        throw new ApiError(400, "Phone number or password is empty");
+        throw new ApiError(404, "Phone number or password is empty");
     }
 
     const sys_user = await findSysUser({phone_number});
 
-    if(sys_user.length == 0) throw new ApiError(400,  "User doesnot exist");
+    if(sys_user.length == 0) throw new ApiError(404,  "User not found");
     // console.log("here");
     
 
@@ -74,7 +74,7 @@ const login = asyncHandler(async(req, res) => {
     // console.log(isPwdCorrect);
     
     if(!isPwdCorrect){
-        throw new ApiError(400, "Incorrect password");
+        throw new ApiError(404, "Incorrect password");
     }
 
 

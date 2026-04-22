@@ -8,12 +8,14 @@ const app = express()
 app.use(
     cors({
         origin : process.env.CORS_ORIGIN,
-        credintials : true
+        credentials : true
     })
     
 )
-console.log(process.env.CORS_ORIGIN);
-console.log(process.env.DB_NAME);
+// console.log(process.env.CORS_ORIGIN);
+
+// console.log(process.env.CORS_ORIGIN);
+// console.log(process.env.DB_NAME);
 
 app.use(express.json())
 
