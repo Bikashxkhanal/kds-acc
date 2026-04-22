@@ -7,13 +7,13 @@ const Button = ({
         size,
         onClick, //callback fn passed for what to do on click
         disabled = false,
-        loading = false
+        loading = false, 
+        className= ''
 
 
 }) => {
     //dynamic button (danger act(eg. delete, color - red), soft UI(eg. cancel, color - white/orange), colored UI(eg. create, update (green color)))
 
-    const [isDisabled, setIsDisabled] = useState(loading || disabled);
 
 
     const varients = {
@@ -31,13 +31,14 @@ const Button = ({
 
     return  <button
               className={`
-                border cursor-pointer transition-all duration-200 focus:outline-none text-center
+                border cursor-pointer transition-all duration-200 focus:outline-none text-center 
+                ${className}
                 ${size ? sizes[size] : "px-8 py-2" }
                 ${varient ? varients[varient] : varients['primary']}
                 `
                 } 
                 onClick={onClick} 
-                disabled={isDisabled}
+                disabled={loading || disabled}
                 
                 >
                   {loading && (
