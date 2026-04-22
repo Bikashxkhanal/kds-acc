@@ -24,7 +24,7 @@ const authSlice = createSlice({
         },
 
         loginSuccess : (state, action) => {
-                console.log(action.payload);
+                // console.log(action.payload);
                 state.user = action.payload;
                 state.authStatus = 'authenticated'
                 state.isLoading = false
@@ -38,7 +38,7 @@ const authSlice = createSlice({
         },
 
         verifyMeSuccess: (state, action) => {
-            console.log(action.payload);
+            // console.log(action.payload);
                 state.user = action.payload;
                 state.authStatus = 'authenticated'
                 state.isLoading = false
@@ -47,7 +47,7 @@ const authSlice = createSlice({
          verifyMeFail: (state, action) => {
                 state.authStatus = 'unauthenticated'
                 state.isLoading = false
-                console.log(state.authStatus, state.isLoading);
+                // console.log(state.authStatus, state.isLoading);
                 
         }, 
 

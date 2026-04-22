@@ -11,9 +11,7 @@ const PublicRoute = ({children}) => {
          if(user?.id && authStatus === 'authenticated'){
             return <Navigate to='/' replace />
             
-    }
-
-   
+    }  
 
     if(isLoading) return <h1>Loading...</h1>
 

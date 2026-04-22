@@ -30,7 +30,6 @@ const findSysUser = async ({phone_number, id}) => {
     return result;
 }
 
-
 const generateAccessToken =async (user) => {
     // console.log("Acc" , user);
     
