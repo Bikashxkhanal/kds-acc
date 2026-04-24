@@ -18,13 +18,6 @@ const LoginForm = () => {
     });
 
 
-    // useEffect(() => {
-        
-    //     if(user?.id && authStatus === 'authenticated'){
-    //             navigate('/');
-    //     }
-    // }, [user?.id, authStatus, isLoading])
-
     const handleSubmit =  async () => {
             // console.log(formData);
 
@@ -39,9 +32,7 @@ const LoginForm = () => {
             } catch (message) {
                toast.error(message)
                 
-            }  
-        
-            
+            }      
     }
 
     const handlePhnChange = (value) => setFormData({...formData, phone_number : value});

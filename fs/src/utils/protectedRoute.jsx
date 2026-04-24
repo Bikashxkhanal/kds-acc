@@ -19,7 +19,6 @@ const ProtectedRoute = ({
         
     }
 
-
     if(user && authStatus == 'authenticated'){
         return <> {children} </>
     }

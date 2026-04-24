@@ -25,6 +25,29 @@ const isCustomerExist = async ({customer_id, phone_number}) => {
     
 }
 
+const searchCustomer = asyncHandler(async (req, res) => {
+   const {q = ""} = req?.query;
+   const query = q;
+
+   if(!query?.trim()){
+    throw new ApiError("Search params connot be empty");
+   }
+
+   const searchQuery = `SELECT id, name FROM customer_personal_details_tbh WHERE LOWER(name) LIKE LOWER(?)`;
+
+   try {
+    const [result] = await connectPool.execute(searchQuery, [`%${query}%`]);
+      
+    return res.status(200).json(
+        new ApiResponse(200, "Search successfull", result)
+    )
+    
+   } catch (error) {
+     throw new ApiError(500, error?.message);
+   }
+    
+})
+
 const getACustomer = asyncHandler(async (req, res) => {
     // console.log("Customer get");
     
@@ -36,7 +59,7 @@ const getACustomer = asyncHandler(async (req, res) => {
     }
 
     if(isNaN(customerId)){
-        throw new ApiError(400, "Id must be valid");
+        throw new ApiError(400, "Add valid customer Id");
     }
 
     const [result] = await connectPool.execute(
@@ -240,5 +263,6 @@ export {
     addCustomerPaymentDetail,
     getACustomerPaymentDetails,
     addCustomerWorkDetails,
-    getCustomerWorkDetails
+    getCustomerWorkDetails,
+    searchCustomer
 }

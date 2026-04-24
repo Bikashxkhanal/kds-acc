@@ -4,9 +4,7 @@ const SIDEBAR_NAVIGATION = [
          'customer',
         'staff',
         'billings',
-        
-
-
+    
 ]
 
 const ICONS = {
@@ -17,7 +15,15 @@ const ICONS = {
 
 }
 
+const LINKS = {
+    'dashboard' : '/',
+    'customer' : '/customers',
+    'staff' : '/staffs',
+    'billings' : '/billings'
+}
+
 export {
     SIDEBAR_NAVIGATION, 
-    ICONS
+    ICONS,
+    LINKS
 }

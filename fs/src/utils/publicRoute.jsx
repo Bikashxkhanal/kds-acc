@@ -7,7 +7,6 @@ const PublicRoute = ({children}) => {
     const {user, authStatus, isLoading } = useSelector(state => state.auth);
     // console.log(user, authStatus);
     
-
          if(user.id && authStatus === 'authenticated'){
             console.log("Navigating back");
             console.log(user.id, authStatus);

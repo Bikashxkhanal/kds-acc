@@ -7,7 +7,8 @@ import {
         addCustomerPaymentDetail,
         getACustomerPaymentDetails,
         addCustomerWorkDetails,
-        getCustomerWorkDetails
+        getCustomerWorkDetails,
+        searchCustomer
 
  } from "../controllers/customer.controller.js";
 
@@ -15,9 +16,10 @@ import {
 const customerRouter =  Router();
 
 
+customerRouter.route("/search").get(verifyJWT, searchCustomer)
 customerRouter.route("/:customerId").get(verifyJWT, getACustomer);
-customerRouter.route("").get(verifyJWT, getAllCustomers)
-customerRouter.route("").post(verifyJWT, addACustomer)
+customerRouter.route("/").get(verifyJWT, getAllCustomers)
+customerRouter.route("/").post(verifyJWT, addACustomer)
 customerRouter.route("/payment").post(verifyJWT, addCustomerPaymentDetail)
 customerRouter.route("/payment/:customer_id").get(verifyJWT, getACustomerPaymentDetails)
 customerRouter.route("/work-details").post(verifyJWT, addCustomerWorkDetails)

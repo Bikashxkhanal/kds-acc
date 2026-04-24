@@ -37,7 +37,6 @@ const logoutSysUser = async () => {
            
         } catch (error) {
             console.log(error?.response?.data?.message);
-            
             throw error;
 
         }
