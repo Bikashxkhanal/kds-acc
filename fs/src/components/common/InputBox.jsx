@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 const InputBox = ({
     type='text',
     placeholder="Enter your Email",
-    onChange
-
+    onChange,
+    readOnly = false,
+    className
+    // manages input box based on use cases, w-full for login, w-1/2 on work form , 
 
 }) => {
-    const baseStyle = `outline-none bg-white w-full h-10 px-3 py-2 border border-white rounded-sm`;
+    const baseStyle = `outline-none bg-white w-full h-10 px-3 py-2 border border-white rounded-sm ${className}`;
     const [inputValue, setInputValue] = useState('');
 
     const handleChange = (e) => {
@@ -23,7 +25,7 @@ const InputBox = ({
             placeholder={placeholder}
             value={inputValue}
             onChange={handleChange}
-        
+            readOnly={readOnly}
         />
 }
 
