@@ -1,9 +1,10 @@
 import { useSelector } from "react-redux";
-import DashboardHeader from "./dashboardHeader";
-import { Container, Footer } from "../../../components";
+import DashboardHeader from "../../features/dashboard/ui/dashboardHeader";
+import { Container, Footer } from "..";
 import SideBar from "./sidebar";
 import { useState } from "react";
-import MainContent from "../../dashboradUI/mainContent";
+import MainContent from "../../features/dashboradUI/mainContent";
+import { Outlet } from "react-router-dom";
 
 const Dashboard = () => {
     const {user, authStatus, loadingStat} = useSelector(state => state.auth);
@@ -22,7 +23,7 @@ const Dashboard = () => {
                     <SideBar />
                 )
             }
-            <MainContent />
+            <Outlet />
         </Container>
         <Footer />
         </>

@@ -23,7 +23,7 @@ const Button = ({
     };
 
     const sizes = {
-        sm : 'px-6 py-2', 
+        sm : 'py-1 px-6', 
         md : 'px-10 py-3', 
         lg : 'px-14 py-3'
     }

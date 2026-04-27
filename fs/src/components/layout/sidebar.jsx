@@ -1,8 +1,8 @@
 import {NavLink, Link} from 'react-router-dom'
-import { SIDEBAR_NAVIGATION , ICONS, LINKS} from "../../../constants.js";
+import { SIDEBAR_NAVIGATION , ICONS, LINKS} from "../../constants.js";
 const SideBar = () => {
     const sidebarList =  SIDEBAR_NAVIGATION;
-    const icons = ICONS;
+    
     
         return <aside className="w-0 md:w-1/5 h-full bg-purple-600 flex flex-col items-center pt-3">
                     {

@@ -17,8 +17,8 @@ const ICONS = {
 
 const LINKS = {
     'dashboard' : '/',
-    'customer' : '/customers',
-    'staff' : '/staffs',
+    'customer' : '/customer',
+    'staff' : '/staff',
     'billings' : '/billings'
 }
 

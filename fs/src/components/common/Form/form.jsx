@@ -5,9 +5,12 @@ import { formSchema } from "./formSchema.js";
 import InputBox from "../InputBox";
 import Button from "../button.jsx";
 import { useState } from "react";
+import DatePicker from '@sbmdkl/nepali-datepicker-reactjs'
+import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
 
 const Form = ({
-    useCase = ''
+    useCase = '',
+    datas = {},
 }) => {
     const [isLoading, setIsLoading] = useState(false);
     const config = formConfig[useCase] || [];
@@ -29,7 +32,11 @@ const Form = ({
                 <div key={field.name}>
                     {
                        ( field.type === 'text' || field.type === 'tel') && 
-                            <InputBox placeholder={field.name.split("_").join(" ")} {...register(field.name)} />
+                            <InputBox 
+                            placeholder={field.name.split("_").join(" ")}
+                             {...register(field.name), { value : datas?.[field.name] }}
+                             
+                             />
                         
                     }
                     {
@@ -54,6 +61,11 @@ const Form = ({
                             <InputBox {...register(field.name)} placeholder={field.name.split("_").join(" ")} />
                         
                     }
+                    {  field.type === 'date' &&
+                        <DatePicker 
+                            className='border border-gray-100 bg-white py-2 px-2 rounded-sm w-full'
+                        {...register(field.name)} placeholder={field.name.split("_").join(" ")} />
+                    }
 
                     {
                         errors[field.name] && (
@@ -62,6 +74,8 @@ const Form = ({
                         )
 
                     }
+
+                    
                     {
                         console.log(errors[field.name])
                         

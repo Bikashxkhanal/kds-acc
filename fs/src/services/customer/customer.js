@@ -6,9 +6,7 @@ const searchCustomer = async ({params , signal} = {} ) => {
             params: params,
             signal : signal
         })
-        console.log(res?.data);
-        
-
+       
         return res?.data;
 }
 

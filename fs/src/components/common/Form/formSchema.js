@@ -1,4 +1,5 @@
 import {preprocess, z} from 'zod'
+import NepaliDate from 'nepali-date-converter'
 
 export const formSchema = (fields = []) => {
     const shape = {}
@@ -8,16 +9,33 @@ export const formSchema = (fields = []) => {
         let rule ;
         switch (field.type) {
             case 'text':
-            case 'tel':
-                    rule = z.preprocess(val => val === undefined || val === null ? "" : val, z.string({required_error : `${field.name.split('_').join(" ")} is required`}).min(1, `${field.name.split('_').join(" ")} is required`))
-                    
-                    if(field.min){
-                      rule =  rule.min(field.min, `${field.name.split('_').join(" ")} must be atleast ${field.min}`)
-                    }
-                    if(field.max){
-                     rule =   rule.max(field.max, `${field.name.split('_').join(" ")} cannot exceed ${field.max}`)
-                    }
+            case 'tel': {
+                let stringSchema = z.string({
+                    required_error: `${field.name.split('_').join(" ")} is required`,
+                    invalid_type_error: `${field.name.split('_').join(" ")} must be a string`
+                }).min(1, `${field.name.split('_').join(" ")} is required`);
+
+                if (field.min) {
+                    stringSchema = stringSchema.min(
+                    field.min,
+                    `${field.name.split('_').join(" ")} must be at least ${field.min}`
+                    );
+                }
+
+                if (field.max) {
+                    stringSchema = stringSchema.max(
+                    field.max,
+                    `${field.name.split('_').join(" ")} cannot exceed ${field.max}`
+                    );
+                }
+
+                rule = z.preprocess(
+                    (val) => (typeof val === "string" ? val.trim() : val),
+                    stringSchema
+                );
+
                 break;
+                }
 
             case 'number' : 
                     rule = z.number({
@@ -31,7 +49,6 @@ export const formSchema = (fields = []) => {
                         })
                     }
 
-                   
                     if(rule.min){
                         rule = rule.min(field.min, `${field.name.split('_').join(" ")} should be greater than ${field.min}`)
                     }
@@ -56,6 +73,17 @@ export const formSchema = (fields = []) => {
                         message : `${field.name.split("_").join(" ")} is required`
                     })
                      break;
+
+            case 'date' : 
+                    rule = z.preprocess(val => {
+                        if(!val) return undefined;
+                        return new NepaliDate(val);
+                    }, z.date(
+                        {
+                            required_error : `${field.name} is required`,
+                            invalid_type_error : `${field.name} is required` 
+                        }
+                    ) )
             
         
             default:
