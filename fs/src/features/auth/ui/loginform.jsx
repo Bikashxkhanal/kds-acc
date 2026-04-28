@@ -35,8 +35,8 @@ const LoginForm = () => {
             }      
     }
 
-    const handlePhnChange = (value) => setFormData({...formData, phone_number : value});
-    const handlePwdChange = (value) => setFormData({...formData, password : value});
+    const handlePhnChange = (e) => setFormData({...formData, phone_number : e.target.value});
+    const handlePwdChange = (e) => setFormData({...formData, password : e.target.value});
 
  
     return <div className="w-90 px-10 py-12 flex flex-col jusity-center items-center gap-4 

@@ -4,21 +4,34 @@ import { formConfig } from "./formConfig.js";
 import { formSchema } from "./formSchema.js";
 import InputBox from "../InputBox";
 import Button from "../button.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DatePicker from '@sbmdkl/nepali-datepicker-reactjs'
 import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
+import { Controller } from "react-hook-form";
 
 const Form = ({
     useCase = '',
-    datas = {},
+    datas = {
+        
+    },
+   
 }) => {
     const [isLoading, setIsLoading] = useState(false);
     const config = formConfig[useCase] || [];
     const schema = formSchema(config);
+    
 
-    const {register, handleSubmit,  formState : {errors}}  = useForm({
+    const {register, control, handleSubmit, reset, formState : {errors}}  = useForm({
         resolver : zodResolver(schema)
     })
+
+     useEffect(() => {
+        if(datas){
+            reset(datas)
+        }
+    }, [datas, reset])
+
+  
 
     const onSubmitHandler = (data) => {
         console.log(data);
@@ -34,7 +47,7 @@ const Form = ({
                        ( field.type === 'text' || field.type === 'tel') && 
                             <InputBox 
                             placeholder={field.name.split("_").join(" ")}
-                             {...register(field.name), { value : datas?.[field.name] }}
+                             {...register(field.name) }
                              
                              />
                         
@@ -49,7 +62,7 @@ const Form = ({
                         <select
                         className="w-full  border border-gray-100 bg-white px-1 py-2 rounded-sm "
                          {...register(field.name)} 
-                            onChange={(e) => register(field.name).onChange(e)} >
+                             >
                                 <option value="">Select a {field.name.split("_").join(" ") }</option>
                                 {field?.options?.map(opt => (<option key={opt}> {opt} </option>))}
                         </select>
@@ -62,9 +75,20 @@ const Form = ({
                         
                     }
                     {  field.type === 'date' &&
-                        <DatePicker 
+                    <Controller 
+                        control={control}
+                        name={field.name}
+                        render={({fld}) => (
+                            <DatePicker 
                             className='border border-gray-100 bg-white py-2 px-2 rounded-sm w-full'
-                        {...register(field.name)} placeholder={field.name.split("_").join(" ")} />
+                            value={fld?.value || ""}
+                            onChange={(value) =>{console.log(value)
+                             fld?.onChange(value)}}
+                            placeholder={field?.name.split("_").join(" ")} />
+                        
+                        )}
+                        />
+                                       
                     }
 
                     {

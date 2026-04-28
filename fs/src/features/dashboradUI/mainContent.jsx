@@ -12,11 +12,11 @@ const MainContent = () => {
             <SearchBar 
                 placeholder="Search customers by name"
                 searchQueryFn={searchCustomer}
-                onSelect={(item) => console.log(item)
+                onSelect={(item) => setCustomerId(item?.id)
                 }             
                 />
 
-                <Form useCase="createWorkEntry" datas={customer_id} />
+                <Form useCase="createWorkEntry" datas={{customer_id : customer_id, work_date : '2083-01-5'} } />
                 
             </main>
 }
