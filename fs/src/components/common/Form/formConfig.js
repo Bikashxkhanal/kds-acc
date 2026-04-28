@@ -19,6 +19,15 @@ export const formConfig = {
             
     ],
 
+    createCustomerPaymentEntry : [
+        {name : 'customer_id', type : 'readOnly', required : true,  },
+        {name : 'pay_amount', type : 'number', required : true , min : 1 },
+        {name : 'payment_mode', type : 'select', required : true , min : 1  , options : ['cash', 'mobile banking', 'cheque'] },
+        {name : 'payers_name', type : 'text', required : false   },
+        {name : 'payment_date', type : 'date', required : true },
+
+    ]
+
 
 };
 
