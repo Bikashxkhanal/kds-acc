@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS customer_payment_details_tbh (
     payment_mode ENUM('cheque', 'cash', 'mobile banking') NOT NULL DEFAULT 'cash',
     payers_name VARCHAR(100) NOT NULL DEFAULT 'self',
 
-    payment_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    payment_date DATE NOT NULL ,
 
     CONSTRAINT fk_customer_payment
     FOREIGN KEY (customer_id)
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS customer_work_details_tbh(
     quantity VARCHAR(10) NOT NULL,
     quantity_unit_notation VARCHAR(10) NOT NULL,
     rate INT UNSIGNED NOT NULL,
-    work_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    work_date DATE NOT NULL 
 
     CONSTRAINT fk_customer_work 
     FOREIGN KEY (customer_id) REFERENCES customer_personal_details_tbh(id),

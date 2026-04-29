@@ -196,9 +196,10 @@ const addCustomerWorkDetails = asyncHandler(async(req, res) => {
     
     const f_work_date = work_date ?? null;
 
+    console.log(customer_id, vehicle_id, title, quantity, quantity_unit_notation, rate, typeof f_work_date);
+
     if(title == null || !quantity || quantity_unit_notation == null || !rate ) throw new ApiError(400, "All work details of customer is required");
 
-    // console.log(customer_id, vehicle_id, title, quantity, quantity_unit_notation, rate, f_work_date);
     
 
     const customer = await isCustomerExist({customer_id})

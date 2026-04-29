@@ -5,15 +5,17 @@ import { formSchema } from "./formSchema.js";
 import InputBox from "../InputBox";
 import Button from "../button.jsx";
 import { useEffect, useState } from "react";
+import { Controller } from "react-hook-form";
 import DatePicker from '@sbmdkl/nepali-datepicker-reactjs'
 import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
-import { Controller } from "react-hook-form";
 
 const Form = ({
     useCase = '',
     datas = {
         
     },
+    handleFormSubmit,
+    isSubmitSuccessfull = false
    
 }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -31,59 +33,73 @@ const Form = ({
         }
     }, [datas, reset])
 
+   
+
+    useEffect(() => {
+        console.log("Outside")  
+        const resetedValues = {}  
+         config?.forEach(field => {
+            resetedValues[field.name] = '' 
+        })
+        if(isSubmitSuccessfull){
+            console.log("Inside"); 
+            reset(resetedValues)
+            
+        }
+    }, [isSubmitSuccessfull, reset])
+
   
 
     const onSubmitHandler = (data) => {
-        console.log(data);
-        
+        handleFormSubmit?.(data)   
     }
 
     return (
        <form onSubmit={handleSubmit(onSubmitHandler)} className="min-w-screen md:min-w-full pt-5 md:pt-10 px-5 grid grid-cols-1 md:grid-cols-3 gap-3 justify-center">
         {
-            config?.map((field) => (
-                <div key={field.name}>
+            config?.map((fld) => (
+                <div key={fld.name}>
                     {
-                       ( field.type === 'text' || field.type === 'tel') && 
+                       ( fld.type === 'text' || fld.type === 'tel') && 
                             <InputBox 
-                            placeholder={field.name.split("_").join(" ")}
-                             {...register(field.name) }
+                            placeholder={fld.name.split("_").join(" ")}
+                             {...register(fld.name) }
                              
                              />
                         
                     }
                     {
-                        field.type === 'readOnly' && 
-                        <InputBox className='bg-gray-900 readOnly:cursor-not-allowed text-gray-600' placeholder={field.name.split("_").join(" ")} {...register(field.name)} readOnly />
+                        fld.type === 'readOnly' && 
+                        <InputBox className='bg-gray-900 readOnly:cursor-not-allowed text-gray-600' placeholder={fld.name.split("_").join(" ")} {...register(fld.name)} readOnly />
                     }
 
                     {
-                       field.type === 'select' &&
+                       fld.type === 'select' &&
                         <select
                         className="w-full  border border-gray-100 bg-white px-1 py-2 rounded-sm "
-                         {...register(field.name)} 
+                         {...register(fld.name)} 
                              >
-                                <option value="">Select a {field.name.split("_").join(" ") }</option>
-                                {field?.options?.map(opt => (<option key={opt}> {opt} </option>))}
+                                <option value="">Select a {fld.name.split("_").join(" ") }</option>
+                                {fld?.options?.map(opt => (<option key={opt}> {opt} </option>))}
                         </select>
-                       
+
                     }
 
                     {
-                        field.type === 'number' && 
-                            <InputBox {...register(field.name)} placeholder={field.name.split("_").join(" ")} />
+                        fld.type === 'number' && 
+                            <InputBox {...register(fld.name)} placeholder={fld.name.split("_").join(" ")} />
                         
                     }
-                    {  field.type === 'date' &&
+                    {  fld.type === 'date' &&
                     <Controller 
                         control={control}
-                        name={field.name}
-                        render={({fld}) => (
+                        name={fld.name}
+                        render={({field}) => (
                             <DatePicker 
                             className='border border-gray-100 bg-white py-2 px-2 rounded-sm w-full'
-                            value={fld?.value || ""}
-                            onChange={(value) =>{console.log(value)
-                             fld?.onChange(value)}}
+                            value={field?.value || ""}
+                            onChange={({bsDate, adDate}) => {
+                                field?.onChange(bsDate)}}
                             placeholder={field?.name.split("_").join(" ")} />
                         
                         )}
@@ -92,8 +108,8 @@ const Form = ({
                     }
 
                     {
-                        errors[field.name] && (
-                            <p className="text-red-600">{errors[field.name].message}</p>
+                        errors[fld.name] && (
+                            <p className="text-red-600">{errors[fld.name].message}</p>
                             
                         )
 
@@ -101,7 +117,7 @@ const Form = ({
 
                     
                     {
-                        console.log(errors[field.name])
+                        console.log(errors[fld.name])
                         
                     }
 

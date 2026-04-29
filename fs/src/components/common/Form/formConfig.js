@@ -6,7 +6,7 @@ export const formConfig = {
             {name : 'vehicle_id', type : 'text' , required : true, min : 1},
             {name : 'title', type : 'text' , required : true},
             {name : 'quantity', type : 'number' , required : true, min : 1, max : 20},
-            {name : 'quanity_unit_notation', type : 'select' , options : ['tip', 'hours', 'cubemeter'], required : true},
+            {name : 'quantity_unit_notation', type : 'select' , options : ['tip', 'hours', 'cubemeter'], required : true},
             {name : 'rate', type : 'number', required : true, min : 1000},
             {name : 'work_date', type : 'date', required : true}
 
