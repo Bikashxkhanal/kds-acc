@@ -83,6 +83,11 @@ const getAllCustomers = asyncHandler(async (req, res, next) => {
     const offset = (pageNum-1 ) * limitNum;
     // console.log(offset);
     
+    const [metaData] = await connectPool.execute(
+        `
+        SELECT COUNT(*) AS totalCustomers FROM customer_personal_details_tbh
+        `
+    );
 
     const [rows] = await connectPool.execute(
         `SELECT 
@@ -111,7 +116,7 @@ const getAllCustomers = asyncHandler(async (req, res, next) => {
         
 
     res.status(200).json(
-        new ApiResponse(200, "All user fetched Successfully!", rows)
+        new ApiResponse(200, "All user fetched Successfully!", {rows, metaData})
     )
 
 
@@ -280,9 +285,48 @@ const getACustomerWorkAndPaymentDetails = asyncHandler(async (req, res) => {
      const {customer_id} = req?.params;
      if(!customer_id) throw new ApiError(400, "Customer Id is requied")
 
+    const { page = 1, limit = 10} = req?.query;
+    
+    // console.log("age" ,page);
+    
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) ||10;
+      
+
+    const offset = (pageNum-1 ) * limitNum;
+
+
     const customer =await isCustomerExist({customer_id});
     if(customer.length ==0) throw new ApiError(400, "Invalid customer id")
 
+    const [metaData] = await connectPool.execute(
+        `
+        SELECT COUNT(*) AS totalRows FROM 
+       (SELECT 
+            pd.payment_date AS date,
+            CONCAT('payers name: ', pd.payers_name, ' payment mode: ', pd.payment_mode) AS discription,  pd.pay_amount AS Credit, NULL AS Debit
+        FROM 
+            customer_payment_details_tbh pd  
+        WHERE 
+            pd.customer_id = ?
+        UNION ALL 
+
+        SELECT 
+            work_date AS Date,
+            CONCAT( wd.title,' vehicle No: ', wd.vehicle_id,' quantity: ', wd.quantity, wd.quantity_unit_notation,' @ ', wd.rate) AS discription, 
+             wd.total AS Debit,
+             NULL AS Credit
+        FROM 
+            customer_work_details_tbh wd 
+        WHERE 
+            wd.customer_id = ?
+) AS work_pay_tbh
+
+        `, [customer_id, customer_id]
+    )
+
+    console.log(metaData);
+    
     const [workAndPaymentDetails] = await connectPool.execute(`
         SELECT 
             pd.payment_date AS date,
@@ -304,12 +348,13 @@ const getACustomerWorkAndPaymentDetails = asyncHandler(async (req, res) => {
             wd.customer_id = ?
 
         ORDER BY date DESC
+        LIMIT ${limit} OFFSET ${offset} 
 
         `, [customer_id, customer_id]);
 
     return res.json(
         new ApiResponse(
-            200, "All work and payment details fetched successfully", workAndPaymentDetails
+            200, "All work and payment details fetched successfully", {workAndPaymentDetails, metaData}
         )
     )
     

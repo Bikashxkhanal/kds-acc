@@ -47,14 +47,12 @@ const getAllCustomers = async (params) => {
     }
 }
 
-const getACustomerWorkAndPaymentDetails = async(customerId, page = 1) => {
+const getACustomerWorkAndPaymentDetails = async(customerId,params) => {
    
         try {
+            console.log("Aff", params?.page);
             const response = await api.get(`/api/v1/customer/${customerId}/work-pay-details`, {
-                params : {
-                    page : page,
-                    limit :  10
-                }
+                params 
             })
             console.log(response?.data);
             return response?.data?.data;

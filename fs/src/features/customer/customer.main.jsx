@@ -6,28 +6,32 @@ import { useEffect, useState } from "react";
 import Table from "../../components/common/Table/table";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
+import PaginationBar from "../../components/common/Pagination/paginationbar";
 
 
 
 const CustomerMainUI = () => {
     const [isAddCustomerFrmOpen, setIsAddCustomerFrmOpen] = useState(false);
     const [page, setPage] = useState(1);
+    const [totalRows, setTotalRows] = useState(null);
     const [tableData, setTableData] = useState({
         tableHeader : null,
         tableBody : null
     });
 
-    const testTableData = {
-        tableHeader : ['SN', 'Customer Name', 'Phone number', 'Address', 'Payable Amount', 'Actions'], 
-        tableBody : [
-            [
-                1, 'Ramesh Baniya', 'Phone number', 'Address', 'Payable Amount', 'Actions'
-            ],
-            [
-                2, 'Amar Kshetri', 'Phone number', 'Address', 'Payable Amount', 'Actions'
-            ]
-        ]
-    }
+    const PAGE_VALUE_LIMIT = 15;
+
+    // const testTableData = {
+    //     tableHeader : ['SN', 'Customer Name', 'Phone number', 'Address', 'Payable Amount', 'Actions'], 
+    //     tableBody : [
+    //         [
+    //             1, 'Ramesh Baniya', 'Phone number', 'Address', 'Payable Amount', 'Actions'
+    //         ],
+    //         [
+    //             2, 'Amar Kshetri', 'Phone number', 'Address', 'Payable Amount', 'Actions'
+    //         ]
+    //     ]
+    // }
 
     const convertApiDataIntoParams = (apiData) => {
 
@@ -44,9 +48,10 @@ const CustomerMainUI = () => {
     useEffect( () => {
     ;(async() => {
             try {
-            const response = await getAllCustomers({page : page, limit : 15})
+            const response = await getAllCustomers({page : page, limit : PAGE_VALUE_LIMIT})
             console.log(response?.data);
-          const {keys, values}  = convertApiDataIntoParams(response?.data)
+        setTotalRows(Math.round(Number(response?.data?.metaData?.[0]?.totalCustomers) / PAGE_VALUE_LIMIT))
+          const {keys, values}  = convertApiDataIntoParams(response?.data?.rows)
           keys?.push('Actions');
           values?.forEach((value) => value.push(<Link to={`${value?.[0]}`} className="text-blue-400 underline underline-offset-1"  >View </Link>))
             setTableData({
@@ -82,6 +87,9 @@ const CustomerMainUI = () => {
         {
             <Table  tableData={tableData} />
         }
+        
+        <PaginationBar current={page} total={totalRows} onPageChange={(page) => setPage(page) }  />
+       
             </main>
 
     )
