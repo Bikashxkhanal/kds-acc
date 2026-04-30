@@ -79,7 +79,9 @@ CREATE TABLE IF NOT EXISTS customer_work_details_tbh(
     quantity VARCHAR(10) NOT NULL,
     quantity_unit_notation VARCHAR(10) NOT NULL,
     rate INT UNSIGNED NOT NULL,
-    work_date DATE NOT NULL 
+    total INT UNSIGNED NOT NULL,
+    work_date DATE NOT NULL ,
+    entry_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 
     CONSTRAINT fk_customer_work 
     FOREIGN KEY (customer_id) REFERENCES customer_personal_details_tbh(id),

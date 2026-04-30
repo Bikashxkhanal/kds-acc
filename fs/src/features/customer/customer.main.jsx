@@ -1,13 +1,21 @@
 import Form from "../../components/common/Form/form";
 import { Button } from "../../components";
 import SearchBar from "../../components/common/SearchBar"
-import { searchCustomer } from "../../services/customer/customer";
-import { useState } from "react";
+import { searchCustomer , getAllCustomers} from "../../services/customer/customer";
+import { useEffect, useState } from "react";
 import Table from "../../components/common/Table/table";
+import { toast } from "react-toastify";
+import { Link } from "react-router-dom";
+
 
 
 const CustomerMainUI = () => {
     const [isAddCustomerFrmOpen, setIsAddCustomerFrmOpen] = useState(false);
+    const [page, setPage] = useState(1);
+    const [tableData, setTableData] = useState({
+        tableHeader : null,
+        tableBody : null
+    });
 
     const testTableData = {
         tableHeader : ['SN', 'Customer Name', 'Phone number', 'Address', 'Payable Amount', 'Actions'], 
@@ -20,6 +28,38 @@ const CustomerMainUI = () => {
             ]
         ]
     }
+
+    const convertApiDataIntoParams = (apiData) => {
+
+        const keys = Object.keys(apiData?.[0]);
+        console.log(keys);
+
+        const values = apiData?.map((data) => Object.values(data));
+        console.log(values);
+        
+        return {keys, values};
+    }
+
+ 
+    useEffect( () => {
+    ;(async() => {
+            try {
+            const response = await getAllCustomers({page : page, limit : 15})
+            console.log(response?.data);
+          const {keys, values}  = convertApiDataIntoParams(response?.data)
+          keys?.push('Actions');
+          values?.forEach((value) => value.push(<Link to={`${value?.[0]}`} className="text-blue-400 underline underline-offset-1"  >View </Link>))
+            setTableData({
+           tableHeader : keys, 
+           tableBody : values
+           
+        });
+        } catch (error) {
+            toast.error(error?.message);
+        }
+    })()
+    
+    }, [page])
 
     return (<main className="w-full md:w-4/5 min-h-screen flex flex-col items-center gap-4 pt-5 ">
         <div className="flex flex-col gap-2" >
@@ -40,7 +80,7 @@ const CustomerMainUI = () => {
         }
 
         {
-            <Table  tableData={testTableData} />
+            <Table  tableData={tableData} />
         }
             </main>
 

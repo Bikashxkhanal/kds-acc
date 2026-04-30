@@ -10,6 +10,7 @@ import store from './store/store'
 import PublicRoute from './utils/publicRoute'
 import CustomerMainUI from './features/customer/customer.main'
 import MainContent from './features/dashboradUI/mainContent'
+import AccountDetailsOfCustomer from './features/customer/accountdetails.customer.ui'
 
 
 const router = createBrowserRouter([
@@ -39,8 +40,14 @@ const router = createBrowserRouter([
         }, 
         {
           path : '/customer' , 
-          element : <CustomerMainUI />
-        }, 
+          element : <CustomerMainUI />,
+        },
+            {
+              path : '/customer/:id', 
+              element : <AccountDetailsOfCustomer />
+            }, 
+          
+       
         {
           path : '/staff', 
           element : <h1 className='w-full' >Staff</h1>

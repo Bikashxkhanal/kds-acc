@@ -1,8 +1,12 @@
 import {NavLink, Link} from 'react-router-dom'
+import { useEffect, useState } from 'react';
 import { SIDEBAR_NAVIGATION , ICONS, LINKS} from "../../constants.js";
 const SideBar = () => {
-    const sidebarList =  SIDEBAR_NAVIGATION;
+    const [sidebarList, setSideBarList] =  useState(SIDEBAR_NAVIGATION);
     
+    useEffect(() => {
+        setSideBarList(SIDEBAR_NAVIGATION)
+    }, [sidebarList])
     
         return <aside className="w-0 md:w-1/5 h-full bg-purple-600 flex flex-col items-center pt-3">
                     {

@@ -78,7 +78,6 @@ const getAllCustomers = asyncHandler(async (req, res, next) => {
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) ||15;
 
-
     // console.log(typeof(pageNum), typeof(limitNum));
     
     const offset = (pageNum-1 ) * limitNum;
@@ -86,9 +85,30 @@ const getAllCustomers = asyncHandler(async (req, res, next) => {
     
 
     const [rows] = await connectPool.execute(
-        `SELECT * FROM customer_personal_details_tbh LIMIT ${limitNum} OFFSET ${offset}`
-    )
-   
+        `SELECT 
+            pr.id,
+            pr.name,
+            pr.phone_number,
+            pr.address,
+            COALESCE(py.Total_Paid_Amt, 0) AS Total_Paid_Amt,
+            COALESCE(pw.Total_Work_Amt, 0) AS Total_Work_Amt,
+            COALESCE(pw.Total_Work_Amt, 0) - COALESCE(py.Total_Paid_Amt, 0) AS Payable
+        FROM customer_personal_details_tbh pr
+
+        LEFT JOIN (
+            SELECT customer_id, SUM(pay_amount) AS Total_Paid_Amt
+            FROM customer_payment_details_tbh
+            GROUP BY customer_id
+        ) py ON pr.id = py.customer_id
+
+        LEFT JOIN (
+            SELECT customer_id, SUM(total) AS Total_Work_Amt
+            FROM customer_work_details_tbh
+            GROUP BY customer_id
+        ) pw ON pr.id = pw.customer_id
+                LIMIT ${limitNum} OFFSET ${offset}`
+            )
+        
 
     res.status(200).json(
         new ApiResponse(200, "All user fetched Successfully!", rows)
@@ -255,6 +275,46 @@ const getCustomerWorkDetails = asyncHandler(async(req, res) => {
 
 })
 
+const getACustomerWorkAndPaymentDetails = asyncHandler(async (req, res) => {
+
+     const {customer_id} = req?.params;
+     if(!customer_id) throw new ApiError(400, "Customer Id is requied")
+
+    const customer =await isCustomerExist({customer_id});
+    if(customer.length ==0) throw new ApiError(400, "Invalid customer id")
+
+    const [workAndPaymentDetails] = await connectPool.execute(`
+        SELECT 
+            pd.payment_date AS date,
+            CONCAT('payers name: ', pd.payers_name, ' payment mode: ', pd.payment_mode) AS discription,  pd.pay_amount AS Credit, NULL AS Debit
+        FROM 
+            customer_payment_details_tbh pd  
+        WHERE 
+            pd.customer_id = ?
+        UNION ALL 
+
+        SELECT 
+            work_date AS Date,
+            CONCAT( wd.title,' vehicle No: ', wd.vehicle_id,' quantity: ', wd.quantity, wd.quantity_unit_notation,' @ ', wd.rate) AS discription, 
+             wd.total AS Debit,
+             NULL AS Credit
+        FROM 
+            customer_work_details_tbh wd 
+        WHERE 
+            wd.customer_id = ?
+
+        ORDER BY date DESC
+
+        `, [customer_id, customer_id]);
+
+    return res.json(
+        new ApiResponse(
+            200, "All work and payment details fetched successfully", workAndPaymentDetails
+        )
+    )
+    
+})
+
 export {
     addACustomer,
     getACustomer,
@@ -265,5 +325,6 @@ export {
     getACustomerPaymentDetails,
     addCustomerWorkDetails,
     getCustomerWorkDetails,
-    searchCustomer
+    searchCustomer,
+    getACustomerWorkAndPaymentDetails
 }

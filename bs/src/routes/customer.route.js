@@ -8,7 +8,8 @@ import {
         getACustomerPaymentDetails,
         addCustomerWorkDetails,
         getCustomerWorkDetails,
-        searchCustomer
+        searchCustomer,
+        getACustomerWorkAndPaymentDetails
 
  } from "../controllers/customer.controller.js";
 
@@ -22,6 +23,7 @@ customerRouter.route("/:customerId").get(verifyJWT, getACustomer);
 customerRouter.route("/").get(verifyJWT, getAllCustomers)
 customerRouter.route("/").post(verifyJWT, addACustomer)
 customerRouter.route("/payment").post(verifyJWT, addCustomerPaymentDetail)
+customerRouter.route("/:customer_id/work-pay-details").get(verifyJWT, getACustomerWorkAndPaymentDetails)
 customerRouter.route("/payment/:customer_id").get(verifyJWT, getACustomerPaymentDetails)
 customerRouter.route("/:work-details/:customer_id").get(verifyJWT, getCustomerWorkDetails)
 

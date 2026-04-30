@@ -33,9 +33,55 @@ const addCustomerPaymentDetail = async (data) => {
     }
 }
 
+const getAllCustomers = async (params) => {
+    try {
+        const res = await api.get('/api/v1/customer', {
+            params : {page : params?.page , limit : params?.limit}
+        });
+
+        console.log(res?.data);
+        return res?.data;
+        
+    } catch (error) {
+            throw error?.response?.data;
+    }
+}
+
+const getACustomerWorkAndPaymentDetails = async(customerId, page = 1) => {
+   
+        try {
+            const response = await api.get(`/api/v1/customer/${customerId}/work-pay-details`, {
+                params : {
+                    page : page,
+                    limit :  10
+                }
+            })
+            console.log(response?.data);
+            return response?.data?.data;
+        } catch (error) {
+            throw error?.response?.data
+        }
+}   
+
+const getACustomerPersonalDetails = async (customerId) => {
+    try {
+        const response = await api.get(`/api/v1/customer/${customerId}`);
+        console.log(response?.data);
+        return response?.data?.data;
+        
+    } catch (error) {
+            throw error?.response?.data;
+    }
+}
+
+
 
 export {
     searchCustomer,
     addWorkDetailsOfCustomer, 
-    addCustomerPaymentDetail
+    addCustomerPaymentDetail,
+    getAllCustomers,
+    getACustomerWorkAndPaymentDetails,
+    getACustomerPersonalDetails
+
 }
