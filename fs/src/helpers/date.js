@@ -1,6 +1,6 @@
 const getCurrentTime = () => {
     return new Date().toLocaleDateString('en-NP', {
-       month: "short",   
+    month: "short",   
   day: "2-digit",   
   year: "numeric",  
   hour: "2-digit",

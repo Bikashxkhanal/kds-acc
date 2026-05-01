@@ -4,10 +4,9 @@ import  {useParams} from 'react-router-dom'
 import Table from "../../components/common/Table/table";
 import PaginationBar from "../../components/common/Pagination/paginationbar";
 
+const PAGE_LIMIT = 10;
 
 const AccountDetailsOfCustomer = () => {
-
-    const PAGE_LIMIT = 10;
 
     const {id:customer_id} = useParams();   
     

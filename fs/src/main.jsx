@@ -12,6 +12,7 @@ import CustomerMainUI from './features/customer/customer.main'
 import MainContent from './features/dashboradUI/mainContent'
 import AccountDetailsOfCustomer from './features/customer/accountdetails.customer.ui'
 import StaffUI from './features/staff/staff.ui'
+import StaffList from './features/staff/stafflist'
 
 
 const router = createBrowserRouter([
@@ -51,7 +52,12 @@ const router = createBrowserRouter([
        
         {
           path : '/staff', 
-          element : <StaffUI />
+          element : <StaffUI />,
+          
+        },
+        {
+          path : '/staff/all', 
+          element : <StaffList />
         },
         {
           path : '/billings', 

@@ -161,12 +161,54 @@ const getSearchedStaffs = asyncHandler(async (req, res) => {
 
 })
 
+const getAllStaffs = asyncHandler(async (req, res) => {
+    const {page = 1, limit = 10} = req?.query;
+
+    if(isNaN(page) || isNaN(limit))  throw new ApiError(401, "Invalid request, page and limit must be a number");
+    
+    const offset = (Number(page) - 1) * Number(limit)
+    const finalLimit = Number(limit);
+
+    const staffDetailQuery = `SELECT id, name, 
+                            phone_number,address FROM staff LIMIT ${finalLimit} OFFSET ${offset}`
+
+    const metaDataQuery = `SELECT COUNT(*) AS staffCount FROM staff`
+
+    try {
+        
+        
+        const [staffDetails] = await connectPool.execute(
+            staffDetailQuery
+        );
+        console.log("Here");
+        
+        
+        const [metaData]  = await connectPool.execute(metaDataQuery)
+
+        return res.status(200).json(
+            new ApiResponse(
+                200, 
+                "Staff Details fetched successfully", 
+                {
+                    staffDetails, 
+                    metaData
+                }
+            )
+        )
+
+    } catch (error) {
+        throw new ApiError(500, error?.message)
+    }
+    
+})
+
 export{
     addAStaff,
     getAStaffPersonalDetails,
     addAStaffRemunationDetails,
     getAStaffStippendAndPayout,
     getSearchedStaffs, 
-    addAStaffPayoutDetails
+    addAStaffPayoutDetails, 
+    getAllStaffs
 }
 

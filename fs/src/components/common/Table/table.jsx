@@ -1,7 +1,14 @@
+import { useEffect, useState } from "react";
+
 const Table = ({
-  tableData = {},
+  tableData = [],
   className = ''
 }) => {
+  
+  if(tableData.length ==0) return;
+     const tableHeader = Object.keys(tableData?.[0]);
+    const tableBody = tableData?.map((data) => Object.values(data));
+
   return (
     <div className="overflow-hidden rounded-t-xl w-[90%]">
       <table className={`w-full border-separate border-spacing-0 ${className}`}>
@@ -10,7 +17,7 @@ const Table = ({
         <thead className="bg-purple-400 ">
           <tr>
             {
-              tableData?.tableHeader?.map((header, index, arr) => (
+              tableHeader?.map((header, index, arr) => (
                 <th
                   key={header}
                   className={`
@@ -29,7 +36,7 @@ const Table = ({
         {/* BODY */}
         <tbody>
           {
-            tableData?.tableBody?.map((row, rowIndex) => (
+            tableBody?.map((row, rowIndex) => (
               <tr key={rowIndex} className="hover:bg-gray-50">
                 {
                   row?.map((cell, colIndex) => (

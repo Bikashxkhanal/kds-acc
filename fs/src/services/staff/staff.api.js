@@ -36,9 +36,25 @@ const addStaffPayout = async (details) => {
     
 }
 
+const getAllStaffs = async({page = 1, limit = 10} = {}) => {
+    try {
+        const response = await api.get('api/v1/staff/all', {
+            params : {
+                page , 
+                limit
+            }
+        })
+
+        return response?.data;
+    } catch (error) {
+        throw error?.response?.data;
+    }
+}
+
 
 export {
     searchStaffByName,
     addStaffRemunation, 
-    addStaffPayout
+    addStaffPayout, 
+    getAllStaffs
 }
