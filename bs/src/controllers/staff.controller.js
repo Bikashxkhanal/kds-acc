@@ -57,7 +57,7 @@ const getAStaffPersonalDetails = asyncHandler(async(req, res) => {
 })
 
 //add payment done to staff as well salary and other benfits (money)
-const addAStaffStippendAndPayout = asyncHandler(async(req, res) => {
+const addAStaffRemunationDetails = asyncHandler(async(req, res) => {
     // console.log('here');
     const {staff_id, title, discription, amount} = req?.body;
 
@@ -73,11 +73,36 @@ const addAStaffStippendAndPayout = asyncHandler(async(req, res) => {
     if(staff.length == 0) throw new ApiError(400, "No staff with such id exist")
     
     const [result] = await connectPool.execute(
-        `INSERT INTO staff_credit_debit_tbh (staff_id, title, discription, amount) VALUES (?,?,?,?)`, [staff_id, title, discription, amount]
+        `INSERT INTO staff_remunation_tbh (staff_id, title, discription, amount) VALUES (?,?,?,?)`, [staff_id, title, discription, amount]
     )
 
     return res.status(200).json(
-        new ApiResponse(200, "Staff Stippend or payout details added successfully!",{lastInsertedId : result.insertId})
+        new ApiResponse(200, "Staff Stippend details added successfully!",{lastInsertedId : result.insertId})
+    )
+
+})
+
+const addAStaffPayoutDetails = asyncHandler(async(req, res) => {
+    // console.log('here');
+    const {staff_id, discription, amount} = req?.body;
+
+    if(!staff_id) throw new ApiError("Staff Id is required")
+
+    if(discription?.trim() == null || !amount) throw new ApiError(400, "All details of stippend or payout is required")
+    
+    if(isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
+
+    if(amount <= 0) throw new ApiError(400, "Invalid amount, must be greater than 0")
+    
+    const staff = await isStaffExists({staff_id})
+    if(staff.length == 0) throw new ApiError(400, "No staff with such id exist")
+    
+    const [result] = await connectPool.execute(
+        `INSERT INTO staff_payment_tbh (staff_id, discription, amount) VALUES (?,?,?)`, [staff_id, discription, amount]
+    )
+
+    return res.status(200).json(
+        new ApiResponse(200, "Staff payout details added successfully!",{lastInsertedId : result.insertId})
     )
 
 })
@@ -134,15 +159,14 @@ const getSearchedStaffs = asyncHandler(async (req, res) => {
         throw new ApiError(500, error?.message)
     }
 
-
-    
 })
 
 export{
     addAStaff,
     getAStaffPersonalDetails,
-    addAStaffStippendAndPayout,
+    addAStaffRemunationDetails,
     getAStaffStippendAndPayout,
-    getSearchedStaffs
+    getSearchedStaffs, 
+    addAStaffPayoutDetails
 }
 

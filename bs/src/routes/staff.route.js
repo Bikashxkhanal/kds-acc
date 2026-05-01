@@ -2,9 +2,10 @@ import { Router } from "express";
 import { 
     addAStaff,
      getAStaffPersonalDetails,
-      addAStaffStippendAndPayout,
+      addAStaffRemunationDetails,
        getAStaffStippendAndPayout, 
-       getSearchedStaffs
+       getSearchedStaffs, 
+       addAStaffPayoutDetails
  } from "../controllers/staff.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -15,7 +16,8 @@ const staffRouter = Router()
 staffRouter.route("/").post(verifyJWT, addAStaff)
 staffRouter.route("/").get(verifyJWT, getSearchedStaffs)
 staffRouter.route("/:staff_id").get(verifyJWT, getAStaffPersonalDetails)
-staffRouter.route("/cr-dr").post(verifyJWT, addAStaffStippendAndPayout)
+staffRouter.route("/remunation").post(verifyJWT, addAStaffRemunationDetails)
+staffRouter.route("/payout").post(verifyJWT, addAStaffPayoutDetails)
 staffRouter.route("/cr-dr/:staff_id").get(verifyJWT, getAStaffStippendAndPayout)
 
 

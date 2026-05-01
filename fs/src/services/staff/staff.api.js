@@ -15,7 +15,30 @@ const searchStaffByName = async({params , signal} = {}) => {
     }
 }
 
+const addStaffRemunation = async(details) => {
+    try {
+        const response = await api.post('/api/v1/staff/remunation' ,details );
+        // console.log(response?.data);
+        return response?.data;
+        
+    } catch (error) {
+        throw error?.response?.data;
+    }
+}
+
+const addStaffPayout = async (details) => {
+        try {
+            const response = await api.post('/api/v1/staff/payout', details)
+            return response?.data;
+        } catch (error) {
+                throw error?.response?.data;
+        }
+    
+}
+
 
 export {
-    searchStaffByName
+    searchStaffByName,
+    addStaffRemunation, 
+    addStaffPayout
 }
