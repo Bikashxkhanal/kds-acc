@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS staff_credit_debit_tbh(
     title ENUM('salary credited', 'bhatta credited', 'payment debited'),
     discription TEXT ,
     amount INT UNSIGNED NOT NULL,
+    date DATE NOT NULL,
 
     CONSTRAINT fk_staff 
     FOREIGN KEY (staff_id) 
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS staff_remunation_tbh (
     title ENUM('salary' , 'bhatta')NOT NULL,
     discription TEXT ,
     amount INT UNSIGNED NOT NULL,
+    date DATE NOT NULL,
 
     CONSTRAINT fk_remunation_staff 
     FOREIGN KEY (staff_id) 

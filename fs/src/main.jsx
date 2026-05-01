@@ -13,66 +13,61 @@ import MainContent from './features/dashboradUI/mainContent'
 import AccountDetailsOfCustomer from './features/customer/accountdetails.customer.ui'
 import StaffUI from './features/staff/staff.ui'
 import StaffList from './features/staff/stafflist'
+import StaffAccountDetails from './features/staff/staff.accountdetails.ui'
 
 
 const router = createBrowserRouter([
-  {
-    path : '/', 
-    element : <App />,
-    children : [
-      
-      {
-        path : '/login', 
-        element : <PublicRoute >
-               <LoginPage />
-              </PublicRoute> 
-        
-      }, 
-      {
-        path : '/',
-        element : <ProtectedRoute >
-                {/* direclty a dashboard remove when dashboard is made */}
-                <Dashboard />
-              
-                  </ProtectedRoute>,
-      children : [
+ {
+  path: '/',
+  element: <App />,
+  children: [
+
+    {
+      path: 'login',
+      element: <PublicRoute><LoginPage /></PublicRoute>
+    },
+
+    {
+      element: <ProtectedRoute />,
+      children: [
         {
-          index : '/', 
-          element : <MainContent />
-        }, 
-        {
-          path : '/customer' , 
-          element : <CustomerMainUI />,
-        },
+          element: <Dashboard />, 
+          children: [
             {
-              path : '/customer/:id', 
-              element : <AccountDetailsOfCustomer />
-            }, 
-          
-       
-        {
-          path : '/staff', 
-          element : <StaffUI />,
-          
-        },
-        {
-          path : '/staff/all', 
-          element : <StaffList />
-        },
-        {
-          path : '/billings', 
-          element : <h1 className='w-full' >Billings</h1>
+              index: true,
+              element: <MainContent />
+            },
+            {
+              path: 'customer',
+              element: <CustomerMainUI />
+            },
+            {
+              path: 'customer/:id',
+              element: <AccountDetailsOfCustomer />
+            },
+            {
+              path: 'staff',
+              element: <StaffUI />
+            },
+            {
+              path: 'staff/all',
+              element: <StaffList />
+            },
+            {
+              path: 'staff/:id',
+              element: <StaffAccountDetails />
+            },
+            {
+              path: 'billings',
+              element: <h1>Billings</h1>
+            }
+          ]
         }
       ]
-      },
-      {
-        path : '/customer', 
-        element : <ProtectedRoute>
-          <CustomerMainUI />
-            </ProtectedRoute>
-      }
-    ]
-  }
+    }
+
+  ]
+}
 ])
 
 createRoot(document.getElementById('root')).render(

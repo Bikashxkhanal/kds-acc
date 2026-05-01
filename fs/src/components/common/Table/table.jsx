@@ -6,7 +6,8 @@ const Table = ({
 }) => {
   
   if(tableData.length ==0) return;
-     const tableHeader = Object.keys(tableData?.[0]);
+  
+    const tableHeader = Object.keys(tableData?.[0]);
     const tableBody = tableData?.map((data) => Object.values(data));
 
   return (

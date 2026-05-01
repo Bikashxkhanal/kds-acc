@@ -1,6 +1,6 @@
 import { useState , useEffect} from "react";
 import { useSelector } from "react-redux";
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
 
 const ProtectedRoute = ({
@@ -19,9 +19,7 @@ const ProtectedRoute = ({
         
     }
 
-    if(user && authStatus == 'authenticated'){
-        return <> {children} </>
-    }
+    return <Outlet />
     
 }
 

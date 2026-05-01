@@ -110,24 +110,66 @@ const addAStaffPayoutDetails = asyncHandler(async(req, res) => {
 //add payment done to staff as well salary and other benfits (money)
 const getAStaffStippendAndPayout = asyncHandler(async(req, res) => {
     const {staff_id} = req?.params;
+
+    const {page = 1, limit = 10} = req?.query;
+
+    if(isNaN(page) || isNaN(limit)) throw new ApiError(400, "Invalid request, query must be integer");
+
+    const finalLimit = Number(limit);
+    // console.log(page);
+    
+    const offset =  (Number(page) -1) * finalLimit
+
     if(!staff_id) throw new ApiError(400, "Staff id is required")
     
     if(isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
 
-    const isStaff = await isStaffExists({staff_id})
-
-    if(isStaff.length == 0) throw new ApiError(400, "No  staff exist with such id")
+    try {
+        const isStaff = await isStaffExists({staff_id})
     
-    const staffDetails = await connectPool.execute(
-        `SELECT * FROM staff_credit_debit_tbh WHERE staff_id = ?`, [staff_id]
-    );
+        if(isStaff.length == 0) throw new ApiError(400, "No  staff exist with such id")
+        
+        const query = `
+                        SELECT 
+                            sr.date AS Date,
+                            CONCAT(sr.title,' ' , sr.discription) AS Discription, 
+                            NULL AS Credit, 
+                            sr.amount AS Debit
+                        FROM 
+                            staff_remunation_tbh sr
+                        WHERE 
+                            sr.staff_id = ?
+                        UNION ALL
+                        SELECT 
+                            sp.date AS Date,
+                            sp.discription AS Discription,
+                            sp.amount AS Credit,
+                            NULL AS Debit
+                        FROM 
+                            staff_payment_tbh sp
+                        WHERE
+                            sp.staff_id = ?
+                        ORDER BY date DESC 
+                        LIMIT ${finalLimit} OFFSET ${offset}
+                        
+                    `
 
-    const stippendAndPyoutDetails = staffDetails?.[0]
+        const [rowsCount] = await connectPool.execute(`SELECT COUNT(*) AS rowsCount FROM (
+            ${query} )AS stippendAndPayout`, [staff_id, staff_id])
+
+        const totalRows = rowsCount?.[0]?.rowsCount;
+        
+
+        const [result] = await connectPool.execute(
+            query, [staff_id, staff_id]
+        )
     
-
-    res.status(200).json(
-        new ApiResponse(200, "Staff Stippend and payout details fetched successfully", {stippendAndPyoutDetails} )
-    )
+        res.status(200).json(
+            new ApiResponse(200, "Staff Stippend and payout details fetched successfully", {result, totalRows} )
+        )
+    } catch (error) {
+        throw new ApiError(500, error?.message)
+    }
 
 })
 
@@ -138,7 +180,7 @@ const getSearchedStaffs = asyncHandler(async (req, res) => {
     if(!q?.trim()){
          throw new ApiError(400, "Must have search query");
     }
-    console.log("Before db call");
+    // console.log("Before db call");
 
     const searchQuery = `SELECT id, name FROM staff WHERE LOWER(name) LIKE LOWER(?)`
 

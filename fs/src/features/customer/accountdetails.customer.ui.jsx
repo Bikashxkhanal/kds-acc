@@ -32,7 +32,7 @@ const AccountDetailsOfCustomer = () => {
                 ])
 
             console.log(response);
-            setCustomerPersonalDetails({...customerPersonalDetails, ...response?.[0]?.[0]});
+            setCustomerPersonalDetails(response?.[0]?.[0]);
             setCustomerWorkAndPaymentDetails([...response?.[1]?.workAndPaymentDetails]);
             setTotalRows(() => Math.round(Number(response?.[1]?.metaData?.[0]?.totalRows) / 10));
 

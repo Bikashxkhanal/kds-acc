@@ -90,7 +90,7 @@ const handleLogout = async () => {
             {!isActiveBrgIcn && (
                 <button className="w-20 flex flex-row gap-2 justify-center items-center cursor-pointer">
                     <i class="bi bi-box-arrow-right text-white text-2xl" onClick={handleLogout} />
-                    <span className="text-white text-[14px]">Welcome {user?.name.split(" ")?.[0] || "Guest"}</span>
+                    <span className="text-white text-[14px]">Welcome {user?.name?.split(" ")?.[0] || "Guest"}</span>
                 </button>
             )}
              </div>

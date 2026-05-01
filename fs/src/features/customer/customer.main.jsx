@@ -24,14 +24,6 @@ const CustomerMainUI = () => {
             console.log(response?.data);
             const finalTableData = response?.data?.rows;
         setTotalRows(Math.round(Number(response?.data?.metaData?.[0]?.totalCustomers) / PAGE_VALUE_LIMIT))
-        //   const {keys, values}  = convertApiDataIntoParams(response?.data?.rows)
-        //   keys?.push('Actions');
-        //   values?.forEach((value) => value.push(<Link to={`${value?.[0]}`} className="text-blue-400 underline underline-offset-1"  >View </Link>))
-        //     setTableData({
-        //    tableHeader : keys, 
-        //    tableBody : values
-           
-        // });
         
          finalTableData?.forEach((eachData) => 
             eachData.Actions = <Link 
@@ -41,10 +33,7 @@ const CustomerMainUI = () => {
         )
 
         setTableData(finalTableData)
-        console.log(finalTableData);
-        
-        
-
+        // console.log(finalTableData);
         } catch (error) {
             toast.error(error?.message);
         }
