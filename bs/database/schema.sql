@@ -42,6 +42,34 @@ CREATE TABLE IF NOT EXISTS staff_credit_debit_tbh(
 
 );
 
+
+CREATE TABLE IF NOT EXISTS staff_remunation_tbh (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    staff_id INT NOT NULL,
+    title ENUM('salary' , 'bhatta')NOT NULL,
+    discription TEXT ,
+    amount INT UNSIGNED NOT NULL,
+
+    CONSTRAINT fk_remunation_staff 
+    FOREIGN KEY (staff_id) 
+    REFERENCES staff(id)
+
+
+);
+
+CREATE TABLE IF NOT EXISTS staff_payment_tbh (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    staff_id INT NOT NULL,
+    discription TEXT ,
+    amount INT UNSIGNED NOT NULL,
+
+    CONSTRAINT fk_payment_staff 
+    FOREIGN KEY (staff_id) 
+    REFERENCES staff(id)
+
+
+);
+
 CREATE TABLE IF NOT EXISTS vehicle(
     id INT PRIMARY KEY AUTO_INCREMENT,
     vehicle_number VARCHAR(100) NOT NULL,
@@ -81,7 +109,7 @@ CREATE TABLE IF NOT EXISTS customer_work_details_tbh(
     rate INT UNSIGNED NOT NULL,
     total INT UNSIGNED NOT NULL,
     work_date DATE NOT NULL ,
-    entry_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    entry_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_customer_work 
     FOREIGN KEY (customer_id) REFERENCES customer_personal_details_tbh(id),

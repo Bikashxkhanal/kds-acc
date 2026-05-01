@@ -47,7 +47,7 @@ const getAllCustomers = async (params) => {
     }
 }
 
-const getACustomerWorkAndPaymentDetails = async(customerId,params) => {
+const getACustomerWorkAndPaymentDetails = async(customerId, params) => {
    
         try {
             console.log("Aff", params?.page);

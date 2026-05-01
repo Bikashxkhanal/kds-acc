@@ -26,6 +26,19 @@ export const formConfig = {
         {name : 'payers_name', type : 'text', required : false   },
         {name : 'payment_date', type : 'date', required : true },
 
+    ], 
+    addStaffRemunationDetails : [
+        {name : 'staff_id', type: 'readOnly', required: 'true'}, 
+        {name : 'title', type: 'select', options : ['salary', 'bhatta'], required: 'true'}, 
+        {name : 'discription', type: 'text', required: 'true'}, 
+        {name : 'amount', type: 'number', required: 'true'}
+
+
+    ], 
+    addStaffPaymentDetails : [
+        {name : 'staff_id', type: 'readOnly', required: 'true'}, 
+        {name : 'discription', type: 'text', required: 'true'}, 
+        {name : 'amount', type: 'number', required: 'true'}
     ]
 
 

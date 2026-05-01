@@ -106,10 +106,43 @@ const getAStaffStippendAndPayout = asyncHandler(async(req, res) => {
 
 })
 
+ //will be returning name and id only
+const getSearchedStaffs = asyncHandler(async (req, res) => {
+
+    const { q = ''} = req?.query;
+    if(!q?.trim()){
+         throw new ApiError(400, "Must have search query");
+    }
+    console.log("Before db call");
+
+    const searchQuery = `SELECT id, name FROM staff WHERE LOWER(name) LIKE LOWER(?)`
+
+    try {
+        const [response] = await connectPool.execute(
+                    searchQuery, [`%${q}%`]
+        );
+       
+        return res.status(200).json(
+        new ApiResponse(
+            200, 
+            "Staff Fetched successfully", response
+        )
+    )
+
+    } catch (error) {
+        console.log(error?.message); 
+        throw new ApiError(500, error?.message)
+    }
+
+
+    
+})
+
 export{
     addAStaff,
     getAStaffPersonalDetails,
     addAStaffStippendAndPayout,
-    getAStaffStippendAndPayout
+    getAStaffStippendAndPayout,
+    getSearchedStaffs
 }
 
