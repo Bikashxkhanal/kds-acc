@@ -72,6 +72,37 @@ const getACustomerPersonalDetails = async (customerId) => {
     }
 }
 
+//get data based on selected date range
+const getACustomerWorkAndPaymentPreviewData = async (customerId, {to , from }) => {
+    try {
+        const response = await api.get(`/api/v1/customer/preview/${customerId}`, {
+            params : {
+                to : to, 
+                from : from
+            }
+        });
+        return response?.data;
+    } catch (error) {
+        throw error?.response?.data;
+    }
+}
+
+
+const downLoadWorkAndPaymentDataPdf = async (customerId, {to, from} = {}) => {
+            try {
+                const response = await api.get(`/api/v1/customer/download/${customerId}`, {
+                    params : {
+                        to : to, 
+                        from : from
+                    }
+                })
+
+                console.log(response);
+                
+            } catch (error) {
+                throw error?.response?.data;
+            }
+}
 
 
 export {
@@ -80,6 +111,8 @@ export {
     addCustomerPaymentDetail,
     getAllCustomers,
     getACustomerWorkAndPaymentDetails,
-    getACustomerPersonalDetails
+    getACustomerPersonalDetails, 
+    getACustomerWorkAndPaymentPreviewData, 
+    downLoadWorkAndPaymentDataPdf
 
 }

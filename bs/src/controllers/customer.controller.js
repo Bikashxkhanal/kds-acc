@@ -4,6 +4,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { isVehicleExists } from "./vehicle.controller.js";
 
+import puppeteer from 'puppeteer';
+
 
 const isCustomerExist = async ({customer_id, phone_number}) => {
     //returns array of [1 => 1] if exist , retuns empty array if not
@@ -360,6 +362,122 @@ const getACustomerWorkAndPaymentDetails = asyncHandler(async (req, res) => {
     
 })
 
+const getACustomerWorkAndPaymentDetailsByDateRange = async({customer_id, startDate, endDate}) => {
+    
+    if(!customer_id?.trim() || isNaN(customer_id)) throw new Error("Invalid customer Id");
+    
+    if(!startDate?.trim() && !endDate?.trim()) throw new Error("Data range must be selected");
+    console.log(startDate, endDate);
+    
+
+    const query = `
+        SELECT 
+            pd.payment_date AS date,
+            CONCAT('payers name: ', pd.payers_name, ' payment mode: ', pd.payment_mode) AS discription,  pd.pay_amount AS Credit, NULL AS Debit
+        FROM 
+            customer_payment_details_tbh pd  
+        WHERE 
+            pd.customer_id = ? AND pd.payment_date BETWEEN ? AND ?
+        UNION ALL 
+
+        SELECT 
+            work_date AS Date,
+            CONCAT( wd.title,' vehicle No: ', wd.vehicle_id,' quantity: ', wd.quantity, wd.quantity_unit_notation,' @ ', wd.rate) AS discription, 
+             wd.total AS Debit,
+             NULL AS Credit
+        FROM 
+            customer_work_details_tbh wd 
+        WHERE 
+            wd.customer_id = ? AND wd.work_date BETWEEN ? AND ?
+        ORDER BY date DESC
+    `
+    try {
+        const [result] = await connectPool.execute(query, [customer_id,startDate, endDate, customer_id, startDate, endDate])
+        return result;
+    } catch (error) {
+        throw new Error(error?.message);
+    }
+    
+}
+
+const getACustomerPreviewData = asyncHandler(async(req, res) => {
+    const {customerId : customer_id} = req?.params;
+    const {from : startDate, to : endDate} = req?.query;
+
+    try {
+        const response = await getACustomerWorkAndPaymentDetailsByDateRange({customerId :customer_id, startDate : startDate ,endDate : endDate})
+
+        return res.status(200).json(
+            200,
+            "Preview Data fetched successfully", 
+            response
+        )
+    } catch (error) {
+        throw new ApiError(400, error?.message)
+    }
+})
+
+
+const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
+    const {customerId : customer_id} = req?.params;
+    const {from : startDate , to : endDate} = req?.query;
+
+    // console.log(startDate, endDate);
+    
+
+    try {
+        const data = await getACustomerWorkAndPaymentDetailsByDateRange({customer_id :customer_id, startDate :startDate,endDate: endDate})
+        // console.log(data);
+        
+
+        const htmlTemplate = `
+                <html>
+                    <body>
+                    <h1>Report</h1>
+                    <p>From ${startDate} To ${endDate} </p>
+                   
+                    <table>
+                        
+                        ${data.length > 0 ? 
+                            data?.map((eachData) => (
+                                `<tr>
+                                    <td>${eachData.date}</td>
+                                    <td>${eachData.discription}</td>
+                                    <td>${eachData.Credit}</td>
+                                    <td>${eachData.Debit}</td>
+                                </tr>`
+                            )) : '<p>No data to show for selected range </p>'
+                        } 
+                    
+                    </table>
+                    </body>
+                
+                </html>
+
+        `
+
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+             await page.setContent(htmlTemplate);
+
+        const pdf = await page.pdf();
+
+        await browser.close();
+
+
+        res.set({
+            "Content-Type" : "application/pdf",
+            "Content-Disposition" : "attachment : filename=customer_acc_details.pdf"
+        })
+
+        res.send(pdf);
+
+        } catch (error) {
+        throw new ApiError(400, error?.message)
+    }
+})
+
+
 export {
     addACustomer,
     getACustomer,
@@ -371,5 +489,7 @@ export {
     addCustomerWorkDetails,
     getCustomerWorkDetails,
     searchCustomer,
-    getACustomerWorkAndPaymentDetails
+    getACustomerWorkAndPaymentDetails, 
+    downloadWorkAndPaymentDetailsInPDF,
+    getACustomerPreviewData
 }

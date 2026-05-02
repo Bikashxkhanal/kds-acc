@@ -9,7 +9,9 @@ import {
         addCustomerWorkDetails,
         getCustomerWorkDetails,
         searchCustomer,
-        getACustomerWorkAndPaymentDetails
+        getACustomerWorkAndPaymentDetails,
+        getACustomerPreviewData,
+        downloadWorkAndPaymentDetailsInPDF
 
  } from "../controllers/customer.controller.js";
 
@@ -26,7 +28,8 @@ customerRouter.route("/payment").post(verifyJWT, addCustomerPaymentDetail)
 customerRouter.route("/:customer_id/work-pay-details").get(verifyJWT, getACustomerWorkAndPaymentDetails)
 customerRouter.route("/payment/:customer_id").get(verifyJWT, getACustomerPaymentDetails)
 customerRouter.route("/:work-details/:customer_id").get(verifyJWT, getCustomerWorkDetails)
-
+customerRouter.route("/preview/:customer_id").get(verifyJWT, getACustomerPreviewData)
+customerRouter.route('/download/:customerId').get(verifyJWT, downloadWorkAndPaymentDetailsInPDF)
 
 export {
     customerRouter
