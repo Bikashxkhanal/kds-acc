@@ -341,25 +341,32 @@ try {
         // console.log(metaData);
         
         const [workAndPaymentDetails] = await connectPool.execute(`
-            SELECT 
+        SELECT 
                 pd.payment_date AS date,
-                CONCAT('payers name: ', pd.payers_name, ' payment mode: ', pd.payment_mode) AS discription,  pd.pay_amount AS Credit, NULL AS Debit
-            FROM 
-                customer_payment_details_tbh pd  
+                CONCAT('Payer: ', pd.payers_name, ' | Mode: ', pd.payment_mode) AS discription,
+                pd.pay_amount AS Credit,
+                0 AS Debit
+            FROM customer_payment_details_tbh pd  
             WHERE 
-                pd.customer_id = ?
+                pd.customer_id = ? 
+
+
             UNION ALL 
-    
+
             SELECT 
-                work_date AS Date,
-                CONCAT( wd.title,' vehicle No: ', wd.vehicle_id,' quantity: ', wd.quantity, wd.quantity_unit_notation,' @ ', wd.rate) AS discription, 
-                 wd.total AS Debit,
-                 NULL AS Credit
-            FROM 
-                customer_work_details_tbh wd 
+                wd.work_date AS date,
+                CONCAT(
+                    wd.title,
+                    ' | Vehicle No: ', wd.vehicle_id,
+                    ' | Qty: ', wd.quantity, ' ', wd.quantity_unit_notation,
+                    ' | Rate: ', wd.rate
+                ) AS description,
+                0 AS Credit,
+                wd.total AS Debit
+            FROM customer_work_details_tbh wd 
             WHERE 
-                wd.customer_id = ?
-    
+                wd.customer_id = ? 
+
             ORDER BY date DESC
             LIMIT ${limit} OFFSET ${offset} 
     
@@ -377,6 +384,7 @@ try {
 })
 
 const getACustomerWorkAndPaymentDetailsByDateRange = async({customer_id, startDate, endDate}) => {
+    console.log(customer_id);
     
     if(!customer_id?.trim() || isNaN(customer_id)) throw new Error("Invalid customer Id");
     
@@ -416,6 +424,7 @@ const getACustomerWorkAndPaymentDetailsByDateRange = async({customer_id, startDa
     `
     try {
         const [result] = await connectPool.execute(query, [customer_id,startDate, endDate, customer_id, startDate, endDate])
+        
         return result;
     } catch (error) {
         throw new Error(error?.message);
@@ -427,14 +436,14 @@ const getACustomerPreviewData = asyncHandler(async(req, res) => {
     const {customerId : customer_id} = req?.params;
     const {from : startDate, to : endDate} = req?.query;
 
+    // console.log(customer_id); 
     try {
-        const response = await getACustomerWorkAndPaymentDetailsByDateRange({customerId :customer_id, startDate : startDate ,endDate : endDate})
-        
-
+        const response = await getACustomerWorkAndPaymentDetailsByDateRange({customer_id, startDate, endDate})
+    
         return res.status(200).json(
-            200,
+           new ApiResponse( 200,
             "Preview Data fetched successfully", 
-            response
+            response)
         )
     } catch (error) {
         throw new ApiError(400, error?.message)
@@ -464,20 +473,21 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
             }
             return values
         }
-        console.log(data);
+        // console.log(data);
         
 
         const customerData = await getCustomerPerDetails(customer_id);
         // console.log(customerData);
         
+        const tableHeaders = null;
         if(data?.length > 0){
             const calculatedTotalStepByStep = getFinalValue(data)
             // console.log(calculatedTotalStepByStep);
         
         data?.forEach((eachData, idx) =>eachData.Total = calculatedTotalStepByStep[idx]);
-         
+         tableHeaders =  Object.keys(data?.[0]);
         }
-        const tableHeaders = Object.keys(data?.[0]);
+       
 
         const htmlTemplate = `
                 <html>

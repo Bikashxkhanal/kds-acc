@@ -3,6 +3,7 @@ import {useParams} from 'react-router-dom'
 import { toast } from 'react-toastify';
 import { getAStaffDetails, getAStaffRemunationAndPayoutDetails } from '../../services/staff/staff.api';
 import PaginationBar from '../../components/common/Pagination/paginationbar';
+import { getFinalCreditOrDebitValue } from '../../helpers/creditAndDebit.helper';
 
 const LIMIT = 10;
 
@@ -26,15 +27,19 @@ const StaffAccountDetails = () => {
                         limit : LIMIT
                     })]
                 )
-                console.log(response);
+                // console.log(response);
                 
                 setStaffPersonalDetails(response?.[0]?.data?.[0]);
                 // setStaffRemuAndPayoutDetails(response?.[1]?.data)
+
+                 const finalValues = getFinalCreditOrDebitValue(response?.[1]?.data?.result);
+                response?.[1]?.data?.result?.forEach((detail, idx) => detail.Total = finalValues[idx])
 
                 const headers = Object.keys(response?.[1]?.data?.result?.[0])
                 setTableHeaders(headers);
 
                 const details = response?.[1]?.data?.result?.map((each) => Object.values(each))
+                
                 setStaffRemuAndPayoutDetails(details);
                 
                 setTotalCount(response?.[1]?.data?.totalRows)

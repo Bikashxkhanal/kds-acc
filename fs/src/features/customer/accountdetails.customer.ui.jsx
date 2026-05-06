@@ -3,6 +3,7 @@ import { getACustomerPersonalDetails, getACustomerWorkAndPaymentDetails } from "
 import  {useParams} from 'react-router-dom'
 import Table from "../../components/common/Table/table";
 import PaginationBar from "../../components/common/Pagination/paginationbar";
+import { getFinalCreditOrDebitValue } from "../../helpers/creditAndDebit.helper";
 
 const PAGE_LIMIT = 10;
 
@@ -31,8 +32,11 @@ const AccountDetailsOfCustomer = () => {
                     getACustomerWorkAndPaymentDetails(customer_id, { page : page, limit: PAGE_LIMIT})
                 ])
 
-            console.log(response);
+            console.log("API DATA" , response);
             setCustomerPersonalDetails(response?.[0]?.[0]);
+
+            const finalValues = getFinalCreditOrDebitValue(response?.[1]?.workAndPaymentDetails);
+            response?.[1]?.workAndPaymentDetails?.forEach((each, idx) => each.Total = finalValues[idx])
             setCustomerWorkAndPaymentDetails([...response?.[1]?.workAndPaymentDetails]);
             setTotalRows(() => Math.round(Number(response?.[1]?.metaData?.[0]?.totalRows) / 10));
 
@@ -48,13 +52,15 @@ const AccountDetailsOfCustomer = () => {
     
 
     const tableValues = customerWorkAndPaymentDetails?.map((data) => Object.values(data));
+    console.log(tableValues);
+    
 
     const handlePageChange = (page) => {
-        console.log("Pag", page);
+        // console.log("Pag", page);
         
         setPage(() => page);
     }
-    console.log("After change",page);
+    // console.log("After change",page);
     
 
         return (
@@ -81,7 +87,7 @@ const AccountDetailsOfCustomer = () => {
                             <tr>
                                 {
                                    headers?.map((header, idx) => (
-                                        <th key={idx}  className="text-center px-5 pb-4 border border-t-0 border-yellow-700"> {header} </th>
+                                        <th key={header}  className="text-center px-5 pb-4 border border-t-0 border-yellow-700"> {header} </th>
                                     ))
                                 }
 
@@ -90,13 +96,13 @@ const AccountDetailsOfCustomer = () => {
 
                         <tbody>
                             {
-                                tableValues?.map((values) => (
-                                    <tr>
+                                tableValues?.map((values, index) => (
+                                    <tr key={index}>
                                       { 
-                                       values?.map((value) => (
-                                        <td key={value} className="text-center px-5 py-4 border border-yellow-700">
+                                       values?.map((value, idx) => (
+                                        <td key={idx} className="text-center px-5 py-4 border border-yellow-700">
                                             {
-                                                value ?? '-'
+                                                value || '-'
                                             }
                                         </td>
                                        ))
