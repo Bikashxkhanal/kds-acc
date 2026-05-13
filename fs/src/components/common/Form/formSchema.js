@@ -3,7 +3,7 @@ import NepaliDate from 'nepali-date-converter'
 
 export const formSchema = (fields = []) => {
     const shape = {}
-    console.log(fields);
+    // console.log(fields);
     
     fields?.forEach((field) => {
         let rule ;

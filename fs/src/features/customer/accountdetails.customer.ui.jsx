@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
-import { getACustomerPersonalDetails, getACustomerWorkAndPaymentDetails } from "../../services/customer/customer";
+import { getACustomerPersonalDetails, getACustomerWorkAndPaymentDetails, getACustomerWorkAndPaymentPreviewData, downLoadWorkAndPaymentDataPdf } from "../../services/customer/customer";
 import  {useParams} from 'react-router-dom'
 import Table from "../../components/common/Table/table";
 import PaginationBar from "../../components/common/Pagination/paginationbar";
 import { getFinalCreditOrDebitValue } from "../../helpers/creditAndDebit.helper";
+import Button from "../../components/common/button";
+import DownloadPreview from "../../components/common/Preview/download-preview";
+import DatePicker from '@sbmdkl/nepali-datepicker-reactjs';
+import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
+import {toast} from 'react-toastify'
+
+
 
 const PAGE_LIMIT = 10;
 
 const AccountDetailsOfCustomer = () => {
 
-    const {id:customer_id} = useParams();   
+    const {id: customer_id} = useParams();   
     
     const [customerPersonalDetails, setCustomerPersonalDetails] = useState({});
     //work-pay details of customer
@@ -20,9 +27,21 @@ const AccountDetailsOfCustomer = () => {
 
     //totalRows is the metadata where it gives the total number of row count of work-pay-details of a particular customer
     const [totalRows, setTotalRows] = useState(null); 
+
+    //for showing and hiding the date range selectors for downloading/printing the a/c details 
+    const [selectedDates, setSelectedDates] = useState({
+        startDate : null, 
+        endDate : null
+    })
    
     //pagination page
     const [page, setPage] = useState(1);
+
+       // to show the preview data of the downloadable customer information
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+
+    // preview data 
+    const [previewData, setPreviewData] = useState({});
     
     useEffect(() => {
         ;(async() => {
@@ -52,7 +71,7 @@ const AccountDetailsOfCustomer = () => {
     
 
     const tableValues = customerWorkAndPaymentDetails?.map((data) => Object.values(data));
-    console.log(tableValues);
+    // console.log(tableValues);
     
 
     const handlePageChange = (page) => {
@@ -61,10 +80,114 @@ const AccountDetailsOfCustomer = () => {
         setPage(() => page);
     }
     // console.log("After change",page);
+
+    const handleDateChange = (type , date) => {
+        setSelectedDates(
+            (prev) => ({
+                ...prev, 
+                [type]: date
+            })
+        )
+        
+    }
+
+    const validateDates = (dates = {}) => {
+            // if no dates provideed
+            if(!dates) return false;
+
+            const values = Object.values(dates);
+            
+            const status = values.every((date) => date !== null && date instanceof Date)
+
+            return true;     
+    }
+
+    const handleDownloadPreview = async (e) => {
+        e.preventDefault();
+        try {
+            // console.log(selectedDates);
+            
+          const response =   await getACustomerWorkAndPaymentPreviewData(
+                                customer_id ,
+                                {
+                                    from : selectedDates?.startDate?.bsDate,
+                                    to : selectedDates?.endDate?.bsDate,
+                                     
+                                })
+        console.log(response?.data);
+                             
+        const updatedValue = {
+            ...previewData, ...response?.data
+        }
+        // console.log(updatedValue);
+        
+        setPreviewData(updatedValue)
+        setIsPreviewOpen((prev) => true)
+        // console.log(previewData);
+        
+        
+        } catch (error) {
+            
+        }
+        
+    }
+
+    const handlePreviewClickOutside = () => {
+        // console.log("OUTSIDE CLICK");
+        
+        setIsPreviewOpen((prev) =>false )
+    }
+
+    const handleCustomerInfoDownload = async() => {
+            try {
+                console.log("down");
+                
+                const response = await downLoadWorkAndPaymentDataPdf(customer_id, {from : selectedDates?.startDate?.bsDate, to : selectedDates?.endDate?.bsDate})
+                toast.success(response?.message)
+                setIsPreviewOpen(false)
+
+            } catch (error) {
+                setIsPreviewOpen(false)
+                toast.error(response?.message)
+            }
+    }
     
 
         return (
             <div className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center pt-5 ">
+                {
+                isPreviewOpen && <DownloadPreview data={previewData} 
+                handleClickOut={handlePreviewClickOutside} handleClick={handleCustomerInfoDownload} />
+            }
+                {/* PRINT/DOWNLOAD BUTTON FOR DOWNLOADING OR PRINTING THE DETAILS OF THE CUSTOMER A/C */}
+                <form  className="flex flex-row justify-center items-center gap-10 text-center"  >
+
+                    <DatePicker 
+                        selected = {selectedDates?.startDate}
+                        onChange = { (date) => handleDateChange('startDate', date)}
+                        className="border border-gray-400 mx-2 px-2 py-1 rounded-lg bg-white" 
+                        language="en"
+                    />
+
+                    <DatePicker
+                        selected = {selectedDates?.endDate}
+                        onChange = { (date) => handleDateChange('endDate', date)}
+                        className="border border-gray-400 mx-2 px-2 py-1 rounded-lg bg-white"
+                        language="en"
+                    />
+
+                    <Button 
+                        children="Preview" 
+                        varient="primary" 
+                        size={"sm"} 
+                        onClick={handleDownloadPreview}
+
+                         />
+
+                </form>
+
+               
+
                 {/* personal Details Section */}
                 <div className="w-[90%] py-5 flex flex-col gap-4 border border-yellow-700 bg-yellow-700 rounded-t-xl" >
                      <div className="text-xl text-center">
@@ -96,7 +219,7 @@ const AccountDetailsOfCustomer = () => {
 
                         <tbody>
                             {
-                                tableValues?.map((values, index) => (
+                               tableValues.length > 0 ?  tableValues?.map((values, index) => (
                                     <tr key={index}>
                                       { 
                                        values?.map((value, idx) => (
@@ -108,7 +231,7 @@ const AccountDetailsOfCustomer = () => {
                                        ))
                                        }
                                     </tr>
-                                ))
+                                )) : <p className="text-gray-400 py-5" >No data found</p>
                             }
                         </tbody>
                     </table>

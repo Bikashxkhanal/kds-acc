@@ -19,7 +19,8 @@ const Button = ({
     const varients = {
         primary : 'border-green-600 rounded-sm bg-green-600 text-white hover:bg-green-700 hover:border-green-700 focus:ring-1 focus:ring-offset-1 disabled:bg-green-300  disabled:border-green-300 disabled:cursor-not-allowed', 
         secondary : 'border-white rounded-sm bg-white text-black hover:bg-gray-200 hover:border-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:border-gray-300', 
-        danger : 'border-red-600 rounded-sm bg-red-600 text-white hover:bg-red-700 hover:border-red-700 disabled:bg-red-300 disabled:cursor-not-allowed disabled:border-red-300'
+        danger : 'border-red-600 rounded-sm bg-red-600 text-white hover:bg-red-700 hover:border-red-700 disabled:bg-red-300 disabled:cursor-not-allowed disabled:border-red-300',
+        confirmation : 'border-gray-600 bg-white rounded-sm opacity-60 hover:opacity-100 hover:bg-gray-700 hover:text-white hover:border-blue-400 disabled:bg-red-300 disabled:cursor-not-allowed disabled:border-red-300'
     };
 
     const sizes = {

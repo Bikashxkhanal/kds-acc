@@ -31,7 +31,7 @@ const Form = ({
         if(datas){
             reset(datas)
         }
-    }, [datas, reset])
+    }, [reset])
 
    
 
@@ -116,11 +116,6 @@ const Form = ({
                     }
 
                     
-                    {
-                        console.log(errors[fld.name])
-                        
-                    }
-
                    
                 </div>
             ))

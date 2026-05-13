@@ -1,12 +1,13 @@
 import Form from "../../components/common/Form/form";
 import { Button } from "../../components";
 import SearchBar from "../../components/common/SearchBar"
-import { searchCustomer , getAllCustomers} from "../../services/customer/customer";
+import { searchCustomer , getAllCustomers, addNewCustomer} from "../../services/customer/customer";
 import { useEffect, useState } from "react";
 import Table from "../../components/common/Table/table";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 import PaginationBar from "../../components/common/Pagination/paginationbar";
+
 
 const PAGE_VALUE_LIMIT = 15;
 
@@ -16,6 +17,7 @@ const CustomerMainUI = () => {
     const [page, setPage] = useState(1);
     const [totalRows, setTotalRows] = useState(null);
     const [tableData, setTableData] = useState([]);
+
 
     useEffect( () => {
     ;(async() => {
@@ -41,23 +43,35 @@ const CustomerMainUI = () => {
     
     }, [page])
 
+    const handleSubmit = async (data) => {
+        try {
+            // console.log(data);
+            
+            const response = await addNewCustomer(data);
+            toast.success(response?.message)
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
     
-    return (<main className="w-full md:w-4/5 min-h-screen flex flex-col items-center gap-4 pt-5 ">
+    return (
+        <main className="w-full md:w-4/5 min-h-screen flex flex-col items-center gap-4 pt-5 ">
+            
         <div className="flex flex-col gap-2" >
             <SearchBar placeholder="Search customer by name" searchQueryFn={searchCustomer} 
             />
             <Button 
             children="Add New Customer" size='sm'  
-            onClick={() => 
-                setIsAddCustomerFrmOpen(true)
+            onClick={() => setIsAddCustomerFrmOpen(true)
             } />
 
         </div>
 
         {
-            isAddCustomerFrmOpen && (
-               <Form useCase="addNewCustomer" />
-            )
+            isAddCustomerFrmOpen && <Form useCase="addNewCustomer" 
+                                    handleFormSubmit={(data) => handleSubmit(data)} 
+                                    />
+            
         }
 
         {

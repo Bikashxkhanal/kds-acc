@@ -436,14 +436,17 @@ const getACustomerPreviewData = asyncHandler(async(req, res) => {
     const {customerId : customer_id} = req?.params;
     const {from : startDate, to : endDate} = req?.query;
 
-    // console.log(customer_id); 
+   console.log(startDate, endDate);
+   
     try {
         const response = await getACustomerWorkAndPaymentDetailsByDateRange({customer_id, startDate, endDate})
+
+        const customerData = await getCustomerPerDetails(customer_id);
     
         return res.status(200).json(
            new ApiResponse( 200,
             "Preview Data fetched successfully", 
-            response)
+            {metaData : customerData?.[0], tableData : response})
         )
     } catch (error) {
         throw new ApiError(400, error?.message)
@@ -479,7 +482,7 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
         const customerData = await getCustomerPerDetails(customer_id);
         // console.log(customerData);
         
-        const tableHeaders = null;
+        let tableHeaders = null;
         if(data?.length > 0){
             const calculatedTotalStepByStep = getFinalValue(data)
             // console.log(calculatedTotalStepByStep);
@@ -681,7 +684,7 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
 
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
-             await page.setContent(htmlTemplate);
+                    await page.setContent(htmlTemplate);
 
         const pdf = await page.pdf(
             {
@@ -711,7 +714,7 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
 
         res.set({
             "Content-Type" : "application/pdf",
-            "Content-Disposition" : "attachment : filename=customer_acc_details.pdf"
+            "Content-Disposition" : "attachment; filename=customer_acc_details.pdf"
         })
 
         res.send(pdf);

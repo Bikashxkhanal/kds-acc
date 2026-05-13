@@ -90,18 +90,42 @@ const getACustomerWorkAndPaymentPreviewData = async (customerId, {to , from }) =
 
 const downLoadWorkAndPaymentDataPdf = async (customerId, {to, from} = {}) => {
             try {
+                console.log('HERE')
                 const response = await api.get(`/api/v1/customer/download/${customerId}`, {
                     params : {
                         to : to, 
                         from : from
-                    }
+                    }, 
+                    responseType : 'blob'
                 })
 
-                console.log(response);
+                const blob = new Blob(
+                    [response.data], 
+                    {type : 'application/pdf'}
+                )
+
+                const fileURL = URL.createObjectURL(blob);
+
+                window.open(fileURL)
+                
                 
             } catch (error) {
-                throw error?.response?.data;
+                throw new Error("Failed to download pdf");
+                
             }
+}
+
+
+const addNewCustomer = async (customerDetails) => {
+    try {
+        const response = await api.post(`/api/v1/customer`, 
+            customerDetails
+        );
+
+        return response?.data;
+    } catch (error) {
+        return error.response.data;
+    }
 }
 
 
@@ -113,6 +137,7 @@ export {
     getACustomerWorkAndPaymentDetails,
     getACustomerPersonalDetails, 
     getACustomerWorkAndPaymentPreviewData, 
-    downLoadWorkAndPaymentDataPdf
+    downLoadWorkAndPaymentDataPdf, 
+    addNewCustomer
 
 }
