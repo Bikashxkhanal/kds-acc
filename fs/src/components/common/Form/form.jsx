@@ -100,7 +100,9 @@ const Form = ({
                             value={field?.value || ""}
                             onChange={({bsDate, adDate}) => {
                                 field?.onChange(bsDate)}}
-                            placeholder={field?.name.split("_").join(" ")} />
+                            placeholder={field?.name.split("_").join(" ")} 
+                            language="en"
+                            />
                         
                         )}
                         />

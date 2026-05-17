@@ -3,7 +3,7 @@ import { Button, InputBox } from "../../../components/index.js";
 import { loginSysUser } from "../../../services/auth/auth.js";
 import {toast} from 'react-toastify'
 import { useSelector , useDispatch} from "react-redux";
-import { loginStart, loginSuccess } from "../../../store/authSlice.js";
+import { loginFail, loginStart, loginSuccess } from "../../../store/authSlice.js";
 import { useNavigate } from "react-router-dom";
 
 const LoginForm = () => {
@@ -24,12 +24,14 @@ const LoginForm = () => {
             try{
                 dispatch(loginStart())
                 const data = await loginSysUser({loginData : formData})
-                console.log(data?.data?.user);
+                // console.log(data?.data?.user);
                 toast.success(data?.message)
                 dispatch(loginSuccess(data?.data?.user))
                     
                 //adjust based on api calls and other thing, WILL USE :: loading
             } catch (message) {
+                console.log(message);
+                dispatch(loginFail())
                toast.error(message)
                 
             }      

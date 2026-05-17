@@ -51,7 +51,7 @@ const DownloadPreview = (
                                 
                             <span key={index}> 
                             {
-                            typeof data === 'string' ? 
+                            typeof data === 'string' || data === 'dob' ?
                                     data?.split("_").join(" ").toUpperCase() 
                                     : data 
                             }
@@ -75,7 +75,7 @@ const DownloadPreview = (
                             {
                                 tableHeaders.map((head, index) => (
                                     <td key={index} className="text-center" >
-                                        {head?.toUpperCase()}
+                                        { head?.toUpperCase()}
                                     </td>
                                 ))
                             }
@@ -88,7 +88,11 @@ const DownloadPreview = (
                                     <tr key={idx} className="text-center" >
                                     {tableHeaders?.map((key, index) => (       
                                                 <td key={key}>
-                                                    { key === 'date' ? td[key]?.split("T")?.[0] : td[key] }
+                                                    {
+
+                                                    ( key === 'date' || key === 'dob') ? 
+                                                        td[key]?.split("T")?.[0] : td[key] 
+                                                    }
                                                 </td>
                                             
                                 ))}

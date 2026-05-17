@@ -140,15 +140,13 @@ const AccountDetailsOfCustomer = () => {
 
     const handleCustomerInfoDownload = async() => {
             try {
-                console.log("down");
-                
-                const response = await downLoadWorkAndPaymentDataPdf(customer_id, {from : selectedDates?.startDate?.bsDate, to : selectedDates?.endDate?.bsDate})
-                toast.success(response?.message)
+                console.log("down"); 
+               await downLoadWorkAndPaymentDataPdf(customer_id, {from : selectedDates?.startDate?.bsDate, to : selectedDates?.endDate?.bsDate})
                 setIsPreviewOpen(false)
 
             } catch (error) {
                 setIsPreviewOpen(false)
-                toast.error(response?.message)
+            
             }
     }
     

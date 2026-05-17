@@ -75,11 +75,53 @@ const getAStaffRemunationAndPayoutDetails = async(staff_id, {page= 1, limit = 10
     }
 } 
 
+const getAStaffPreviewDetails = async(staff_id, {startDate , endDate}) => {
+    try {
+        const res = await api.get(`/api/v1/staff/${staff_id}/preview`,{
+            params : {
+                startDate : startDate, 
+                endDate : endDate
+            }
+        } )
+
+        console.log(res?.data);
+        return res?.data;
+        
+    } catch (error) {
+        throw error?.response?.data
+    }
+}
+
+const downloadStaffDetailsPDF = async (staff_id, {startDate, endDate}) => {
+        try {
+            const res = await api.get(`/api/v1/staff/${staff_id}/download`, {
+                params : {
+                    from : startDate, 
+                    to : endDate
+                }, 
+                responseType : 'blob'
+            })
+           const blob = new Blob(
+            [res?.data], 
+           { type : 'application/pdf'}
+           )
+           
+           const fileUrl = URL.createObjectURL(blob);
+           window.open(fileUrl);
+           
+
+        } catch (error) {
+            throw new Error("Failed to download pdf");
+        }
+}
+
 export {
     searchStaffByName,
     addStaffRemunation, 
     addStaffPayout, 
     getAllStaffs,
     getAStaffDetails, 
-    getAStaffRemunationAndPayoutDetails
+    getAStaffRemunationAndPayoutDetails, 
+    getAStaffPreviewDetails, 
+    downloadStaffDetailsPDF
 }

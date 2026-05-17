@@ -11,7 +11,7 @@ import { toast } from "react-toastify";
 
 
 const MainContent = () => {
-        const [customer_id, setCustomerId] = useState('');
+        const [customer_id, setCustomerId] = useState(null);
         const [toggleForm, setToggleForm] = useState('work');
         const [isWorkDetailsSubmitSuccessfull, setIsWorkDetailsSubmitSuccessfull] = useState(false)
         const [isPaymentDetailsSubmitSuccessfull, setIsPaymentDetailsSubmitSuccessfull] = useState(false)
@@ -49,7 +49,8 @@ const MainContent = () => {
             <SearchBar 
                 placeholder="Search customers by name"
                 searchQueryFn={searchCustomer}
-                onSelect={(item) => setCustomerId(item?.id)
+                onSelect={(item) => setCustomerId(() => item?.id)
+                
                 }             
                 />
                 <div className="mt-2 md:mt-0 md:fixed md:right-10" >

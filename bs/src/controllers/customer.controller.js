@@ -717,7 +717,7 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
             "Content-Disposition" : "attachment; filename=customer_acc_details.pdf"
         })
 
-        res.send(pdf);
+        res.status(200).send(pdf);
 
         } catch (error) {
         throw new ApiError(400, error?.message)

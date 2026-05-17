@@ -32,6 +32,15 @@ const authSlice = createSlice({
 
         },
 
+        loginFail : (state, action) => {
+             state.user.id = null;
+            state.user.name = null;
+            state.user.email = null;
+            state.user.phone_number = null;
+            state.authStatus = "idle";
+            state.isLoading = false;
+        },
+
         verifyMeStart: (state, action) => {
             state.authStatus = 'loading'
             state.isLoading = true
@@ -52,20 +61,20 @@ const authSlice = createSlice({
         },
 
         clearAuthState: (state) => {
-    state.user.id = null;
-    state.user.name = null;
-    state.user.email = null;
-    state.user.phone_number = null;
+            state.user.id = null;
+            state.user.name = null;
+            state.user.email = null;
+            state.user.phone_number = null;
 
-    state.authStatus = "idle";
-    state.isLoading = false;
-}
+            state.authStatus = "idle";
+            state.isLoading = false;
+        }
 
     }
 })
 
 export const {
-    loginStart, loginSuccess, verifyMeSuccess, verifyMeStart, verifyMeFail, clearAuthState
+    loginStart,loginFail, loginSuccess, verifyMeSuccess, verifyMeStart, verifyMeFail, clearAuthState
 } = authSlice.actions;
 
 export default authSlice.reducer;

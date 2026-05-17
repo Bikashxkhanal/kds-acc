@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import {useParams} from 'react-router-dom'
 import { toast } from 'react-toastify';
-import { getAStaffDetails, getAStaffRemunationAndPayoutDetails } from '../../services/staff/staff.api';
+import { getAStaffDetails, getAStaffRemunationAndPayoutDetails, getAStaffPreviewDetails, downloadStaffDetailsPDF } from '../../services/staff/staff.api';
 import PaginationBar from '../../components/common/Pagination/paginationbar';
 import { getFinalCreditOrDebitValue } from '../../helpers/creditAndDebit.helper';
+import Button from '../../components/common/button';
+import DownloadPreview from '../../components/common/Preview/download-preview';
+import DatePicker from '@sbmdkl/nepali-datepicker-reactjs';
+import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
 
 const LIMIT = 10;
 
@@ -16,6 +20,16 @@ const StaffAccountDetails = () => {
     const [staffRemuAndPayoutDetails , setStaffRemuAndPayoutDetails] = useState([])
     const [totalCount, setTotalCount] = useState(-1)
 
+    const [selectedDates, setSelectedDates] = useState({
+        startDate : null,
+        endDate : null
+    })
+
+    const [previewDetails, setPreviewDetails] = useState({
+
+    });
+
+    const [isPreviewActive, setIsPreviewActive] = useState(false);
 
     useEffect(() => {
         ;(async () => {
@@ -51,14 +65,72 @@ const StaffAccountDetails = () => {
         })()
     }, [page])
 
-    console.log(staffPersonalDetails);
-    console.log(staffRemuAndPayoutDetails);
+    // console.log(staffPersonalDetails);
+    // console.log(staffRemuAndPayoutDetails);
     
+    const handleDateChange = (type , date) => {
+        setSelectedDates((prev) => ({
+            ...prev,
+            [type] : date
+        }))
+    }
+
+    const handlePreviewClick = async() => {
+        // console.log(selectedDates);
+        try {
+            const res = await getAStaffPreviewDetails(id, {startDate : selectedDates?.startDate?.bsDate, endDate : selectedDates?.endDate?.bsDate});
+            // console.log(res);
+            
+            setPreviewDetails(res?.data)
+           setIsPreviewActive(true)
+            
+        } catch (error) {
+            toast.error(error?.message);
+            handlePreviewClick(false)
+        }
+    }
+
     
+
+    const handleDownload = async() => {
+        try {
+             await downloadStaffDetailsPDF(id , {startDate : selectedDates?.startDate?.bsDate, endDate : selectedDates?.endDate?.bsDate})
+
+        } catch (error) {
+            
+        }
+    }
 
     return (
      
             <div className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center pt-5 ">
+                <div className='flex flex-col gap-2 my-2 md:flex-row items-center'>
+                    <DatePicker 
+                    selected={selectedDates.startDate}
+                    onChange={(date) => handleDateChange('startDate', date)}
+                    className="border border-gray-400 mx-2 px-2 py-1 rounded-lg bg-white"
+                    language='en'
+                      />
+                    <DatePicker 
+                    selected={selectedDates.endDate}
+                    onChange={(date) => handleDateChange('endDate', date)}
+                    className="border border-gray-400 mx-2 px-2 py-1 rounded-lg bg-white"
+                    language='en'
+                     />
+                    <Button children='Preview' onClick={() => handlePreviewClick()} />
+                </div>
+
+                {
+                    isPreviewActive && (
+                        <DownloadPreview 
+                        title="Staff Work And Payment Details" 
+                        data={previewDetails} 
+                        handleClickOut={() => setIsPreviewActive(false)}
+                        handleClick={() => handleDownload()
+                        } />
+                    )
+                }
+
                 {/* personal Details Section */}
                 <div className="w-[90%] py-5 flex flex-col gap-4 border border-yellow-700 bg-yellow-700 rounded-t-xl" >
                      <div className="text-xl text-center">

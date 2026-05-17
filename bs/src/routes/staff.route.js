@@ -6,7 +6,9 @@ import {
        getAStaffStippendAndPayout, 
        getSearchedStaffs, 
        addAStaffPayoutDetails, 
-       getAllStaffs
+       getAllStaffs, 
+       getAStaffDownloadPreviewDetails,
+        downlaodAStaffStippendAndPayoutDetailsPDF
  } from "../controllers/staff.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -21,6 +23,8 @@ staffRouter.route("/:staff_id").get(verifyJWT, getAStaffPersonalDetails)
 staffRouter.route("/remunation").post(verifyJWT, addAStaffRemunationDetails)
 staffRouter.route("payout").post(verifyJWT, addAStaffPayoutDetails)
 staffRouter.route("/:staff_id/remu-payout-details").get(verifyJWT, getAStaffStippendAndPayout)
+staffRouter.route("/:staff_id/preview").get(verifyJWT, getAStaffDownloadPreviewDetails)
+staffRouter.route("/:staff_id/download").get(verifyJWT, downlaodAStaffStippendAndPayoutDetailsPDF)
 
 
 export{
