@@ -10,7 +10,7 @@ const Dashboard = () => {
     const {user, authStatus, loadingStat} = useSelector(state => state.auth);
     const [isSideBarActive, setIsSideBarActive] = useState(false);
     
-    if(loadingStat)return <div>Loading...</div>
+    if(loadingStat)return <div className="text-center text-gray-600">Loading...</div>
     // console.log(isSideBarActive);
     
 

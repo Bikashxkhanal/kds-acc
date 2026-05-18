@@ -43,7 +43,7 @@ const StaffAccountDetails = () => {
                 )
                 // console.log(response);
                 
-                setStaffPersonalDetails(response?.[0]?.data?.[0]);
+                setStaffPersonalDetails(response?.[0]?.data);
                 // setStaffRemuAndPayoutDetails(response?.[1]?.data)
 
                  const finalValues = getFinalCreditOrDebitValue(response?.[1]?.data?.result);
@@ -132,28 +132,29 @@ const StaffAccountDetails = () => {
                 }
 
                 {/* personal Details Section */}
-                <div className="w-[90%] py-5 flex flex-col gap-4 border border-yellow-700 bg-yellow-700 rounded-t-xl" >
-                     <div className="text-xl text-center">
+                <div className="w-screen md:w-[90%] py-2 md:py-5 flex flex-col gap-4 border border-yellow-700 bg-yellow-700 rounded-t-xl text-sm md:text-lg" >
+                     <div className="text-lg md:text-2xl text-center">
                         <span className="font-bold" > {staffPersonalDetails?.name}</span>
                     </div>
-                    <div className=" flex flex-row justify-around text-lg">
+                    <div className=" flex flex-row justify-around">
                         <span >Address:
                         <span  > {staffPersonalDetails?.address} </span>
                         </span>
                         <span>Phone Number: {staffPersonalDetails?.phone_number} </span>
+                        <span>Salary: Rs.{staffPersonalDetails?.salary}</span>
                     </div>
 
                    
                 </div>
 
                 {/* work and payment secttion must be shown based on work date latest to oldest */}
-                <div className="w-[90%] text-center " >
-                    <table className="w-full border-separate border-spacing-0 border-collapse border border-t-0 border-yellow-700">
+                <div className="w-screen md:w-[90%] text-center " >
+                    <table className="w-screen md:w-full border-separate border-spacing-0 border-collapse border border-t-0 border-yellow-700">
                         <thead>
                             <tr>
                                 {
                                    headers?.map((header, idx) => (
-                                        <th key={idx}  className="text-center px-5 pb-4 border border-t-0 border-yellow-700"> {header} </th>
+                                        <th key={idx}  className="text-center px-1 md:px-5 pb-2 md:pb-4 border border-t-0 border-yellow-700"> {header} </th>
                                     ))
                                 }
 
@@ -166,7 +167,7 @@ const StaffAccountDetails = () => {
                                     <tr key={idx} >
                                       { 
                                        values?.map((value, idx) => (
-                                        <td key={idx} className="text-center px-5 py-4 border border-yellow-700">
+                                        <td key={idx} className="text-center px-2 md:px-5 py-2 md:py-4 border border-yellow-700">
                                             {
                                                 value ?? '-'
                                             }

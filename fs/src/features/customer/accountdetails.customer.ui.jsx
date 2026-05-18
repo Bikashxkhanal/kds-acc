@@ -152,13 +152,13 @@ const AccountDetailsOfCustomer = () => {
     
 
         return (
-            <div className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center pt-5 ">
+            <div className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center text-sm md:mt-4 md:text-lg">
                 {
                 isPreviewOpen && <DownloadPreview data={previewData} 
                 handleClickOut={handlePreviewClickOutside} handleClick={handleCustomerInfoDownload} />
             }
                 {/* PRINT/DOWNLOAD BUTTON FOR DOWNLOADING OR PRINTING THE DETAILS OF THE CUSTOMER A/C */}
-                <form  className="flex flex-row justify-center items-center gap-10 text-center"  >
+                <form  className="flex flex-col flex-start gap-3 mb-3 md:flex-row md:justify-center md:items-center md:gap-8 text-center"  >
 
                     <DatePicker 
                         selected = {selectedDates?.startDate}
@@ -187,11 +187,11 @@ const AccountDetailsOfCustomer = () => {
                
 
                 {/* personal Details Section */}
-                <div className="w-[90%] py-5 flex flex-col gap-4 border border-yellow-700 bg-yellow-700 rounded-t-xl" >
-                     <div className="text-xl text-center">
+                <div className="w-screen md:w-[90%] py-2 md:py-5 flex flex-col gap-2 md:gap-4 border border-yellow-700 bg-yellow-700 rounded-t-xl text-center" >
+                     <div className="text-lg md:text-2xl text-center">
                         <span className="font-bold" > {customerPersonalDetails?.name}</span>
                     </div>
-                    <div className=" flex flex-row justify-around text-lg">
+                    <div className="flex flex-row justify-around gap-2">
                         <span >Address:
                         <span  > {customerPersonalDetails?.address} </span>
                         </span>
@@ -202,13 +202,13 @@ const AccountDetailsOfCustomer = () => {
                 </div>
 
                 {/* work and payment secttion must be shown based on work date latest to oldest */}
-                <div className="w-[90%] text-center " >
-                    <table className="w-full border-separate border-spacing-0 border-collapse border border-t-0 border-yellow-700">
+                <div className="w-screen md:w-[90%] text-center" >
+                    <table className="w-screen md:w-full border-separate border-spacing-0 border-collapse border border-t-0 border-yellow-700">
                         <thead>
                             <tr>
                                 {
                                    headers?.map((header, idx) => (
-                                        <th key={header}  className="text-center px-5 pb-4 border border-t-0 border-yellow-700"> {header} </th>
+                                        <th key={header}  className="text-center px-0 md:px-5 pb-4 border border-t-0 border-yellow-700"> {header} </th>
                                     ))
                                 }
 
@@ -221,7 +221,7 @@ const AccountDetailsOfCustomer = () => {
                                     <tr key={index}>
                                       { 
                                        values?.map((value, idx) => (
-                                        <td key={idx} className="text-center px-5 py-4 border border-yellow-700">
+                                        <td key={idx} className="text-center px-2 md:px-5 py-2 md:py-4 border border-yellow-700">
                                             {
                                                 value || '-'
                                             }
@@ -229,7 +229,7 @@ const AccountDetailsOfCustomer = () => {
                                        ))
                                        }
                                     </tr>
-                                )) : <p className="text-gray-400 py-5" >No data found</p>
+                                )) : <p className="text-gray-400 py-2 md:py-5" >No data found</p>
                             }
                         </tbody>
                     </table>

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Controller } from "react-hook-form";
 import DatePicker from '@sbmdkl/nepali-datepicker-reactjs'
 import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
+import NepaliDate from "nepali-date-converter";
 
 const Form = ({
     //use case of the form
@@ -130,10 +131,11 @@ const Form = ({
                     <Controller 
                         control={control}
                         name={fld.name}
+                        defaultValue={new NepaliDate().format('YYYY-MM-DD')}
                         render={({field}) => (
                             <DatePicker 
                             className='border border-gray-100 bg-white py-2 px-2 rounded-sm w-full'
-                            value={field?.value || ""}
+                            value={field?.value || "" }
                             onChange={({bsDate, adDate}) => {
                                 field?.onChange(bsDate)}}
                             placeholder={field?.name.split("_").join(" ")} 

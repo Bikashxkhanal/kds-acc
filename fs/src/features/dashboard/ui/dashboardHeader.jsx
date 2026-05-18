@@ -5,6 +5,8 @@ import { logoutSysUser } from "../../../services/auth/auth";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { clearAuthState } from "../../../store/authSlice.js";
+import HangingSideBar from "../../../components/layout/hanging.sidebar.jsx";
+
 const DashboardHeader = ({
     isSideBarRequired = false
 }) => {
@@ -74,23 +76,33 @@ const handleLogout = async () => {
   }
 };
 
-    return <header className="w-dvw bg-purple-700 font-bold flex flex-row justify-between items-center px-12 py-4" >
+    return <header className="w-full bg-purple-700 font-bold flex flex-start gap-45 md:flex-row  md:justify-between items-center px-12 py-4" >
             {/* logo or name or both on the left side */}
             <h1 className="text-4xl text-white text-bold">KDS</h1>
             {
                 (isActiveBrgIcn && !isOpen )&& (
+                    <div>
                     <button className="cursor-pointer flex flex-col gap-1" onClick={() => setIsOpen(prev => !prev)} >
                         <div className="w-5 h-0 border border-white rounded-lg"></div>
                         <div className="w-5 h-0 border border-white rounded-lg"></div>
                         <div className="w-5 h-0 border border-white rounded-lg"></div>
                     </button>
+                    </div>
                 )
             }
             {
                 isOpen && (
-                    <button className="cursor-pointer text-white text-xl" onClick={() => setIsOpen(prev => !prev)}>
+                    <button className="cursor-pointer text-white text-xl " onClick={() => setIsOpen(prev => !prev)}>
                         X
                     </button>
+                )
+            }
+
+            {
+                isOpen && (
+                    <div className="w-full" >
+                    <HangingSideBar show={true} />
+                    </div>
                 )
             }
 

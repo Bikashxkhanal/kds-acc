@@ -6,8 +6,6 @@ import ToggleButton from "../../components/common/toggleButton.jsx";
 
 import NepaliDate from "nepali-date-converter";
 import { toast } from "react-toastify";
-import { useEffect } from "react";
-
 
 
 
@@ -46,10 +44,6 @@ const MainContent = () => {
                 }
                 
         } 
-
-        
-
-
 
     return <main className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center pt-5 ">
             <SearchBar 

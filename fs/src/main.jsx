@@ -59,7 +59,7 @@ const router = createBrowserRouter([
             },
             {
               path: 'billings',
-              element: <h1>Billings</h1>
+              element: <h1 className='w-full text-center text-lg text-gray-500'>No content available to show.</h1>
             }
           ]
         }

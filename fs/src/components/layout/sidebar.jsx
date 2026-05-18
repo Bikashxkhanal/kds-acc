@@ -6,7 +6,7 @@ const SideBar = () => {
     
     useEffect(() => {
         setSideBarList(SIDEBAR_NAVIGATION)
-    }, [sidebarList])
+    }, [ SIDEBAR_NAVIGATION])
     
         return <aside className="w-0 md:w-1/5 h-full bg-purple-600 flex flex-col items-center pt-3">
                     {
