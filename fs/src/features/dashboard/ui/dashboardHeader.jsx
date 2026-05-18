@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { clearAuthState } from "../../../store/authSlice.js";
 const DashboardHeader = ({
-    isSideBarRequired
+    isSideBarRequired = false
 }) => {
     const stat = window.innerWidth <= 768 ? true : false;
     const [isActiveBrgIcn, setIsActiveBrgIcn] = useState(stat);
@@ -15,42 +15,56 @@ const DashboardHeader = ({
     const {user} = useSelector(state => state?.auth);
 
     //passing data to parent
-    useEffect(() => {isSideBarRequired(!isActiveBrgIcn)}, [isActiveBrgIcn])
+    useEffect(() => 
+        {
+            isSideBarRequired(!isActiveBrgIcn)
+        }, [isActiveBrgIcn])
 
     const navigate = useNavigate();
     const dispatch = useDispatch();
     
-    
-    window.addEventListener('resize', () => {
-        if(innerWidth <= 768){
+    useEffect(() => {
+        const handleResize = () => {
+            if(innerWidth <= 768){
             setIsActiveBrgIcn(true)
         }else{
             setIsActiveBrgIcn(false)
         }
-    })
+
+        window.addEventListener('resize', handleResize)
+
+        return () => window.removeEventListener('resize', handleResize)
+        }
+    }, [])
     
-    setInterval(() => {
+    useEffect(() => {
+      const interval =  setInterval(() => {
        const  curTime = getCurrentTime();
         setCurrentTime(curTime);
        
     }, 1000);
 
+    return () => clearInterval(interval)
+
+    }, [])
+    
+    
+
 
 const handleLogout = async () => {
   try {
-    const res = await logoutSysUser();
+    await logoutSysUser();
 
     dispatch(clearAuthState());
-    // toast.success(res?.message || "Logged out successfully");
-    console.log(user);
+    
     
     navigate("/login", {replace : true});
   } catch (error) {
     dispatch(clearAuthState());
-    console.log(user);
+   
 
     if (error?.status === 401) {
-        console.log("erroring");
+        
         
       navigate("/login", {replace : true});
       return;

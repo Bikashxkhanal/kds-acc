@@ -1,11 +1,10 @@
 import axios from 'axios'
 
-console.log(import.meta.env.VITE_LOCAL_BASE_URL);
 
 const api = axios.create({
-    baseURL : import.meta.env.VITE_LOCAL_BASE_URL,
+    baseURL : import.meta.env.VITE_LOCAL_BASE_URL_NETWORK,
     withCredentials : true,
-    timeout : 10000,
+    timeout : 100000,
     headers : {"Content-Type" : 'application/json'} 
 });
 

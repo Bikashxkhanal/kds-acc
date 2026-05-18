@@ -58,7 +58,7 @@ const CustomerMainUI = () => {
         <main className="w-full md:w-4/5 min-h-screen flex flex-col items-center gap-4 pt-5 ">
             
         <div className="flex flex-col gap-2" >
-            <SearchBar placeholder="Search customer by name" searchQueryFn={searchCustomer} 
+            <SearchBar placeholder="Search customer " searchQueryFn={searchCustomer} 
             />
             <Button 
             children="Add New Customer" size='sm'  

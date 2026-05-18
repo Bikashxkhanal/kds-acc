@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt';
-import { options } from "../constants.js";
+import { options , NETWORK_OPTIONS_CORS} from "../constants.js";
 
 
 const verifyMe = asyncHandler((req, res)=>{
@@ -89,7 +89,6 @@ const login = asyncHandler(async(req, res) => {
         throw new ApiError(404, "Incorrect password");
     }
 
-
     const access_token = await generateAccessToken(sys_user?.[0]);
     const refresh_token = await generateRefreshToken(sys_user?.[0]);
     // console.log(refresh_token);
@@ -112,8 +111,8 @@ const login = asyncHandler(async(req, res) => {
 
 
     return res.status(200)
-                .cookie("accessToken", access_token,options )
-                .cookie("refreshToken", refresh_token, options)
+                .cookie("accessToken", access_token,NETWORK_OPTIONS_CORS )
+                .cookie("refreshToken", refresh_token, NETWORK_OPTIONS_CORS)
                 .json(
                     new ApiResponse(200, "User Logged in successfully", 
                         {
@@ -141,8 +140,8 @@ const logout = asyncHandler(async (req, res) => {
         )
 
         res.status(200)
-                .clearCookie("accessToken", options)
-                .clearCookie("refreshToken", options)
+                .clearCookie("accessToken", NETWORK_OPTIONS_CORS)
+                .clearCookie("refreshToken", NETWORK_OPTIONS_CORS)
                 .json(
                     new ApiResponse(
                         200, 

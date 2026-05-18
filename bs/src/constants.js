@@ -3,6 +3,12 @@
     secure: true,
   };
 
+  const NETWORK_OPTIONS_CORS = {
+    httpOnly : true, 
+    secure : false ,
+    sameSite : "lax"
+  }
+
   // the given template is for downlading details of like customer, stafff and other
   const downloadReportHtmlTemplate= ``
 
@@ -11,6 +17,7 @@
 
   export {
     options, 
+    NETWORK_OPTIONS_CORS,
     downloadReportHtmlTemplate, 
     billingHtmlTemplate
   }

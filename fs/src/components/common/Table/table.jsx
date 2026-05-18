@@ -11,8 +11,8 @@ const Table = ({
     const tableBody = tableData?.map((data) => Object.values(data));
 
   return (
-    <div className="overflow-hidden rounded-t-xl w-[90%]">
-      <table className={`w-full border-separate border-spacing-0 ${className}`}>
+    <div className="rounded-t-xl w-[90%] overflow-x-scroll">
+      <table className={`w-full text-sm border-separate border-spacing-0 ${className}`}>
         
         {/* HEADER */}
         <thead className="bg-purple-400 ">

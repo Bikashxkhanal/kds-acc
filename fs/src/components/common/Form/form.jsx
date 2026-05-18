@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver} from '@hookform/resolvers/zod'
 import { formConfig } from "./formConfig.js";
 import { formSchema } from "./formSchema.js";
@@ -10,10 +10,14 @@ import DatePicker from '@sbmdkl/nepali-datepicker-reactjs'
 import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
 
 const Form = ({
+    //use case of the form
     useCase = '',
+
+    //default datas or dynamic datas 
     datas = {
         
     },
+
     handleFormSubmit,
     isSubmitSuccessfull = false
    
@@ -22,27 +26,59 @@ const Form = ({
     const config = formConfig[useCase] || [];
     const schema = formSchema(config);
     
+    //name of the fields to be watched
+    const watchedValues = config?.filter((eh) => eh?.watch)?.map(fld => fld.name);
+    // console.log(watchedValues);
+    
+    //the field name for which the value is being watched
+    const watchedFor = config?.filter(eh => eh?.watched)?.map(fld => fld.name)   
+    // console.log(watchedFor);
+     
 
-    const {register, control, handleSubmit, reset, formState : {errors}}  = useForm({
+    const {register, control, handleSubmit,setValue, getValues, reset, formState : {errors}}  = useForm({
         resolver : zodResolver(schema)
     })
 
+
+   const watchedVal = watchedValues?.length > 0 ? useWatch({
+    control, 
+    name : watchedValues
+   }) : null
+
+
+    useEffect(() => {
+        if(watchedValues.length > 0){
+        const values = watchedVal?.map(eh => Number(eh) || 0)
+        const finalValue = values?.reduce((prev, cur) => prev * cur, 1);
+        // console.log(finalValue);
+        
+        const currentValue = getValues(watchedFor?.[0]);
+
+        if(currentValue !== finalValue){
+            setValue(watchedFor?.[0], finalValue || 0);
+        }
+    }
+
+    }, [watchedValues])
+
      useEffect(() => {
         if(datas){
+            console.log(datas);
+            
             reset(datas)
         }
-    }, [reset])
+    }, [reset, datas])
 
    
 
     useEffect(() => {
-        console.log("Outside")  
+        // console.log("Outside")  
         const resetedValues = {}  
          config?.forEach(field => {
             resetedValues[field.name] = '' 
         })
         if(isSubmitSuccessfull){
-            console.log("Inside"); 
+            // console.log("Inside"); 
             reset(resetedValues)
             
         }

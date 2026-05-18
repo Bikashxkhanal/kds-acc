@@ -6,6 +6,7 @@ import ToggleButton from "../../components/common/toggleButton.jsx";
 
 import NepaliDate from "nepali-date-converter";
 import { toast } from "react-toastify";
+import { useEffect } from "react";
 
 
 
@@ -17,6 +18,7 @@ const MainContent = () => {
         const [isPaymentDetailsSubmitSuccessfull, setIsPaymentDetailsSubmitSuccessfull] = useState(false)
 
         const todayNepaliDate = new NepaliDate().format('YYYY-MM-DD');
+
 
         const handleWorkFormSubmit = async(data) => {
             try {
@@ -45,11 +47,15 @@ const MainContent = () => {
                 
         } 
 
+        
+
+
+
     return <main className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center pt-5 ">
             <SearchBar 
                 placeholder="Search customers by name"
                 searchQueryFn={searchCustomer}
-                onSelect={(item) => setCustomerId(() => item?.id)
+                onSelect={(item) => setCustomerId(item?.id)
                 
                 }             
                 />
@@ -61,7 +67,10 @@ const MainContent = () => {
                 {
                     toggleForm === 'work'  && (
                         <Form useCase="createWorkEntry" 
-                        datas={{customer_id : customer_id, work_date : todayNepaliDate} }
+                        datas={{
+                                    customer_id : customer_id,
+                                    work_date : todayNepaliDate
+                                } }
                          handleFormSubmit={(data) => handleWorkFormSubmit(data)} 
                          isSubmitSuccessfull={isWorkDetailsSubmitSuccessfull}
                          />
@@ -70,8 +79,14 @@ const MainContent = () => {
 
                 {
                     toggleForm === 'pay' && (
-                         <Form useCase="createCustomerPaymentEntry" datas={{customer_id : customer_id, payment_date : todayNepaliDate} } handleFormSubmit={(data) => handlePaymentFormSubmit(data)} 
-                         isSubmitSuccessfull={isPaymentDetailsSubmitSuccessfull}
+                         <Form useCase="createCustomerPaymentEntry" 
+                                datas={{
+                                 customer_id : customer_id,
+                                  work_date : todayNepaliDate
+                                  }} 
+
+                        handleFormSubmit={(data) => handlePaymentFormSubmit(data)} 
+                        isSubmitSuccessfull={isPaymentDetailsSubmitSuccessfull}
                          />
                     )
                 }
