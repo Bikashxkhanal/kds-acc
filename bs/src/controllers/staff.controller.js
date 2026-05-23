@@ -119,7 +119,7 @@ const getAStaffPersonalDetails = asyncHandler(async(req, res) => {
     if(isExists == false) throw new ApiError(400, "Staff with such id doesnot exist")
     
     const staffDetails = await getAStaffPersonalDtls(staff_id);
-    console.log(staffDetails);
+    // console.log(staffDetails);
     
     return res.status(200).json(
         new ApiResponse(200, "Staff Details fetched successfully!", staffDetails)
