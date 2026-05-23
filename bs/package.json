@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --import dotenv/config ./src/index.js"
+    "start": "nodemon --import dotenv/config ./src/index.js",
+    "dev": "nodemon --import dotenv/config ./src/index.js"
+    
   },
   "keywords": [],
   "author": "",
