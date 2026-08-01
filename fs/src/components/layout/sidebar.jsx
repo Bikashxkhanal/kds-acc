@@ -3,7 +3,7 @@ import { SIDEBAR_NAVIGATION , ICONS, LINKS} from "../../constants.js";
 
 const SideBar = () => {
     return (
-        <aside className="hidden md:flex w-56 lg:w-64 h-full bg-[#12355b] flex-col py-4 shadow-lg">
+        <aside className="hidden md:flex fixed inset-y-0 left-0 z-30 w-56 lg:w-64 h-screen overflow-y-auto bg-[#12355b] flex-col py-4 shadow-lg">
             <div className="px-6 mb-6">
                 <p className="text-xs uppercase tracking-wider text-sky-300/70 font-medium">Navigation</p>
             </div>

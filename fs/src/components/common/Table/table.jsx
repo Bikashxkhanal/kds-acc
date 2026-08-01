@@ -1,3 +1,5 @@
+import { humanizeLabel } from "../../../utils/labels";
+
 const Table = ({ tableData = [], className = '' }) => {
   if (tableData.length === 0) {
     return (
@@ -12,22 +14,22 @@ const Table = ({ tableData = [], className = '' }) => {
   const tableBody = tableData.map((data) => Object.values(data));
 
   return (
-    <div className={`w-full overflow-x-auto rounded-xl border border-slate-200 shadow-sm ${className}`}>
+    <div className={`kds-table-scroll w-full overflow-auto rounded-xl border border-slate-200 shadow-sm ${className}`}>
       <table className="w-full text-sm border-collapse">
         <thead className="kds-table-header">
           <tr>
             {tableHeader.map((header) => (
               <th key={header} className="px-4 py-3 text-left font-semibold whitespace-nowrap">
-                {header}
+                {humanizeLabel(header)}
               </th>
             ))}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-slate-100">
           {tableBody.map((row, rowIndex) => (
-            <tr key={rowIndex} className="hover:bg-slate-50/80 transition-colors">
+              <tr key={rowIndex} className="hover:bg-slate-50/80 transition-colors">
               {row.map((cell, colIndex) => (
-                <td key={colIndex} className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                <td key={colIndex} className="px-4 py-4 text-slate-700 whitespace-nowrap">
                   {cell}
                 </td>
               ))}

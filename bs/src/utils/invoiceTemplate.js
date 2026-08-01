@@ -35,7 +35,6 @@ export const buildInvoiceHtml = (invoice = {}) => {
     customer = {},
     billDate,
     dueDate,
-    section = "",
     remarks = "",
     items = [],
     totals = {},
@@ -71,7 +70,7 @@ export const buildInvoiceHtml = (invoice = {}) => {
     body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #1e293b; line-height: 1.5; }
     .invoice { max-width: 210mm; margin: 0 auto; }
 
-    .header { background: #12355b; color: white; padding: 20px 24px; display: flex; justify-content: space-between; }
+    .header { background: #12355b; color: white; padding: 14px 18px; display: flex; justify-content: space-between; gap: 20px; }
     .header h1 { font-size: 22px; margin-bottom: 4px; }
     .header p { font-size: 10px; opacity: 0.85; margin-top: 2px; }
     .header-right { text-align: right; }
@@ -82,11 +81,11 @@ export const buildInvoiceHtml = (invoice = {}) => {
     .status { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 9px; font-weight: 700; text-transform: uppercase;
               color: white; background: ${statusColor(paymentStatus)}; }
 
-    .items { padding: 16px 24px; }
+    .items { padding: 10px 18px; }
     table { width: 100%; border-collapse: collapse; }
     th { background: #f1f5f9; padding: 8px 6px; text-align: left; font-size: 9px; text-transform: uppercase;
          letter-spacing: 0.5px; color: #64748b; border: 1px solid #e2e8f0; }
-    td { padding: 7px 6px; border: 1px solid #e2e8f0; vertical-align: top; }
+    td { padding: 5px 6px; border: 1px solid #e2e8f0; vertical-align: top; }
     tr { page-break-inside: avoid; }
     thead { display: table-header-group; }
     .center { text-align: center; }
@@ -114,9 +113,9 @@ export const buildInvoiceHtml = (invoice = {}) => {
     <div class="header">
       <div>
         <h1>${escapeHtml(company.name || "Company Name")}</h1>
+        ${company.pan ? `<p style="font-weight:700;color:#fff">PAN: ${escapeHtml(company.pan)}</p>` : ""}
         <p>${escapeHtml(company.address || "")}</p>
         <p>${[company.phone, company.email].filter(Boolean).map(escapeHtml).join(" · ")}</p>
-        ${company.pan ? `<p>PAN: ${escapeHtml(company.pan)}</p>` : ""}
       </div>
       <div class="header-right">
         <div class="title">INVOICE</div>
@@ -124,21 +123,14 @@ export const buildInvoiceHtml = (invoice = {}) => {
         ${billNumber ? `<p>Bill #: <strong>${escapeHtml(billNumber)}</strong></p>` : ""}
         <p>Date: ${formatDate(billDate)}</p>
         ${dueDate ? `<p>Due: ${formatDate(dueDate)}</p>` : ""}
-        ${section ? `<p>Section: ${escapeHtml(section)}</p>` : ""}
-      </div>
-    </div>
-
-    <div class="parties">
-      <div>
-        <div class="label">Bill To</div>
-        <strong style="font-size:13px;color:#12355b">${escapeHtml(customer.name || "")}</strong>
-        <p>${escapeHtml(customer.address || "")}</p>
-        ${customer.phone ? `<p>Phone: ${escapeHtml(customer.phone)}</p>` : ""}
-        ${customer.pan ? `<p>PAN: ${escapeHtml(customer.pan)}</p>` : ""}
-      </div>
-      <div style="text-align:right">
-        <div class="label">Payment Status</div>
-        <span class="status">${escapeHtml(paymentStatus)}</span>
+        <div style="border-top:1px solid rgba(255,255,255,.3);margin-top:8px;padding-top:8px">
+          <p style="text-transform:uppercase;letter-spacing:1px;font-size:9px">Bill To</p>
+          <p style="font-weight:700;color:#fff">${escapeHtml(customer.name || "")}</p>
+          <p>${escapeHtml(customer.address || "")}</p>
+          ${customer.phone ? `<p>Phone: ${escapeHtml(customer.phone)}</p>` : ""}
+          <p style="margin-top:4px;text-transform:uppercase;letter-spacing:1px;font-size:9px">Payment Status</p>
+          <p style="font-weight:700;color:#fff;text-transform:capitalize">${escapeHtml(paymentStatus)}</p>
+        </div>
       </div>
     </div>
 

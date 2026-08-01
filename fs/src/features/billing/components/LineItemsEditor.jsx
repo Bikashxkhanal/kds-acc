@@ -14,7 +14,7 @@ const LineItemsEditor = ({ items = [], onChange }) => {
   };
 
   const addRow = () => onChange([...items, {
-    productName: "", description: "", quantity: 1, unit: "Piece",
+    productName: "", description: "", quantity: 1, unit: "Cubic Meter",
     rate: 0, discount: 0, tax: 0, total: 0
   }]);
 

@@ -18,7 +18,6 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
     customer = {},
     billDate,
     dueDate,
-    section = "",
     remarks = "",
     items = [],
     totals = {},
@@ -33,9 +32,9 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
 
   return (
     <div className={`invoice-print-area bg-white text-slate-800 ${compact ? "text-xs" : "text-sm"}`}>
-      <div className="border border-slate-300 rounded-lg overflow-hidden">
+        <div className="invoice-shell border border-slate-300 rounded-lg overflow-hidden">
         {/* Header */}
-        <div className="bg-[#12355b] text-white px-6 py-5 flex justify-between items-start">
+        <div className="bg-[#12355b] text-white px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             {company.logoUrl ? (
               <img src={company.logoUrl} alt="Logo" className="h-12 mb-2 object-contain" />
@@ -45,45 +44,31 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
               </div>
             )}
             <h2 className="text-lg font-bold">{company.name || "Company Name"}</h2>
+            {company.pan && <p className="font-semibold text-white mt-1">PAN: {company.pan}</p>}
             <p className="text-sky-200/90 mt-1 max-w-xs">{company.address || "Address"}</p>
             <p className="text-sky-200/80 mt-1">
               {[company.phone, company.email].filter(Boolean).join(" · ") || "Contact"}
             </p>
-            {company.pan && <p className="text-sky-200/80">PAN: {company.pan}</p>}
           </div>
-          <div className="text-right">
+          <div className="md:text-right">
             <p className="text-2xl font-bold tracking-wide">INVOICE</p>
             <p className="mt-2">Invoice #: <strong>{invoiceNumber}</strong></p>
             {billNumber && <p>Bill #: <strong>{billNumber}</strong></p>}
             <p className="mt-1">Date: {formatDate(billDate)}</p>
             {dueDate && <p>Due: {formatDate(dueDate)}</p>}
-            {section && <p>Section: {section}</p>}
-          </div>
-        </div>
-
-        {/* Customer */}
-        <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-200">
-          <div>
-            <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Bill To</p>
-            <p className="font-semibold text-[#12355b]">{customer.name || "Customer Name"}</p>
-            <p className="text-slate-600 mt-1">{customer.address || "Address"}</p>
-            {customer.phone && <p className="text-slate-600">Phone: {customer.phone}</p>}
-            {customer.pan && <p className="text-slate-600">PAN: {customer.pan}</p>}
-          </div>
-          <div className="md:text-right">
-            <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Payment Status</p>
-            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase ${
-              paymentStatus === "paid" ? "bg-emerald-100 text-emerald-800"
-              : paymentStatus === "partial" ? "bg-orange-100 text-orange-800"
-              : "bg-red-100 text-red-800"
-            }`}>
-              {paymentStatus}
-            </span>
+            <div className="mt-3 border-t border-white/20 pt-3 text-sm md:ml-auto md:max-w-xs">
+              <p className="text-sky-200 text-xs uppercase tracking-wider">Bill To</p>
+              <p className="font-semibold">{customer.name || "Customer Name"}</p>
+              <p className="text-sky-100/85">{customer.address || "Address"}</p>
+              {customer.phone && <p className="text-sky-100/85">Phone: {customer.phone}</p>}
+              <p className="mt-2 text-sky-200 text-xs uppercase tracking-wider">Payment Status</p>
+              <span className="font-semibold capitalize">{paymentStatus}</span>
+            </div>
           </div>
         </div>
 
         {/* Items table */}
-        <div className="px-6 py-4">
+        <div className="px-5 py-3">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-slate-100 text-xs uppercase tracking-wider">
@@ -107,17 +92,17 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
               ) : (
                 items.map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/50">
-                    <td className="border border-slate-200 px-2 py-2 text-center">{idx + 1}</td>
-                    <td className="border border-slate-200 px-2 py-2">
+                    <td className="border border-slate-200 px-2 py-1.5 text-center">{idx + 1}</td>
+                    <td className="border border-slate-200 px-2 py-1.5">
                       <p className="font-medium">{item.productName || "—"}</p>
                       {item.description && <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>}
                     </td>
-                    <td className="border border-slate-200 px-2 py-2 text-center">{item.quantity}</td>
-                    <td className="border border-slate-200 px-2 py-2 text-center">{item.unit}</td>
-                    <td className="border border-slate-200 px-2 py-2 text-right">{formatNumber(item.rate)}</td>
-                    <td className="border border-slate-200 px-2 py-2 text-right">{formatNumber(item.discount || 0)}</td>
-                    <td className="border border-slate-200 px-2 py-2 text-right">{formatNumber(item.tax || 0)}</td>
-                    <td className="border border-slate-200 px-2 py-2 text-right font-medium">{formatNumber(item.total || 0)}</td>
+                    <td className="border border-slate-200 px-2 py-1.5 text-center">{item.quantity}</td>
+                    <td className="border border-slate-200 px-2 py-1.5 text-center">{item.unit}</td>
+                    <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.rate)}</td>
+                    <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.discount || 0)}</td>
+                    <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.tax || 0)}</td>
+                    <td className="border border-slate-200 px-2 py-1.5 text-right font-medium">{formatNumber(item.total || 0)}</td>
                   </tr>
                 ))
               )}
@@ -126,7 +111,7 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
         </div>
 
         {/* Totals */}
-        <div className="px-6 pb-4 flex flex-col md:flex-row gap-6">
+        <div className="px-5 pb-3 flex flex-col md:flex-row gap-5">
           <div className="flex-1">
             {remarks && (
               <div className="mb-3">
@@ -156,7 +141,7 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
         </div>
 
         {/* Signatures */}
-        <div className="px-6 py-5 border-t border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+        <div className="px-5 py-4 border-t border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
           <div>
             <p className="text-slate-400 uppercase tracking-wider mb-6">Prepared By</p>
             <div className="border-t border-slate-400 pt-1">{displayCreator}</div>

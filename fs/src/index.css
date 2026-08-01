@@ -27,6 +27,7 @@
     background-color: var(--color-background);
     color: #1e293b;
     -webkit-font-smoothing: antialiased;
+    min-width: 0;
   }
 }
 
@@ -51,7 +52,7 @@
   }
 
   .kds-page {
-    @apply w-full md:w-4/5 min-h-screen flex flex-col gap-5 p-4 md:p-6;
+    @apply w-full min-w-0 flex-1 flex flex-col gap-5 p-4 md:p-6 lg:p-8;
   }
 
   .kds-table-header {
@@ -75,13 +76,29 @@
   }
 }
 
+.kds-search {
+  width: min(100%, 34rem);
+}
+
+.kds-table-scroll {
+  max-height: min(62vh, 48rem);
+}
+
+.kds-table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 @media print {
   body * {
     visibility: hidden;
   }
 
   .invoice-print-area,
-  .invoice-print-area * {
+  .invoice-print-area *,
+  .customer-report-print,
+  .customer-report-print * {
     visibility: visible;
   }
 
@@ -90,6 +107,23 @@
     left: 0;
     top: 0;
     width: 100%;
+  }
+
+  .customer-report-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+  }
+
+  .customer-report-print button {
+    display: none !important;
+  }
+
+  .invoice-print-area .invoice-shell {
+    border: 0 !important;
+    border-radius: 0 !important;
   }
 
   .no-print {

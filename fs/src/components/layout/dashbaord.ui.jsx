@@ -8,7 +8,7 @@ const Dashboard = () => (
     <DashboardHeader />
     <Container>
       <SideBar />
-      <div className="flex-1 overflow-auto min-h-[calc(100dvh-72px)]">
+      <div className="flex-1 min-w-0 overflow-auto">
         <Outlet />
       </div>
     </Container>

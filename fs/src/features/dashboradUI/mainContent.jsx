@@ -47,13 +47,15 @@ const MainContent = () => {
 
     return (
         <main className="kds-page relative">
-            <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="grid w-full grid-cols-1 items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
+                <div />
                 <SearchBar
+                    className="kds-search mx-auto w-full"
                     placeholder="Search customers by name"
                     searchQueryFn={searchCustomer}
                     onSelect={(item) => setCustomerId(item?.id)}
                 />
-                <ToggleButton options={['work', 'pay']} activeButton={(data) => setToggleForm(() => data)} />
+                <div className="flex justify-center sm:justify-end"><ToggleButton options={['work', 'pay']} activeButton={(data) => setToggleForm(() => data)} /></div>
             </div>
 
                 {

@@ -9,6 +9,7 @@ import { Controller } from "react-hook-form";
 import DatePicker from '@sbmdkl/nepali-datepicker-reactjs'
 import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
 import NepaliDate from "nepali-date-converter";
+import { humanizeLabel } from "../../../utils/labels";
 
 const Form = ({
     //use case of the form
@@ -102,7 +103,7 @@ const Form = ({
                     {
                        ( fld.type === 'text' || fld.type === 'tel') && 
                             <InputBox 
-                            placeholder={fld.name.split("_").join(" ")}
+                            placeholder={humanizeLabel(fld.name)}
                              {...register(fld.name) }
                              
                              />
@@ -110,7 +111,7 @@ const Form = ({
                     }
                     {
                         fld.type === 'readOnly' && 
-                        <InputBox className='bg-gray-900 readOnly:cursor-not-allowed text-gray-600' placeholder={fld.name.split("_").join(" ")} {...register(fld.name)} readOnly />
+                        <InputBox className='bg-gray-900 readOnly:cursor-not-allowed text-gray-600' placeholder={humanizeLabel(fld.name)} {...register(fld.name)} readOnly />
                     }
 
                     {
@@ -119,7 +120,7 @@ const Form = ({
                         className="kds-input"
                          {...register(fld.name)} 
                              >
-                                <option value="">Select a {fld.name.split("_").join(" ") }</option>
+                                <option value="">Select a {humanizeLabel(fld.name)}</option>
                                 {fld?.options?.map(opt => (<option key={opt}> {opt} </option>))}
                         </select>
 
@@ -127,7 +128,7 @@ const Form = ({
 
                     {
                         fld.type === 'number' && 
-                            <InputBox {...register(fld.name)} placeholder={fld.name.split("_").join(" ")} />
+                            <InputBox {...register(fld.name)} placeholder={humanizeLabel(fld.name)} />
                         
                     }
                     {  fld.type === 'date' &&
@@ -141,7 +142,7 @@ const Form = ({
                             value={field?.value || "" }
                             onChange={({bsDate}) => {
                                 field?.onChange(bsDate)}}
-                            placeholder={field?.name.split("_").join(" ")} 
+                            placeholder={humanizeLabel(field?.name)}
                             language="en"
                             />
                         

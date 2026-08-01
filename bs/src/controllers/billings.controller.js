@@ -11,6 +11,7 @@ const currency = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
 });
+const INVOICE_UNITS = new Set(["Cubic Meter", "Hours", "Kilograms (Kgs)", "Trips"]);
 
 const getUserSnapshot = (user = {}) => ({
     id: user?.id,
@@ -39,6 +40,7 @@ const calculateItems = (items = []) => {
 
         if (!item.productName?.trim()) throw new ApiError(400, "Product / service name is required");
         if (!item.unit?.trim()) throw new ApiError(400, "Item unit is required");
+        if (!INVOICE_UNITS.has(item.unit.trim())) throw new ApiError(400, "Select a valid invoice unit");
         if (!Number.isFinite(quantity) || quantity <= 0) throw new ApiError(400, "Item quantity must be greater than zero");
         if (!Number.isFinite(rate) || rate < 0) throw new ApiError(400, "Item rate must be valid");
 
@@ -132,7 +134,6 @@ const buildInvoicePayload = async (body, user, existingInvoice) => {
         },
         billDate: normalizeDate(body.billDate, "Bill date", true),
         dueDate: normalizeDate(body.dueDate, "Due date"),
-        section: body.section?.trim() || "",
         remarks: body.remarks?.trim() || "",
         items,
         totals,

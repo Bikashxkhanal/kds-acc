@@ -264,9 +264,9 @@ const SearchBar = ({
    
 
     return (
-        <div ref={containerRef} className="flex flex-col justify-center " >
+        <div ref={containerRef} className={`relative flex flex-col justify-center ${className || ""}`} >
             <input type="text" 
-            className={`outline-none bg-white w-70 md:w-100 h-10 px-3 py-2 border border-white rounded-4xl shadow-sm ${className}`}
+            className="kds-input h-11 rounded-full border-slate-200 bg-white px-4 shadow-sm"
                 placeholder={placeholder}
                 onChange={handleChange}
                 value={query}
@@ -275,7 +275,7 @@ const SearchBar = ({
             />
             {
                 isOpen && (
-                    <ul className="bg-white px-2 py-2 md:px-4 md:py-4 mt-0 md:mt-0 border border-gray-200 rounded-lg shadow-xl">
+                    <ul className="absolute top-full z-30 mt-2 w-full bg-white px-2 py-2 border border-gray-200 rounded-lg shadow-xl">
                         {
                             suggestions.length > 0 ? (
                                 suggestions.map((suggestion, idx) => (

@@ -23,16 +23,13 @@ const CustomerMainUI = () => {
     ;(async() => {
             try {
             const response = await getAllCustomers({page : page, limit : PAGE_VALUE_LIMIT})
-            const finalTableData = response?.data?.rows || [];
+        const finalTableData = (response?.data?.rows || []).map(({ id, _id, ...customer }) => ({
+            "Customer ID": _id,
+            ...customer,
+            Actions: <Link to={`${id}`} className="font-medium text-[#12355b] hover:text-sky-600 hover:underline">View details</Link>
+        }));
         setTotalRows(Math.max(1, Math.ceil(Number(response?.data?.metaData?.[0]?.totalCustomers || 0) / PAGE_VALUE_LIMIT)))
         
-         finalTableData?.forEach((eachData) => 
-            eachData.Actions = <Link 
-                                to={`${eachData.id}`} 
-                                className="text-blue-400 underline underline-offset-1" >
-                                View</Link>
-        )
-
         setTableData(finalTableData)
         // console.log(finalTableData);
         } catch (error) {
@@ -55,9 +52,10 @@ const CustomerMainUI = () => {
     
     return (
         <main className="kds-page">
-            <div className="flex flex-col sm:flex-row gap-3 w-full">
-                <SearchBar placeholder="Search customer" searchQueryFn={searchCustomer} />
-                <Button children="Add New Customer" size="sm" onClick={() => setIsAddCustomerFrmOpen(true)} />
+            <div className="grid w-full grid-cols-1 items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
+                <div />
+                <SearchBar className="kds-search mx-auto w-full" placeholder="Search customers" searchQueryFn={searchCustomer} />
+                <div className="flex justify-center sm:justify-end"><Button children="Add New Customer" size="sm" onClick={() => setIsAddCustomerFrmOpen(true)} /></div>
             </div>
 
         {

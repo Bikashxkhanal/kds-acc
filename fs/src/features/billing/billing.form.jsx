@@ -31,7 +31,6 @@ const BillingForm = () => {
   const [customer, setCustomer] = useState({ name: "", address: "", phone: "", pan: "" });
   const [billDate, setBillDate] = useState(new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState("");
-  const [section, setSection] = useState("");
   const [remarks, setRemarks] = useState("");
   const [items, setItems] = useState([emptyLineItem()]);
   const [paidAmount, setPaidAmount] = useState(0);
@@ -58,7 +57,6 @@ const BillingForm = () => {
         setCustomer(inv?.customer || {});
         setBillDate(inv?.billDate ? new Date(inv.billDate).toISOString().split("T")[0] : "");
         setDueDate(inv?.dueDate ? new Date(inv.dueDate).toISOString().split("T")[0] : "");
-        setSection(inv?.section || "");
         setRemarks(inv?.remarks || "");
         setItems(inv?.items?.length ? inv.items : [emptyLineItem()]);
         setPaidAmount(inv?.totals?.paidAmount || 0);
@@ -104,12 +102,11 @@ const BillingForm = () => {
     customer,
     billDate,
     dueDate,
-    section,
     remarks,
     items: calcItems,
     totals,
     paymentStatus
-  }), [existingMeta, selectedCompany, customer, billDate, dueDate, section, remarks, calcItems, totals, paymentStatus]);
+  }), [existingMeta, selectedCompany, customer, billDate, dueDate, remarks, calcItems, totals, paymentStatus]);
 
   const validate = () => {
     if (!companyId) { toast.error("Please select a company"); return false; }
@@ -125,7 +122,6 @@ const BillingForm = () => {
     customer,
     billDate,
     dueDate: dueDate || undefined,
-    section,
     remarks,
     items: calcItems.map((item, index) => ({ ...item, sortOrder: index })),
     paidAmount: totals.paidAmount
@@ -238,8 +234,6 @@ const BillingForm = () => {
                 onChange={(e) => setBillDate(e.target.value)} />
               <InputBox label="Due Date" type="date" value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)} />
-              <InputBox label="Section / Department" value={section}
-                onChange={(e) => setSection(e.target.value)} />
               <InputBox label="Remarks / Notes" value={remarks}
                 onChange={(e) => setRemarks(e.target.value)} />
 

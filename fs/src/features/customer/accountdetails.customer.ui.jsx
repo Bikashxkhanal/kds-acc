@@ -1,228 +1,94 @@
-import { useEffect, useState } from "react";
-import { getACustomerPersonalDetails, getACustomerWorkAndPaymentDetails, getACustomerWorkAndPaymentPreviewData, downLoadWorkAndPaymentDataPdf } from "../../services/customer/customer";
-import  {useParams} from 'react-router-dom'
-import PaginationBar from "../../components/common/Pagination/paginationbar";
-import { getFinalCreditOrDebitValue } from "../../helpers/creditAndDebit.helper";
-import Button from "../../components/common/button";
-import DownloadPreview from "../../components/common/Preview/download-preview";
-import DatePicker from '@sbmdkl/nepali-datepicker-reactjs';
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import DatePicker from "@sbmdkl/nepali-datepicker-reactjs";
 import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
-import {toast} from 'react-toastify'
-
-
+import { toast } from "react-toastify";
+import { getACustomerPersonalDetails, getACustomerWorkAndPaymentDetails, getACustomerWorkAndPaymentPreviewData, downLoadWorkAndPaymentDataPdf } from "../../services/customer/customer";
+import PaginationBar from "../../components/common/Pagination/paginationbar";
+import Button from "../../components/common/button";
+import Card from "../../components/common/Card";
+import { humanizeLabel } from "../../utils/labels";
+import { getFinalCreditOrDebitValue } from "../../helpers/creditAndDebit.helper";
 
 const PAGE_LIMIT = 10;
 
+const Detail = ({ label, value, icon }) => (
+  <div className="rounded-lg bg-slate-50 px-4 py-3">
+    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400"><i className={`bi ${icon}`} />{label}</p>
+    <p className="mt-1 break-words font-medium text-slate-700">{value || "Not available"}</p>
+  </div>
+);
+
 const AccountDetailsOfCustomer = () => {
+  const { id: customerId } = useParams();
+  const [customer, setCustomer] = useState({});
+  const [entries, setEntries] = useState([]);
+  const [totalRows, setTotalRows] = useState(1);
+  const [page, setPage] = useState(1);
+  const [dates, setDates] = useState({ startDate: null, endDate: null });
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    const {id: customer_id} = useParams();   
-    
-    const [customerPersonalDetails, setCustomerPersonalDetails] = useState({});
-    //work-pay details of customer
-    const [customerWorkAndPaymentDetails, setCustomerWorkAndPaymentDetails] = useState([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const [personal, ledger] = await Promise.all([
+          getACustomerPersonalDetails(customerId),
+          getACustomerWorkAndPaymentDetails(customerId, { page, limit: PAGE_LIMIT })
+        ]);
+        setCustomer(personal?.[0] || {});
+        const rows = ledger?.workAndPaymentDetails || [];
+        const balances = getFinalCreditOrDebitValue(rows);
+        setEntries(rows.map((row, index) => ({ ...row, Balance: balances[index] })));
+        setTotalRows(Math.max(1, Math.ceil(Number(ledger?.metaData?.[0]?.totalRows || 0) / PAGE_LIMIT)));
+      } catch (error) {
+        toast.error(error?.message || "Unable to load customer details");
+      } finally { setLoading(false); }
+    })();
+  }, [customerId, page]);
 
-    //totalRows is the metadata where it gives the total number of row count of work-pay-details of a particular customer
-    const [totalRows, setTotalRows] = useState(null); 
+  const totals = useMemo(() => entries.reduce((summary, row) => ({
+    credit: summary.credit + Number(row.Credit || 0), debit: summary.debit + Number(row.Debit || 0)
+  }), { credit: 0, debit: 0 }), [entries]);
+  const headers = entries.length ? Object.keys(entries[0]) : ["Date", "Description", "Credit", "Debit", "Balance"];
 
-    //for showing and hiding the date range selectors for downloading/printing the a/c details 
-    const [selectedDates, setSelectedDates] = useState({
-        startDate : null, 
-        endDate : null
-    })
-   
-    //pagination page
-    const [page, setPage] = useState(1);
+  const loadPreview = async () => {
+    if (!dates.startDate?.bsDate || !dates.endDate?.bsDate) return toast.error("Select both report dates");
+    try {
+      const response = await getACustomerWorkAndPaymentPreviewData(customerId, { from: dates.startDate.bsDate, to: dates.endDate.bsDate });
+      setPreview(response?.data || {});
+    } catch (error) { toast.error(error?.message || "Unable to prepare report"); }
+  };
 
-       // to show the preview data of the downloadable customer information
-    const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const download = async () => {
+    try {
+      await downLoadWorkAndPaymentDataPdf(customerId, { from: dates.startDate.bsDate, to: dates.endDate.bsDate });
+    } catch (error) { toast.error(error?.message || "Unable to download report"); }
+  };
 
-    // preview data 
-    const [previewData, setPreviewData] = useState({});
-    
-    useEffect(() => {
-        ;(async() => {
-            const response = await Promise.all( 
-                [
-                    getACustomerPersonalDetails(customer_id),
-                    getACustomerWorkAndPaymentDetails(customer_id, { page : page, limit: PAGE_LIMIT})
-                ])
+  return <main className="kds-page">
+    <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <div><p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Customer profile</p><h1 className="mt-1 text-2xl font-bold text-[#12355b]">{customer.name || "Customer Details"}</h1><p className="mt-1 text-sm text-slate-500">Account overview, activity, and billing history in one place.</p></div>
+      <div className="flex flex-wrap items-center gap-2"><DatePicker selected={dates.startDate} onChange={(date) => setDates((prev) => ({ ...prev, startDate: date }))} className="kds-input w-40" language="en" /><DatePicker selected={dates.endDate} onChange={(date) => setDates((prev) => ({ ...prev, endDate: date }))} className="kds-input w-40" language="en" /><Button size="sm" varient="outline" onClick={loadPreview}><i className="bi bi-eye" /> Preview report</Button></div>
+    </div>
 
-            setCustomerPersonalDetails(response?.[0]?.[0]);
+    {preview && <Card className="customer-report-print" title="Customer Report" subtitle={`Selected period: ${dates.startDate?.bsDate} to ${dates.endDate?.bsDate}`}>
+      <div className="mb-4 flex flex-wrap justify-end gap-2"><Button size="sm" varient="outline" onClick={() => window.print()}><i className="bi bi-printer" /> Print Customer Details</Button><Button size="sm" varient="primary" onClick={download}><i className="bi bi-download" /> Download PDF</Button></div>
+      <p className="mb-3 text-sm text-slate-500">Generated {new Date().toLocaleDateString()} for {preview?.metaData?.name || customer.name}.</p>
+      <div className="overflow-x-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="bg-slate-100 text-slate-600"><tr>{(preview?.tableData?.length ? Object.keys(preview.tableData[0]) : ["Date", "Description", "Credit", "Debit"]).map((header) => <th key={header} className="px-3 py-2 text-left">{humanizeLabel(header)}</th>)}</tr></thead><tbody>{preview?.tableData?.length ? preview.tableData.map((row, index) => <tr key={index} className="border-t border-slate-100">{Object.keys(row).map((key) => <td key={key} className="px-3 py-2">{row[key] || "—"}</td>)}</tr>) : <tr><td colSpan="4" className="px-3 py-6 text-center text-slate-400">No records in this date range.</td></tr>}</tbody></table></div>
+    </Card>}
 
-            const workAndPaymentDetails = response?.[1]?.workAndPaymentDetails || [];
-            const finalValues = getFinalCreditOrDebitValue(workAndPaymentDetails);
-            workAndPaymentDetails?.forEach((each, idx) => each.Total = finalValues[idx])
-            setCustomerWorkAndPaymentDetails([...workAndPaymentDetails]);
-            setTotalRows(() => Math.max(1, Math.ceil(Number(response?.[1]?.metaData?.[0]?.totalRows || 0) / PAGE_LIMIT)));
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+      <Card title="Basic Information" className="xl:col-span-2"><div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><Detail label="Customer Name" value={customer.name} icon="bi-person" /><Detail label="Customer ID" value={customer._id} icon="bi-fingerprint" /><Detail label="Phone Number" value={customer.phone_number} icon="bi-telephone" /><Detail label="Address" value={customer.address} icon="bi-geo-alt" /></div></Card>
+      <Card title="Account Summary"><div className="space-y-3"><Detail label="Total Payments" value={`Rs. ${totals.credit.toLocaleString()}`} icon="bi-arrow-down-circle" /><Detail label="Total Work" value={`Rs. ${totals.debit.toLocaleString()}`} icon="bi-arrow-up-circle" /><Detail label="Current Balance" value={`Rs. ${(totals.debit - totals.credit).toLocaleString()}`} icon="bi-wallet2" /></div></Card>
+    </div>
 
-        })()
-    }, [customer_id, page])
-    
-
-    const headers = customerWorkAndPaymentDetails.length ? Object.keys(customerWorkAndPaymentDetails[0]) : [];
-    const tableValues = customerWorkAndPaymentDetails?.map((data) => Object.values(data));
-    // console.log(tableValues);
-    
-
-    const handlePageChange = (page) => {
-        // console.log("Pag", page);
-        
-        setPage(() => page);
-    }
-    // console.log("After change",page);
-
-    const handleDateChange = (type , date) => {
-        setSelectedDates(
-            (prev) => ({
-                ...prev, 
-                [type]: date
-            })
-        )
-        
-    }
-
-    const handleDownloadPreview = async (e) => {
-        e.preventDefault();
-        try {
-            if(!selectedDates?.startDate?.bsDate || !selectedDates?.endDate?.bsDate) {
-                toast.error("Select both start and end dates")
-                return
-            }
-            
-          const response =   await getACustomerWorkAndPaymentPreviewData(
-                                customer_id ,
-                                {
-                                    from : selectedDates?.startDate?.bsDate,
-                                    to : selectedDates?.endDate?.bsDate,
-                                     
-                                })
-        const updatedValue = {
-            ...previewData, ...response?.data
-        }
-        // console.log(updatedValue);
-        
-        setPreviewData(updatedValue)
-        setIsPreviewOpen(true)
-        // console.log(previewData);
-        
-        
-        } catch (error) {
-            toast.error(error?.message || "Failed to load preview")
-        }
-        
-    }
-
-    const handlePreviewClickOutside = () => {
-        // console.log("OUTSIDE CLICK");
-        
-        setIsPreviewOpen(false)
-    }
-
-    const handleCustomerInfoDownload = async() => {
-            try {
-               await downLoadWorkAndPaymentDataPdf(customer_id, {from : selectedDates?.startDate?.bsDate, to : selectedDates?.endDate?.bsDate})
-                setIsPreviewOpen(false)
-
-            } catch (error) {
-                toast.error(error?.message || "Failed to download PDF")
-                setIsPreviewOpen(false)
-            
-            }
-    }
-    
-
-        return (
-            <div className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center text-sm md:mt-4 md:text-lg">
-                {
-                isPreviewOpen && <DownloadPreview data={previewData} 
-                handleClickOut={handlePreviewClickOutside} handleClick={handleCustomerInfoDownload} />
-            }
-                {/* PRINT/DOWNLOAD BUTTON FOR DOWNLOADING OR PRINTING THE DETAILS OF THE CUSTOMER A/C */}
-                <form  className="flex flex-col flex-start gap-3 mb-3 md:flex-row md:justify-center md:items-center md:gap-8 text-center"  >
-
-                    <DatePicker 
-                        selected = {selectedDates?.startDate}
-                        onChange = { (date) => handleDateChange('startDate', date)}
-                        className="border border-gray-400 mx-2 px-2 py-1 rounded-lg bg-white" 
-                        language="en"
-                    />
-
-                    <DatePicker
-                        selected = {selectedDates?.endDate}
-                        onChange = { (date) => handleDateChange('endDate', date)}
-                        className="border border-gray-400 mx-2 px-2 py-1 rounded-lg bg-white"
-                        language="en"
-                    />
-
-                    <Button 
-                        children="Preview" 
-                        varient="primary" 
-                        size={"sm"} 
-                        onClick={handleDownloadPreview}
-
-                         />
-
-                </form>
-
-               
-
-                {/* personal Details Section */}
-                <div className="w-screen md:w-[90%] py-2 md:py-5 flex flex-col gap-2 md:gap-4 border border-yellow-700 bg-yellow-700 rounded-t-xl text-center" >
-                     <div className="text-lg md:text-2xl text-center">
-                        <span className="font-bold" > {customerPersonalDetails?.name}</span>
-                    </div>
-                    <div className="flex flex-row justify-around gap-2">
-                        <span >Address:
-                        <span  > {customerPersonalDetails?.address} </span>
-                        </span>
-                        <span>Phone Number: {customerPersonalDetails?.phone_number} </span>
-                    </div>
-
-                   
-                </div>
-
-                {/* work and payment secttion must be shown based on work date latest to oldest */}
-                <div className="w-screen md:w-[90%] text-center" >
-                    <table className="w-screen md:w-full border-separate border-spacing-0 border-collapse border border-t-0 border-yellow-700">
-                        <thead>
-                            <tr>
-                                {
-                                   headers?.map((header) => (
-                                        <th key={header}  className="text-center px-0 md:px-5 pb-4 border border-t-0 border-yellow-700"> {header} </th>
-                                    ))
-                                }
-
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {
-                               tableValues.length > 0 ?  tableValues?.map((values, index) => (
-                                    <tr key={index}>
-                                      { 
-                                       values?.map((value, idx) => (
-                                        <td key={idx} className="text-center px-2 md:px-5 py-2 md:py-4 border border-yellow-700">
-                                            {
-                                                value || '-'
-                                            }
-                                        </td>
-                                       ))
-                                       }
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td className="text-gray-400 py-2 md:py-5" colSpan={Math.max(headers.length, 1)}>No data found</td>
-                                    </tr>
-                                )
-                            }
-                        </tbody>
-                    </table>
-                </div>
-                    
-                <PaginationBar current={page} total={totalRows} onPageChange={handlePageChange} />
-            </div>
-        )
-
-}
+    <Card title="Payment History" subtitle="Work entries and payments are shown in newest-first order.">
+      <div className="kds-table-scroll overflow-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="kds-table-header"><tr>{headers.map((header) => <th key={header} className="px-4 py-3 text-left font-semibold">{humanizeLabel(header)}</th>)}</tr></thead><tbody>{loading ? <tr><td colSpan={headers.length} className="p-10 text-center text-slate-400">Loading account activity…</td></tr> : entries.length ? entries.map((row, index) => <tr key={index} className="border-t border-slate-100 hover:bg-slate-50">{headers.map((header) => <td key={header} className="px-4 py-3 text-slate-700">{row[header] || "—"}</td>)}</tr>) : <tr><td colSpan={headers.length} className="p-10 text-center text-slate-400">No account activity yet.</td></tr>}</tbody></table></div>
+      <PaginationBar current={page} total={totalRows} onPageChange={setPage} />
+    </Card>
+  </main>;
+};
 
 export default AccountDetailsOfCustomer;

@@ -1,10 +1,10 @@
-export const UNIT_OPTIONS = ["Piece", "KG", "Liter", "Hour", "Trip", "Box", "Set", "Day"];
+export const UNIT_OPTIONS = ["Cubic Meter", "Hours", "Kilograms (Kgs)", "Trips"];
 
 export const emptyLineItem = () => ({
   productName: "",
   description: "",
   quantity: 1,
-  unit: "Piece",
+  unit: "Cubic Meter",
   rate: 0,
   discount: 0,
   tax: 0,
