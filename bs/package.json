@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --import dotenv/config ./src/index.js",
+    "build":"nodemon --import dotenv/config ./src/index.js",
     "dev": "nodemon --import dotenv/config ./src/index.js",
     "migrate:mysql-to-mongo": "node --import dotenv/config ./testing/migrateMysqlToMongo.js",
     "seed:user": "node --import dotenv/config ./testing/bcrypt.js",
