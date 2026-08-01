@@ -1,12 +1,14 @@
 import { formatCurrency } from "../../../utils/currency";
 import { amountToWords } from "../../../utils/numberToWords";
 import { InputBox } from "../../../components";
+import { TAX_RATE_OPTIONS } from "../../../utils/invoiceCalculations";
 
-const TotalsSummary = ({ totals = {}, paidAmount, onPaidAmountChange }) => {
+const TotalsSummary = ({ totals = {}, paidAmount, onPaidAmountChange, taxRate, onTaxRateChange }) => {
   const rows = [
     { label: "Subtotal", value: totals.subtotal },
     { label: "Discount", value: totals.discount },
-    { label: "Tax", value: totals.tax },
+    { label: "Taxable Amount", value: totals.taxableAmount },
+    { label: `Tax Amount (${totals.taxRate || 0}%)`, value: totals.tax },
     { label: "Grand Total", value: totals.grandTotal, highlight: true }
   ];
 
@@ -20,6 +22,8 @@ const TotalsSummary = ({ totals = {}, paidAmount, onPaidAmountChange }) => {
           </div>
         ))}
       </div>
+
+      <div><label className="kds-label">Tax Rate</label><select className="kds-input" value={taxRate} onChange={(event) => onTaxRateChange?.(event.target.value)}>{TAX_RATE_OPTIONS.map((rate) => <option key={rate} value={rate}>{rate}%</option>)}</select></div>
 
       <InputBox
         label="Paid Amount"

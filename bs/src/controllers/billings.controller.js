@@ -12,6 +12,7 @@ const currency = new Intl.NumberFormat("en-IN", {
     maximumFractionDigits: 2
 });
 const INVOICE_UNITS = new Set(["Cubic Meter", "Hours", "Kilograms (Kgs)", "Trips"]);
+const TAX_RATES = new Set([0, 5, 10, 13, 15]);
 
 const getUserSnapshot = (user = {}) => ({
     id: user?.id,
@@ -36,7 +37,6 @@ const calculateItems = (items = []) => {
         const quantity = Number(item.quantity);
         const rate = Number(item.rate);
         const discount = Number(item.discount || 0);
-        const tax = Number(item.tax || 0);
 
         if (!item.productName?.trim()) throw new ApiError(400, "Product / service name is required");
         if (!item.unit?.trim()) throw new ApiError(400, "Item unit is required");
@@ -45,7 +45,7 @@ const calculateItems = (items = []) => {
         if (!Number.isFinite(rate) || rate < 0) throw new ApiError(400, "Item rate must be valid");
 
         const lineBase = quantity * rate;
-        const total = Math.max(lineBase - discount + tax, 0);
+        const total = Math.max(lineBase - discount, 0);
 
         return {
             productName: item.productName.trim(),
@@ -54,24 +54,28 @@ const calculateItems = (items = []) => {
             unit: item.unit.trim(),
             rate,
             discount,
-            tax,
             total,
             sortOrder: Number(item.sortOrder ?? index)
         };
     });
 };
 
-const calculateTotals = (items, paidAmount = 0) => {
+const calculateTotals = (items, paidAmount = 0, taxRate = 0) => {
     const subtotal = items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
     const discount = items.reduce((sum, item) => sum + item.discount, 0);
-    const tax = items.reduce((sum, item) => sum + item.tax, 0);
-    const grandTotal = Math.max(subtotal - discount + tax, 0);
+    const taxableAmount = Math.max(subtotal - discount, 0);
+    const normalizedTaxRate = Number(taxRate);
+    if (!TAX_RATES.has(normalizedTaxRate)) throw new ApiError(400, "Select a valid tax rate");
+    const tax = taxableAmount * (normalizedTaxRate / 100);
+    const grandTotal = taxableAmount + tax;
     const paid = Math.min(Math.max(Number(paidAmount || 0), 0), grandTotal);
     const remainingAmount = Math.max(grandTotal - paid, 0);
 
     return {
         subtotal,
         discount,
+        taxableAmount,
+        taxRate: normalizedTaxRate,
         tax,
         grandTotal,
         paidAmount: paid,
@@ -112,7 +116,7 @@ const buildInvoicePayload = async (body, user, existingInvoice) => {
     if (!body.customer?.address?.trim()) throw new ApiError(400, "Customer address is required");
 
     const items = calculateItems(body.items);
-    const totals = calculateTotals(items, body.totals?.paidAmount ?? body.paidAmount);
+    const totals = calculateTotals(items, body.totals?.paidAmount ?? body.paidAmount, body.taxRate ?? body.totals?.taxRate ?? 0);
     const actor = getUserSnapshot(user);
 
     return {

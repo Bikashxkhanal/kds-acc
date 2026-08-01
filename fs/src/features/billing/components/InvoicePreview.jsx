@@ -52,15 +52,16 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
           </div>
           <div className="md:text-right">
             <p className="text-2xl font-bold tracking-wide">INVOICE</p>
-            <p className="mt-2">Invoice #: <strong>{invoiceNumber}</strong></p>
-            {billNumber && <p>Bill #: <strong>{billNumber}</strong></p>}
-            <p className="mt-1">Date: {formatDate(billDate)}</p>
-            {dueDate && <p>Due: {formatDate(dueDate)}</p>}
+            <p className="mt-2">Invoice Number: <strong>{invoiceNumber}</strong></p>
+            {billNumber && <p>Bill Number: <strong>{billNumber}</strong></p>}
+            <p className="mt-1">Invoice Date: {formatDate(billDate)}</p>
+            {dueDate && <p>Due Date: {formatDate(dueDate)}</p>}
             <div className="mt-3 border-t border-white/20 pt-3 text-sm md:ml-auto md:max-w-xs">
               <p className="text-sky-200 text-xs uppercase tracking-wider">Bill To</p>
-              <p className="font-semibold">{customer.name || "Customer Name"}</p>
-              <p className="text-sky-100/85">{customer.address || "Address"}</p>
-              {customer.phone && <p className="text-sky-100/85">Phone: {customer.phone}</p>}
+              <p className="font-semibold">Customer Name: {customer.name || "Customer Name"}</p>
+              <p className="text-sky-100/85">Customer Address: {customer.address || "Address"}</p>
+              {customer.phone && <p className="text-sky-100/85">Phone Number: {customer.phone}</p>}
+              {customer.pan && <p className="text-sky-100/85">PAN Number: {customer.pan}</p>}
               <p className="mt-2 text-sky-200 text-xs uppercase tracking-wider">Payment Status</p>
               <span className="font-semibold capitalize">{paymentStatus}</span>
             </div>
@@ -78,14 +79,13 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
                 <th className="border border-slate-200 px-2 py-2 text-center w-16">Unit</th>
                 <th className="border border-slate-200 px-2 py-2 text-right w-24">Rate</th>
                 <th className="border border-slate-200 px-2 py-2 text-right w-20">Disc.</th>
-                <th className="border border-slate-200 px-2 py-2 text-right w-20">Tax</th>
                 <th className="border border-slate-200 px-2 py-2 text-right w-28">Total</th>
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="border border-slate-200 px-4 py-6 text-center text-slate-400">
+                  <td colSpan={7} className="border border-slate-200 px-4 py-6 text-center text-slate-400">
                     Add line items to preview invoice
                   </td>
                 </tr>
@@ -101,7 +101,6 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
                     <td className="border border-slate-200 px-2 py-1.5 text-center">{item.unit}</td>
                     <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.rate)}</td>
                     <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.discount || 0)}</td>
-                    <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.tax || 0)}</td>
                     <td className="border border-slate-200 px-2 py-1.5 text-right font-medium">{formatNumber(item.total || 0)}</td>
                   </tr>
                 ))
@@ -127,7 +126,8 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
             {[
               ["Subtotal", totals.subtotal],
               ["Discount", totals.discount],
-              ["Tax", totals.tax],
+              ["Taxable Amount", totals.taxableAmount],
+              [`Tax Amount (${totals.taxRate || 0}%)`, totals.tax],
               ["Grand Total", totals.grandTotal, true],
               ["Paid Amount", totals.paidAmount],
               ["Remaining", totals.remainingAmount]

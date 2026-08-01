@@ -34,6 +34,7 @@ const BillingForm = () => {
   const [remarks, setRemarks] = useState("");
   const [items, setItems] = useState([emptyLineItem()]);
   const [paidAmount, setPaidAmount] = useState(0);
+  const [taxRate, setTaxRate] = useState(13);
   const [existingMeta, setExistingMeta] = useState({});
 
   useEffect(() => {
@@ -60,6 +61,7 @@ const BillingForm = () => {
         setRemarks(inv?.remarks || "");
         setItems(inv?.items?.length ? inv.items : [emptyLineItem()]);
         setPaidAmount(inv?.totals?.paidAmount || 0);
+        setTaxRate(inv?.totals?.taxRate ?? 13);
         setExistingMeta({
           invoiceNumber: inv?.invoiceNumber,
           billNumber: inv?.billNumber,
@@ -84,8 +86,8 @@ const BillingForm = () => {
   }, [companies, companyId]);
 
   const { items: calcItems, totals, paymentStatus } = useMemo(
-    () => calculateInvoiceTotals(items, paidAmount),
-    [items, paidAmount]
+    () => calculateInvoiceTotals(items, paidAmount, taxRate),
+    [items, paidAmount, taxRate]
   );
 
   const previewInvoice = useMemo(() => ({
@@ -124,6 +126,7 @@ const BillingForm = () => {
     dueDate: dueDate || undefined,
     remarks,
     items: calcItems.map((item, index) => ({ ...item, sortOrder: index })),
+    taxRate: totals.taxRate,
     paidAmount: totals.paidAmount
   });
 
@@ -251,7 +254,7 @@ const BillingForm = () => {
           </Card>
 
           <Card title="Payment Summary">
-            <TotalsSummary totals={totals} paidAmount={paidAmount} onPaidAmountChange={setPaidAmount} />
+              <TotalsSummary totals={totals} paidAmount={paidAmount} onPaidAmountChange={setPaidAmount} taxRate={taxRate} onTaxRateChange={setTaxRate} />
           </Card>
 
           {user?.name && (

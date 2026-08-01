@@ -8,7 +8,7 @@ const PaginationBar = ({
     className
 }) => {
     return (
-       <div className={`absolute bottom-4 ${className}`} >
+       <div className={`mt-5 flex w-full justify-center border-t border-slate-100 pt-4 ${className || ""}`} >
         <ResponsivePagination
             current={current}
             total={total}

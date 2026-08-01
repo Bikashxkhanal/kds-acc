@@ -1,191 +1,29 @@
-import { useEffect, useState } from 'react';
-import {useParams} from 'react-router-dom'
-import { toast } from 'react-toastify';
-import { getAStaffDetails, getAStaffRemunationAndPayoutDetails, getAStaffPreviewDetails, downloadStaffDetailsPDF } from '../../services/staff/staff.api';
-import PaginationBar from '../../components/common/Pagination/paginationbar';
-import { getFinalCreditOrDebitValue } from '../../helpers/creditAndDebit.helper';
-import Button from '../../components/common/button';
-import DownloadPreview from '../../components/common/Preview/download-preview';
-import DatePicker from '@sbmdkl/nepali-datepicker-reactjs';
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import DatePicker from "@sbmdkl/nepali-datepicker-reactjs";
 import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
+import { toast } from "react-toastify";
+import { getAStaffDetails, getAStaffRemunationAndPayoutDetails, getAStaffPreviewDetails, downloadStaffDetailsPDF } from "../../services/staff/staff.api";
+import Card from "../../components/common/Card";
+import Button from "../../components/common/button";
+import PaginationBar from "../../components/common/Pagination/paginationbar";
+import { humanizeLabel } from "../../utils/labels";
+import { getFinalCreditOrDebitValue } from "../../helpers/creditAndDebit.helper";
 
 const LIMIT = 10;
+const Detail = ({ label, value, icon }) => <div className="rounded-lg bg-slate-50 px-4 py-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400"><i className={`bi ${icon}`} /> {label}</p><p className="mt-1 font-medium text-slate-700">{value || "Not available"}</p></div>;
 
 const StaffAccountDetails = () => {
-
-    const {id} = useParams();
-    const [page, setPage] = useState(1);
-    const [staffPersonalDetails, setStaffPersonalDetails] = useState({})
-    const [headers, setTableHeaders] = useState([]);
-    const [staffRemuAndPayoutDetails , setStaffRemuAndPayoutDetails] = useState([])
-    const [totalCount, setTotalCount] = useState(-1)
-
-    const [selectedDates, setSelectedDates] = useState({
-        startDate : null,
-        endDate : null
-    })
-
-    const [previewDetails, setPreviewDetails] = useState({
-
-    });
-
-    const [isPreviewActive, setIsPreviewActive] = useState(false);
-
-    useEffect(() => {
-        ;(async () => {
-            try {
-                const response = await Promise.all(
-                    [getAStaffDetails(id),
-                    getAStaffRemunationAndPayoutDetails(id, {
-                        page : page, 
-                        limit : LIMIT
-                    })]
-                )
-                // console.log(response);
-                
-                setStaffPersonalDetails(response?.[0]?.data);
-                // setStaffRemuAndPayoutDetails(response?.[1]?.data)
-
-                 const finalValues = getFinalCreditOrDebitValue(response?.[1]?.data?.result);
-                response?.[1]?.data?.result?.forEach((detail, idx) => detail.Total = finalValues[idx])
-
-                const headers = response?.[1]?.data?.result?.length ? Object.keys(response?.[1]?.data?.result?.[0]) : []
-                setTableHeaders(headers);
-
-                const details = response?.[1]?.data?.result?.map((each) => Object.values(each)) || []
-                
-                setStaffRemuAndPayoutDetails(details);
-                
-                setTotalCount(Math.max(1, Math.ceil(Number(response?.[1]?.data?.totalRows || 0) / LIMIT)))
-            
-
-            } catch (error) {
-                toast.error(error?.data?.message);
-            }
-        })()
-    }, [id, page])
-
-    // console.log(staffPersonalDetails);
-    // console.log(staffRemuAndPayoutDetails);
-    
-    const handleDateChange = (type , date) => {
-        setSelectedDates((prev) => ({
-            ...prev,
-            [type] : date
-        }))
-    }
-
-    const handlePreviewClick = async() => {
-        // console.log(selectedDates);
-        try {
-            const res = await getAStaffPreviewDetails(id, {startDate : selectedDates?.startDate?.bsDate, endDate : selectedDates?.endDate?.bsDate});
-            // console.log(res);
-            
-            setPreviewDetails(res?.data)
-           setIsPreviewActive(true)
-            
-        } catch (error) {
-            toast.error(error?.message || "Failed to load preview");
-            setIsPreviewActive(false)
-        }
-    }
-
-    
-
-    const handleDownload = async() => {
-        try {
-             await downloadStaffDetailsPDF(id , {startDate : selectedDates?.startDate?.bsDate, endDate : selectedDates?.endDate?.bsDate})
-
-        } catch (error) {
-            toast.error(error?.message || "Failed to download PDF")
-        }
-    }
-
-    return (
-     
-            <div className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center pt-5 ">
-                <div className='flex flex-col gap-2 my-2 md:flex-row items-center'>
-                    <DatePicker 
-                    selected={selectedDates.startDate}
-                    onChange={(date) => handleDateChange('startDate', date)}
-                    className="border border-gray-400 mx-2 px-2 py-1 rounded-lg bg-white"
-                    language='en'
-                      />
-                    <DatePicker 
-                    selected={selectedDates.endDate}
-                    onChange={(date) => handleDateChange('endDate', date)}
-                    className="border border-gray-400 mx-2 px-2 py-1 rounded-lg bg-white"
-                    language='en'
-                     />
-                    <Button children='Preview' onClick={() => handlePreviewClick()} />
-                </div>
-
-                {
-                    isPreviewActive && (
-                        <DownloadPreview 
-                        title="Staff Work And Payment Details" 
-                        data={previewDetails} 
-                        handleClickOut={() => setIsPreviewActive(false)}
-                        handleClick={() => handleDownload()
-                        } />
-                    )
-                }
-
-                {/* personal Details Section */}
-                <div className="w-screen md:w-[90%] py-2 md:py-5 flex flex-col gap-4 border border-yellow-700 bg-yellow-700 rounded-t-xl text-sm md:text-lg" >
-                     <div className="text-lg md:text-2xl text-center">
-                        <span className="font-bold" > {staffPersonalDetails?.name}</span>
-                    </div>
-                    <div className=" flex flex-row justify-around">
-                        <span >Address:
-                        <span  > {staffPersonalDetails?.address} </span>
-                        </span>
-                        <span>Phone Number: {staffPersonalDetails?.phone_number} </span>
-                        <span>Salary: Rs.{staffPersonalDetails?.salary}</span>
-                    </div>
-
-                   
-                </div>
-
-                {/* work and payment secttion must be shown based on work date latest to oldest */}
-                <div className="w-screen md:w-[90%] text-center " >
-                    <table className="w-screen md:w-full border-separate border-spacing-0 border-collapse border border-t-0 border-yellow-700">
-                        <thead>
-                            <tr>
-                                {
-                                   headers?.map((header, idx) => (
-                                        <th key={idx}  className="text-center px-1 md:px-5 pb-2 md:pb-4 border border-t-0 border-yellow-700"> {header} </th>
-                                    ))
-                                }
-
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {
-                                staffRemuAndPayoutDetails?.map((values, idx) => (
-                                    <tr key={idx} >
-                                      { 
-                                       values?.map((value, idx) => (
-                                        <td key={idx} className="text-center px-2 md:px-5 py-2 md:py-4 border border-yellow-700">
-                                            {
-                                                value ?? '-'
-                                            }
-                                        </td>
-                                       ))
-                                       }
-                                    </tr>
-                                ))
-                            }
-                        </tbody>
-                    </table>
-                </div>
-                    
-                <PaginationBar current={page} total={totalCount} onPageChange={(page) => setPage(page)} />
-            </div>
-        )
-
-    
-}
-
+  const { id } = useParams(); const [staff, setStaff] = useState({}); const [rows, setRows] = useState([]); const [page, setPage] = useState(1); const [total, setTotal] = useState(1); const [dates, setDates] = useState({ startDate: null, endDate: null }); const [report, setReport] = useState(null);
+  useEffect(() => { (async () => { try { const [profile, ledger] = await Promise.all([getAStaffDetails(id), getAStaffRemunationAndPayoutDetails(id, { page, limit: LIMIT })]); setStaff(profile?.data || {}); const entries = ledger?.data?.result || []; const balances = getFinalCreditOrDebitValue(entries); setRows(entries.map((entry, index) => ({ ...entry, Balance: balances[index] }))); setTotal(Math.max(1, Math.ceil(Number(ledger?.data?.totalRows || 0) / LIMIT))); } catch (error) { toast.error(error?.message || "Unable to load staff details"); } })(); }, [id, page]);
+  const summary = useMemo(() => rows.reduce((value, row) => ({ paid: value.paid + Number(row.Credit || 0), earned: value.earned + Number(row.Debit || 0) }), { paid: 0, earned: 0 }), [rows]);
+  const headers = rows.length ? Object.keys(rows[0]) : ["Date", "Description", "Credit", "Debit", "Balance"];
+  const preview = async () => { if (!dates.startDate?.bsDate || !dates.endDate?.bsDate) return toast.error("Select both report dates"); try { const response = await getAStaffPreviewDetails(id, { startDate: dates.startDate.bsDate, endDate: dates.endDate.bsDate }); setReport(response?.data || {}); } catch (error) { toast.error(error?.message || "Unable to prepare report"); } };
+  const download = async () => { try { await downloadStaffDetailsPDF(id, { startDate: dates.startDate.bsDate, endDate: dates.endDate.bsDate }); } catch (error) { toast.error(error?.message || "Unable to download report"); } };
+  return <main className="kds-page"><div className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center"><div><p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Human resources</p><h1 className="text-2xl font-bold text-[#12355b]">{staff.name || "Staff Profile"}</h1><p className="text-sm text-slate-500">Personal, employment, and remuneration overview.</p></div><div className="flex flex-wrap gap-2"><DatePicker selected={dates.startDate} onChange={(date) => setDates((prev) => ({ ...prev, startDate: date }))} className="kds-input w-40" language="en" /><DatePicker selected={dates.endDate} onChange={(date) => setDates((prev) => ({ ...prev, endDate: date }))} className="kds-input w-40" language="en" /><Button size="sm" varient="outline" onClick={preview}><i className="bi bi-eye" /> Preview report</Button></div></div>
+    {report && <Card className="customer-report-print" title="Staff HR Report" subtitle={`Personal details are always included. Payment period: ${dates.startDate?.bsDate} to ${dates.endDate?.bsDate}`}><div className="mb-3 flex justify-end gap-2"><Button size="sm" varient="outline" onClick={() => window.print()}><i className="bi bi-printer" /> Print</Button><Button size="sm" onClick={download}><i className="bi bi-download" /> Download PDF</Button></div><p className="text-sm text-slate-500">Generated {new Date().toLocaleDateString()} for {staff.name}.</p><div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-3 text-sm sm:grid-cols-4"><p><strong>Staff ID:</strong> {staff.id || "—"}</p><p><strong>Full Name:</strong> {staff.name || "—"}</p><p><strong>Phone Number:</strong> {staff.phone_number || "—"}</p><p><strong>Address:</strong> {staff.address || "—"}</p></div><div className="mt-4 overflow-x-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="bg-slate-100"><tr>{(report?.tableData?.length ? Object.keys(report.tableData[0]) : ["Date", "Description", "Credit", "Debit"]).map((header) => <th key={header} className="px-3 py-2 text-left">{humanizeLabel(header)}</th>)}</tr></thead><tbody>{report?.tableData?.length ? report.tableData.map((row, index) => <tr key={index} className="border-t border-slate-100">{Object.keys(row).map((key) => <td key={key} className="px-3 py-2">{row[key] || "—"}</td>)}</tr>) : <tr><td colSpan="4" className="p-5 text-center text-slate-400">No remuneration or payment records in this date range.</td></tr>}</tbody></table></div></Card>}
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-3"><Card title="Personal Information" className="xl:col-span-2"><div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><Detail label="Staff ID" value={staff.id} icon="bi-fingerprint" /><Detail label="Full Name" value={staff.name} icon="bi-person" /><Detail label="Phone Number" value={staff.phone_number} icon="bi-telephone" /><Detail label="Date of Birth" value={staff.dob ? new Date(staff.dob).toLocaleDateString() : ""} icon="bi-calendar" /><Detail label="Permanent Address" value={staff.address} icon="bi-geo-alt" /><Detail label="Email Address" value={staff.email} icon="bi-envelope" /></div></Card><Card title="Employment Information"><div className="space-y-3"><Detail label="Basic Salary" value={staff.salary ? `Rs. ${Number(staff.salary).toLocaleString()}` : ""} icon="bi-cash-stack" /><Detail label="Position" value={staff.position} icon="bi-briefcase" /><Detail label="Department" value={staff.department} icon="bi-diagram-3" /></div></Card></div>
+    <Card title="Payment & Remuneration" subtitle="Salary earnings and payments, newest first."><div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-3"><Detail label="Total Paid" value={`Rs. ${summary.paid.toLocaleString()}`} icon="bi-arrow-down-circle" /><Detail label="Total Earned" value={`Rs. ${summary.earned.toLocaleString()}`} icon="bi-arrow-up-circle" /><Detail label="Remaining Balance" value={`Rs. ${(summary.earned - summary.paid).toLocaleString()}`} icon="bi-wallet2" /></div><div className="kds-table-scroll overflow-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="kds-table-header"><tr>{headers.map((header) => <th key={header} className="px-4 py-3 text-left">{humanizeLabel(header)}</th>)}</tr></thead><tbody>{rows.length ? rows.map((row, index) => <tr key={index} className="border-t border-slate-100 hover:bg-slate-50">{headers.map((header) => <td key={header} className="px-4 py-3">{row[header] || "—"}</td>)}</tr>) : <tr><td colSpan={headers.length} className="p-10 text-center text-slate-400">No payment or remuneration records yet.</td></tr>}</tbody></table></div><PaginationBar current={page} total={total} onPageChange={setPage} /></Card>
+  </main>;
+};
 export default StaffAccountDetails;

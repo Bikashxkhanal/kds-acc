@@ -55,10 +55,9 @@ export const buildInvoiceHtml = (invoice = {}) => {
           <td class="center">${escapeHtml(item.unit)}</td>
           <td class="right">${currency.format(item.rate || 0)}</td>
           <td class="right">${currency.format(item.discount || 0)}</td>
-          <td class="right">${currency.format(item.tax || 0)}</td>
           <td class="right"><strong>${currency.format(item.total || 0)}</strong></td>
         </tr>`).join("")
-    : `<tr><td colspan="8" class="center muted">No items</td></tr>`;
+    : `<tr><td colspan="7" class="center muted">No items</td></tr>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -144,8 +143,7 @@ export const buildInvoiceHtml = (invoice = {}) => {
             <th style="width:8%" class="center">Unit</th>
             <th style="width:12%" class="right">Rate</th>
             <th style="width:10%" class="right">Disc.</th>
-            <th style="width:10%" class="right">Tax</th>
-            <th style="width:14%" class="right">Total</th>
+            <th style="width:16%" class="right">Total</th>
           </tr>
         </thead>
         <tbody>${itemRows}</tbody>
@@ -160,7 +158,8 @@ export const buildInvoiceHtml = (invoice = {}) => {
       <div class="summary-right">
         <div class="summary-row"><span>Subtotal</span><span>Rs. ${currency.format(totals.subtotal || 0)}</span></div>
         <div class="summary-row"><span>Discount</span><span>Rs. ${currency.format(totals.discount || 0)}</span></div>
-        <div class="summary-row"><span>Tax</span><span>Rs. ${currency.format(totals.tax || 0)}</span></div>
+        <div class="summary-row"><span>Taxable Amount</span><span>Rs. ${currency.format(totals.taxableAmount || 0)}</span></div>
+        <div class="summary-row"><span>Tax Amount (${totals.taxRate || 0}%)</span><span>Rs. ${currency.format(totals.tax || 0)}</span></div>
         <div class="summary-row grand"><span>Grand Total</span><span>Rs. ${currency.format(totals.grandTotal || 0)}</span></div>
         <div class="summary-row"><span>Paid Amount</span><span>Rs. ${currency.format(totals.paidAmount || 0)}</span></div>
         <div class="summary-row"><span>Remaining</span><span>Rs. ${currency.format(totals.remainingAmount || 0)}</span></div>

@@ -14,7 +14,6 @@ const invoiceItemSchema = new mongoose.Schema(
         unit: { type: String, required: true, trim: true, enum: ["Cubic Meter", "Hours", "Kilograms (Kgs)", "Trips"] },
         rate: { type: Number, required: true, min: 0 },
         discount: moneyField,
-        tax: moneyField,
         total: moneyField,
         sortOrder: { type: Number, default: 0 }
     },
@@ -47,6 +46,8 @@ const invoiceSchema = new mongoose.Schema(
         totals: {
             subtotal: moneyField,
             discount: moneyField,
+            taxableAmount: moneyField,
+            taxRate: { type: Number, default: 0, enum: [0, 5, 10, 13, 15] },
             tax: moneyField,
             grandTotal: moneyField,
             paidAmount: moneyField,

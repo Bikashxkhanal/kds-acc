@@ -46,20 +46,18 @@ const StaffUI = () => {
 
     return (
 
-        <div className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center pt-5" >
-        <SearchBar 
+        <main className="kds-page" >
+        <div className="grid w-full grid-cols-1 items-center gap-3 sm:grid-cols-[1fr_auto_1fr]"><div /> <SearchBar
+            className="kds-search mx-auto w-full"
             placeholder="Search staff by name" 
             searchQueryFn={ searchStaffByName} 
             onSelect={(data) =>setStaffId(data?.id)} 
-        />
-
-        <ToggleButton
+        /><div className="flex justify-center sm:justify-end"><Button children="View Staff" size="sm" onClick={() => navigate('all') } /></div></div>
+        <div className="flex justify-center"><ToggleButton
           //remu = remunation: earned value by the staff, payment: amount paid to staff
             options={['remu', 'payout']} 
             activeButton={(data) => setActiveForm(data)} 
-        />
-
-        <Button children="View Staffs" onClick={() => navigate('all') } />
+        /></div>
 
 
         {
@@ -84,7 +82,7 @@ const StaffUI = () => {
             )
         }
 
-        </div>
+        </main>
     )
 }
 
