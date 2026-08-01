@@ -7,6 +7,8 @@ const loginSysUser = async ({loginData}) => {
         
         try {
             const response = await api.post('/api/v1/sysuser/login', loginData);
+            localStorage.setItem("accessToken", response.data.accessToken);
+            localStorage.setItem("refreshToken", response.data.refreshToken);
             // console.log(response?.data);
             return response?.data;
             
