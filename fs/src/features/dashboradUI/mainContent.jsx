@@ -45,18 +45,16 @@ const MainContent = () => {
                 
         } 
 
-    return <main className="relative w-full md:w-4/5 min-h-screen flex flex-col items-center pt-5 ">
-            <SearchBar 
-                placeholder="Search customers by name"
-                searchQueryFn={searchCustomer}
-                onSelect={(item) => setCustomerId(item?.id)
-                
-                }             
+    return (
+        <main className="kds-page relative">
+            <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <SearchBar
+                    placeholder="Search customers by name"
+                    searchQueryFn={searchCustomer}
+                    onSelect={(item) => setCustomerId(item?.id)}
                 />
-                <div className="mt-2 md:mt-0 md:fixed md:right-10" >
-                <ToggleButton options={['work', 'pay']} activeButton={(data) => setToggleForm(() => data) 
-                } />
-                </div>
+                <ToggleButton options={['work', 'pay']} activeButton={(data) => setToggleForm(() => data)} />
+            </div>
 
                 {
                     toggleForm === 'work'  && (
@@ -85,8 +83,8 @@ const MainContent = () => {
                     )
                 }
                
-                
             </main>
+    );
 }
 
 export default MainContent;

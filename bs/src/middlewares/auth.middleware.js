@@ -1,6 +1,5 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import connectPool from "../db/index.js";
 import jwt from 'jsonwebtoken'
 import { findSysUser } from "../controllers/user.controller.js";
 

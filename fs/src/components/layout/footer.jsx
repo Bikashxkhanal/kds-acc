@@ -1,28 +1,12 @@
-
-const Footer = () => {
-    return <footer className="w-dvw text-[9px] md:text-sm bg-purple-800 px-2 h-18 md:px-15 md:h-25 py-5 md:py-8
-                flex flex-row flex-start justify-between text-white ">
-        <div>
-                <p className="text-center font-semibold" >
-                    Created By    
-                </p>
-                 <span className="text-[8px] md:text-sm">                     
-                        Bikash Khanal
-                    </span>
-        </div>
-
-        <div className="flex flex-col justify-center ">
-           <p>@2026 Khanal Dhuwani Sewa Sindhuli, All rights reserved.</p>
-        </div>
-
-        <div>
-           <span>Connect With Me</span>
-           <div>
-            {/* links */}
-
-           </div>
-        </div>
-            </footer>
-}
+const Footer = () => (
+  <footer className="w-full text-xs bg-[#0d2844] px-4 md:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-sky-200/70">
+    <div>
+      <p className="font-semibold text-white text-sm">Created By</p>
+      <span className="text-xs">Bikash Khanal</span>
+    </div>
+    <p className="text-center text-xs">&copy; 2026 Khanal Dhuwani Sewa Sindhuli. All rights reserved.</p>
+    <div className="text-xs">KDS Business Management</div>
+  </footer>
+);
 
 export default Footer;

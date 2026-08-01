@@ -4,7 +4,7 @@ import { formConfig } from "./formConfig.js";
 import { formSchema } from "./formSchema.js";
 import InputBox from "../InputBox";
 import Button from "../button.jsx";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller } from "react-hook-form";
 import DatePicker from '@sbmdkl/nepali-datepicker-reactjs'
 import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
@@ -24,7 +24,7 @@ const Form = ({
    
 }) => {
     const [isLoading, setIsLoading] = useState(false);
-    const config = formConfig[useCase] || [];
+    const config = useMemo(() => formConfig[useCase] || [], [useCase]);
     const schema = formSchema(config);
     
     //name of the fields to be watched
@@ -41,14 +41,14 @@ const Form = ({
     })
 
 
-   const watchedVal = watchedValues?.length > 0 ? useWatch({
+   const watchedVal = useWatch({
     control, 
     name : watchedValues
-   }) : null
+   })
 
 
     useEffect(() => {
-        if(watchedValues.length > 0){
+        if(watchedValues.length > 0 && watchedFor.length > 0){
         const values = watchedVal?.map(eh => Number(eh) || 0)
         const finalValue = values?.reduce((prev, cur) => prev * cur, 1);
         // console.log(finalValue);
@@ -60,12 +60,10 @@ const Form = ({
         }
     }
 
-    }, [watchedValues])
+    }, [getValues, setValue, watchedFor, watchedVal, watchedValues])
 
      useEffect(() => {
         if(datas){
-            console.log(datas);
-            
             reset(datas)
         }
     }, [reset, datas])
@@ -83,16 +81,21 @@ const Form = ({
             reset(resetedValues)
             
         }
-    }, [isSubmitSuccessfull, reset])
+    }, [config, isSubmitSuccessfull, reset])
 
   
 
-    const onSubmitHandler = (data) => {
-        handleFormSubmit?.(data)   
+    const onSubmitHandler = async (data) => {
+        setIsLoading(true)
+        try {
+            await handleFormSubmit?.(data)
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
-       <form onSubmit={handleSubmit(onSubmitHandler)} className="min-w-screen md:min-w-full pt-5 md:pt-10 px-5 grid grid-cols-1 md:grid-cols-3 gap-3 justify-center">
+       <form onSubmit={handleSubmit(onSubmitHandler)} className="w-full kds-card p-5 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {
             config?.map((fld) => (
                 <div key={fld.name}>
@@ -113,7 +116,7 @@ const Form = ({
                     {
                        fld.type === 'select' &&
                         <select
-                        className="w-full  border border-gray-100 bg-white px-1 py-2 rounded-sm "
+                        className="kds-input"
                          {...register(fld.name)} 
                              >
                                 <option value="">Select a {fld.name.split("_").join(" ") }</option>
@@ -134,9 +137,9 @@ const Form = ({
                         defaultValue={new NepaliDate().format('YYYY-MM-DD')}
                         render={({field}) => (
                             <DatePicker 
-                            className='border border-gray-100 bg-white py-2 px-2 rounded-sm w-full'
+                            className='kds-input'
                             value={field?.value || "" }
-                            onChange={({bsDate, adDate}) => {
+                            onChange={({bsDate}) => {
                                 field?.onChange(bsDate)}}
                             placeholder={field?.name.split("_").join(" ")} 
                             language="en"
@@ -161,8 +164,9 @@ const Form = ({
             ))
         }
 
-        <Button children="Submit" loading={isLoading} />
-
+        <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 pt-2">
+            <Button children="Submit" loading={isLoading} />
+        </div>
        </form>
     )
 }

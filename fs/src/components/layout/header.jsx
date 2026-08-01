@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-
-
-const Header = () => {
-    return <header className="w-dvw bg-purple-700 font-bold flex flex-row flex-start px-10 py-4" >
-            {/* logo or name or both on the left side */}
-            <h1 className="text-4xl text-white text-bold">KDS</h1>
-
-            </header>
-}
+const Header = () => (
+  <header className="w-full bg-[#12355b] shadow-md">
+    <div className="flex items-center px-6 md:px-10 py-4">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">KDS</h1>
+        <p className="text-xs text-sky-300/70">Business Management System</p>
+      </div>
+    </div>
+  </header>
+);
 
 export default Header;

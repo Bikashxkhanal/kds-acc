@@ -1,12 +1,7 @@
-
-
-const Container = ({
-    children
-}) => {
-    return <main className="min-h-screen w-screen py-5 md:py-0 md:h-dvh bg-purple-200 
-            flex flex-row justify-center items-center" >
+const Container = ({ children }) => (
+    <main className="min-h-[calc(100dvh-72px)] w-full bg-[#f0f4f8] flex flex-row">
         {children}
-        </main>
-}
+    </main>
+);
 
 export default Container;

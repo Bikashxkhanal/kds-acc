@@ -1,34 +1,58 @@
 import bcrypt from 'bcrypt'
-import connectPool from "../src/db/index.js";
+import dotenv from "dotenv";
+import connectMongo from "../src/db/mongo.js";
+import SysUser from "../src/models/sysUser.model.js";
+import Company from "../src/models/company.model.js";
+import { getNextSequence } from "../src/utils/autoIncrement.js";
+
+dotenv.config({ path: "../.env" });
 
 const addSystemUser = async () => {
+    await connectMongo();
 
-    console.log("DB USER:", process.env.DB_USER);
+    const existing = await SysUser.findOne({ phone_number: "9824774632" });
+    if (existing) {
+        console.log("System user already exists, skipping.");
+        return;
+    }
 
     const hashed_password = await bcrypt.hash("Bikash07", 10);
+    const id = await getNextSequence("sysUser");
 
-    await connectPool.execute(
-        `INSERT INTO sys_user 
-        (name, phone_number, email, address, hashed_password) 
-        VALUES (?, ?, ?, ?, ?)`,
-        [
-            "Bikash Khanal",
-            "9824774632",
-            "khanalbikash007@gmail.com",
-            "Dudhauli-8, Sindhuli",
-            hashed_password
-        ]
-    );
+    await SysUser.create({
+        id,
+        name: "Bikash Khanal",
+        phone_number: "9824774632",
+        email: "khanalbikash007@gmail.com",
+        address: "Dudhauli-8, Sindhuli",
+        hashed_password
+    });
 
     console.log("User inserted successfully");
 }
 
-export const addCompany = async() => {
-    await connectPool.execute(
-            `INSERT INTO company_info (name , address, pan) VALUES 
-            ("KHANAL DHUWANI SEWA", "Dudhauli-8, Sindhuli", "983908230439"),
-            ("YES KHANAL NIRWAN SEWA PVT. LTD.", "Dudhauli-8, Sindhuli", "98230439")`
-    )
-} 
+export const addCompany = async () => {
+    await connectMongo();
+
+    const companies = [
+        { name: "KHANAL DHUWANI SEWA", address: "Dudhauli-8, Sindhuli", pan: "983908230439" },
+        { name: "YES KHANAL NIRWAN SEWA PVT. LTD.", address: "Dudhauli-8, Sindhuli", pan: "98230439" }
+    ];
+
+    for (const c of companies) {
+        const exists = await Company.findOne({ pan: c.pan });
+        if (!exists) {
+            await Company.create({ ...c, isActive: true });
+            console.log(`Company created: ${c.name}`);
+        }
+    }
+}
 
 export default addSystemUser;
+
+addSystemUser()
+    .then(() => process.exit(0))
+    .catch((err) => {
+        console.error(err);
+        process.exit(1);
+    });

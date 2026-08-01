@@ -20,14 +20,14 @@ function App() {
                      // console.log("Pass");
                      
                      
-                 } catch (error) {
+                 } catch {
                      // console.log("Failed");     
                      toast.error("Session expired please login!")
                      dispatch(verifyMeFail())
                      
                  }    
               })()
-}, []);
+	}, [dispatch]);
 
        return(<>
        <Outlet />

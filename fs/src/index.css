@@ -1,2 +1,98 @@
 @import "tailwindcss";
 @import "bootstrap-icons/font/bootstrap-icons.css";
+
+@theme {
+  --color-primary: #12355b;
+  --color-primary-light: #1a4a7a;
+  --color-primary-dark: #0d2844;
+  --color-accent: #38bdf8;
+  --color-accent-soft: #e0f2fe;
+  --color-slate: #64748b;
+  --color-slate-light: #f1f5f9;
+  --color-success: #10b981;
+  --color-warning: #f97316;
+  --color-danger: #ef4444;
+  --color-surface: #ffffff;
+  --color-background: #f0f4f8;
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: #1e293b;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .kds-card {
+    @apply rounded-xl bg-white shadow-sm border border-slate-200/80 transition-shadow duration-200 hover:shadow-md;
+  }
+
+  .kds-input {
+    @apply w-full h-10 px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white
+           outline-none transition-all duration-150
+           focus:border-[#12355b] focus:ring-2 focus:ring-[#12355b]/20
+           disabled:bg-slate-100 disabled:cursor-not-allowed;
+  }
+
+  .kds-label {
+    @apply block text-sm font-medium text-slate-700 mb-1;
+  }
+
+  .kds-section-title {
+    @apply text-base font-semibold text-[#12355b] border-b border-slate-200 pb-2 mb-4;
+  }
+
+  .kds-page {
+    @apply w-full md:w-4/5 min-h-screen flex flex-col gap-5 p-4 md:p-6;
+  }
+
+  .kds-table-header {
+    @apply bg-[#12355b] text-white;
+  }
+
+  .kds-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .kds-badge-paid {
+    @apply bg-emerald-100 text-emerald-800;
+  }
+
+  .kds-badge-partial {
+    @apply bg-orange-100 text-orange-800;
+  }
+
+  .kds-badge-unpaid {
+    @apply bg-red-100 text-red-800;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .invoice-print-area,
+  .invoice-print-area * {
+    visibility: visible;
+  }
+
+  .invoice-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

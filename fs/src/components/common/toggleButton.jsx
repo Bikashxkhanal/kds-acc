@@ -1,35 +1,32 @@
 import { useEffect, useState } from "react";
 
-
-const ToggleButton = ({
-    options = [], 
-    className = '',
-    activeButton
-}) => {
-    //must of of 2 length , no more or less
-    if(options?.length !== 2)return;
-    const highPriority = options?.[0] //for ui (0th element should be colored 0 and 1th should be red for better UI)
+const ToggleButton = ({ options = [], className = '', activeButton }) => {
     const [selected, setSelected] = useState(options?.[0]?.trim());
 
-    const toggleButtonBaseStyle = `text-gray-400 py-[1px]  px-[8px] rounded-2xl cursor-pointer`
-
     useEffect(() => {
-        activeButton(selected)
-    }, [selected] )
+        activeButton?.(selected);
+    }, [activeButton, selected]);
+
+    if (options?.length !== 2) return null;
 
     return (
-        <div className={`px-4 py-1.5 flex flex-row gap-4 bg-white text-gray-400 border rounded-4xl ${selected === highPriority ? 'border-green-300' : 'border-red-300'} shadow-xl ${className}`} >
-            {
-                options.map((option) => (
-                    <button className={ ` ${toggleButtonBaseStyle} ${(option === selected ) ? (option === highPriority) ? 'bg-green-300 text-white' : 'bg-red-300 text-white' : '' }  `} onClick={() => setSelected(() => option)
-                    } key={option}  >
-                            {option}
-                    </button>
-                ))
-            }
+        <div className={`inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200 ${className}`}>
+            {options.map((option) => (
+                <button
+                    type="button"
+                    key={option}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
+                        option === selected
+                            ? "bg-[#12355b] text-white shadow-sm"
+                            : "text-slate-600 hover:text-[#12355b]"
+                    }`}
+                    onClick={() => setSelected(option)}
+                >
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                </button>
+            ))}
         </div>
-    )
-
-}
+    );
+};
 
 export default ToggleButton;

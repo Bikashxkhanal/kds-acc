@@ -1,3 +1,5 @@
+ const isHttpsOrigin = process.env.CORS_ORIGIN?.startsWith("https://");
+
  const options = {
     httpOnly: true,
     secure: true,
@@ -5,8 +7,8 @@
 
   const NETWORK_OPTIONS_CORS = {
     httpOnly : true, 
-    secure : false ,
-    sameSite : "lax"
+    secure : Boolean(isHttpsOrigin),
+    sameSite : isHttpsOrigin ? "none" : "lax"
   }
 
   // the given template is for downlading details of like customer, stafff and other

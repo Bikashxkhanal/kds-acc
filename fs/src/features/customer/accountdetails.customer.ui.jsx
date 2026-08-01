@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { getACustomerPersonalDetails, getACustomerWorkAndPaymentDetails, getACustomerWorkAndPaymentPreviewData, downLoadWorkAndPaymentDataPdf } from "../../services/customer/customer";
 import  {useParams} from 'react-router-dom'
-import Table from "../../components/common/Table/table";
 import PaginationBar from "../../components/common/Pagination/paginationbar";
 import { getFinalCreditOrDebitValue } from "../../helpers/creditAndDebit.helper";
 import Button from "../../components/common/button";
@@ -21,9 +20,6 @@ const AccountDetailsOfCustomer = () => {
     const [customerPersonalDetails, setCustomerPersonalDetails] = useState({});
     //work-pay details of customer
     const [customerWorkAndPaymentDetails, setCustomerWorkAndPaymentDetails] = useState([]);
-
-    //headers are the title values for the table 
-    const [headers , setHeaders] = useState([]);
 
     //totalRows is the metadata where it gives the total number of row count of work-pay-details of a particular customer
     const [totalRows, setTotalRows] = useState(null); 
@@ -51,25 +47,19 @@ const AccountDetailsOfCustomer = () => {
                     getACustomerWorkAndPaymentDetails(customer_id, { page : page, limit: PAGE_LIMIT})
                 ])
 
-            console.log("API DATA" , response);
             setCustomerPersonalDetails(response?.[0]?.[0]);
 
-            const finalValues = getFinalCreditOrDebitValue(response?.[1]?.workAndPaymentDetails);
-            response?.[1]?.workAndPaymentDetails?.forEach((each, idx) => each.Total = finalValues[idx])
-            setCustomerWorkAndPaymentDetails([...response?.[1]?.workAndPaymentDetails]);
-            setTotalRows(() => Math.round(Number(response?.[1]?.metaData?.[0]?.totalRows) / 10));
+            const workAndPaymentDetails = response?.[1]?.workAndPaymentDetails || [];
+            const finalValues = getFinalCreditOrDebitValue(workAndPaymentDetails);
+            workAndPaymentDetails?.forEach((each, idx) => each.Total = finalValues[idx])
+            setCustomerWorkAndPaymentDetails([...workAndPaymentDetails]);
+            setTotalRows(() => Math.max(1, Math.ceil(Number(response?.[1]?.metaData?.[0]?.totalRows || 0) / PAGE_LIMIT)));
 
         })()
     }, [customer_id, page])
-
-
-    useEffect(() => {
-         if(customerWorkAndPaymentDetails.length){
-     setHeaders(Object.keys(customerWorkAndPaymentDetails?.[0]))
-    }
-    }, [customerWorkAndPaymentDetails])
     
 
+    const headers = customerWorkAndPaymentDetails.length ? Object.keys(customerWorkAndPaymentDetails[0]) : [];
     const tableValues = customerWorkAndPaymentDetails?.map((data) => Object.values(data));
     // console.log(tableValues);
     
@@ -91,21 +81,13 @@ const AccountDetailsOfCustomer = () => {
         
     }
 
-    const validateDates = (dates = {}) => {
-            // if no dates provideed
-            if(!dates) return false;
-
-            const values = Object.values(dates);
-            
-            const status = values.every((date) => date !== null && date instanceof Date)
-
-            return true;     
-    }
-
     const handleDownloadPreview = async (e) => {
         e.preventDefault();
         try {
-            // console.log(selectedDates);
+            if(!selectedDates?.startDate?.bsDate || !selectedDates?.endDate?.bsDate) {
+                toast.error("Select both start and end dates")
+                return
+            }
             
           const response =   await getACustomerWorkAndPaymentPreviewData(
                                 customer_id ,
@@ -114,20 +96,18 @@ const AccountDetailsOfCustomer = () => {
                                     to : selectedDates?.endDate?.bsDate,
                                      
                                 })
-        console.log(response?.data);
-                             
         const updatedValue = {
             ...previewData, ...response?.data
         }
         // console.log(updatedValue);
         
         setPreviewData(updatedValue)
-        setIsPreviewOpen((prev) => true)
+        setIsPreviewOpen(true)
         // console.log(previewData);
         
         
         } catch (error) {
-            
+            toast.error(error?.message || "Failed to load preview")
         }
         
     }
@@ -135,16 +115,16 @@ const AccountDetailsOfCustomer = () => {
     const handlePreviewClickOutside = () => {
         // console.log("OUTSIDE CLICK");
         
-        setIsPreviewOpen((prev) =>false )
+        setIsPreviewOpen(false)
     }
 
     const handleCustomerInfoDownload = async() => {
             try {
-                console.log("down"); 
                await downLoadWorkAndPaymentDataPdf(customer_id, {from : selectedDates?.startDate?.bsDate, to : selectedDates?.endDate?.bsDate})
                 setIsPreviewOpen(false)
 
             } catch (error) {
+                toast.error(error?.message || "Failed to download PDF")
                 setIsPreviewOpen(false)
             
             }
@@ -207,7 +187,7 @@ const AccountDetailsOfCustomer = () => {
                         <thead>
                             <tr>
                                 {
-                                   headers?.map((header, idx) => (
+                                   headers?.map((header) => (
                                         <th key={header}  className="text-center px-0 md:px-5 pb-4 border border-t-0 border-yellow-700"> {header} </th>
                                     ))
                                 }
@@ -229,7 +209,11 @@ const AccountDetailsOfCustomer = () => {
                                        ))
                                        }
                                     </tr>
-                                )) : <p className="text-gray-400 py-2 md:py-5" >No data found</p>
+                                )) : (
+                                    <tr>
+                                        <td className="text-gray-400 py-2 md:py-5" colSpan={Math.max(headers.length, 1)}>No data found</td>
+                                    </tr>
+                                )
                             }
                         </tbody>
                     </table>

@@ -164,29 +164,6 @@ const SearchBar = ({
     const containerRef = useRef(null);
     const debounceTimer = useRef(null);
 
-     //close dropdown on outside click 
-    useEffect(() => {
-     const handleClickOutside = () => {  
-         if(containerRef.current && !containerRef.current.contains(e.target)){
-                setActiveIndex(-1);
-                setIsOpen(false)
-        }
-    }
-
-        document.addEventListener('onMouseDown',handleClickOutside )
-        return () => document.removeEventListener('onMouseDown', handleClickOutside);
-
-    }, [])
-
-    //cleanup of debouning in unmount
-    useEffect(() => {
-        return () => {
-            if(debounceTimer.current) clearTimeout(debounceTimer.current)
-        }
-    }, [])
-
-
-
     //debouncing search query
     const debounceSearch = useCallback((value) => {
        if(debounceTimer.current) clearTimeout(debounceTimer.current)
@@ -202,7 +179,7 @@ const SearchBar = ({
             setSearchQuery(value)
         }, delay);
 
-    }, [delay, query, minChars])
+    }, [delay, minChars])
 
      //if the input value changes
     const handleChange = useCallback((e) => {
@@ -234,15 +211,41 @@ const SearchBar = ({
     return () => controller.abort()
     }, [searchQuery, searchQueryFn])
 
+    const handleSelect = useCallback((item) => {
+            setQuery(item?.name)
+            setIsOpen(false)
+            setActiveIndex(-1)
+            onSelect?.(item)
+    }, [onSelect])
+
+     //close dropdown on outside click 
+    useEffect(() => {
+     const handleClickOutside = (e) => {  
+         if(containerRef.current && !containerRef.current.contains(e.target)){
+                setActiveIndex(-1);
+                setIsOpen(false)
+        }
+    }
+
+        document.addEventListener('mousedown',handleClickOutside )
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    }, [])
+
+    //cleanup of debouning in unmount
+    useEffect(() => {
+        return () => {
+            if(debounceTimer.current) clearTimeout(debounceTimer.current)
+        }
+    }, [])
+
     //handling the arrow key up down enter and escape
     const handleKeyDown = useCallback((e) => {
        if(!isOpen || suggestions.length === 0) return;
 
        if(e.key === 'ArrowUp'){
             e.preventDefault()
-            setActiveIndex( prev => (prev -1) % suggestions.length)
-                console.log(activeIndex);
-                
+            setActiveIndex(prev => (prev <= 0 ? suggestions.length - 1 : prev - 1))
        }else if(e.key === 'ArrowDown'){
            e.preventDefault()
             setActiveIndex(prev => (prev +1) % suggestions.length)
@@ -256,14 +259,7 @@ const SearchBar = ({
             handleSelect(suggestions[activeIndex])
        }
 
-    }, [suggestions , isOpen, activeIndex ])
-
-    const handleSelect = useCallback((item) => {
-            setQuery(item?.name)
-            setIsOpen(false)
-            setActiveIndex(-1)
-            onSelect?.(item)
-    }, [onSelect])
+    }, [activeIndex, handleSelect, isOpen, suggestions])
 
    
 

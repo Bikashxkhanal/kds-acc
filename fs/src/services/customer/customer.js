@@ -109,7 +109,7 @@ const downLoadWorkAndPaymentDataPdf = async (customerId, {to, from} = {}) => {
                 window.open(fileURL)
                 
                 
-            } catch (error) {
+            } catch {
                 throw new Error("Failed to download pdf");
                 
             }

@@ -1,59 +1,39 @@
-import { useEffect, useState } from "react";
+const Table = ({ tableData = [], className = '' }) => {
+  if (tableData.length === 0) {
+    return (
+      <div className="w-full rounded-xl border border-slate-200 bg-white px-5 py-12 text-center">
+        <i className="bi bi-inbox text-3xl text-slate-300 mb-2 block" />
+        <p className="text-sm text-slate-500">No data found</p>
+      </div>
+    );
+  }
 
-const Table = ({
-  tableData = [],
-  className = ''
-}) => {
-  
-  if(tableData.length ==0) return;
-  
-    const tableHeader = Object.keys(tableData?.[0]);
-    const tableBody = tableData?.map((data) => Object.values(data));
+  const tableHeader = Object.keys(tableData[0]);
+  const tableBody = tableData.map((data) => Object.values(data));
 
   return (
-    <div className="rounded-t-xl w-[90%] overflow-x-scroll">
-      <table className={`w-full text-sm border-separate border-spacing-0 ${className}`}>
-        
-        {/* HEADER */}
-        <thead className="bg-purple-400 ">
+    <div className={`w-full overflow-x-auto rounded-xl border border-slate-200 shadow-sm ${className}`}>
+      <table className="w-full text-sm border-collapse">
+        <thead className="kds-table-header">
           <tr>
-            {
-              tableHeader?.map((header, index, arr) => (
-                <th
-                  key={header}
-                  className={`
-                    px-5 py-4 border border-purple-400
-                    ${index === 0 ? "rounded-tl-sm" : ""}
-                    ${index === arr.length - 1 ? "rounded-tr-sm" : ""}
-                  `}
-                >
-                  {header}
-                </th>
-              ))
-            }
+            {tableHeader.map((header) => (
+              <th key={header} className="px-4 py-3 text-left font-semibold whitespace-nowrap">
+                {header}
+              </th>
+            ))}
           </tr>
         </thead>
-
-        {/* BODY */}
-        <tbody>
-          {
-            tableBody?.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-gray-50">
-                {
-                  row?.map((cell, colIndex) => (
-                    <td
-                      key={colIndex}
-                      className="px-5 py-4 border border-gray-200"
-                    >
-                      {cell}
-                    </td>
-                  ))
-                }
-              </tr>
-            ))
-          }
+        <tbody className="bg-white divide-y divide-slate-100">
+          {tableBody.map((row, rowIndex) => (
+            <tr key={rowIndex} className="hover:bg-slate-50/80 transition-colors">
+              {row.map((cell, colIndex) => (
+                <td key={colIndex} className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
         </tbody>
-
       </table>
     </div>
   );

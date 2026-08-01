@@ -14,6 +14,9 @@ import AccountDetailsOfCustomer from './features/customer/accountdetails.custome
 import StaffUI from './features/staff/staff.ui'
 import StaffList from './features/staff/stafflist'
 import StaffAccountDetails from './features/staff/staff.accountdetails.ui'
+import BillingsList from './features/billing/billings.list'
+import BillingForm from './features/billing/billing.form'
+import BillingDetail from './features/billing/billing.detail'
 
 
 const router = createBrowserRouter([
@@ -59,7 +62,19 @@ const router = createBrowserRouter([
             },
             {
               path: 'billings',
-              element: <h1 className='w-full text-center text-lg text-gray-500'>No content available to show.</h1>
+              element: <BillingsList />
+            },
+            {
+              path: 'billings/new',
+              element: <BillingForm />
+            },
+            {
+              path: 'billings/:id/edit',
+              element: <BillingForm />
+            },
+            {
+              path: 'billings/:id',
+              element: <BillingDetail />
             }
           ]
         }

@@ -29,7 +29,7 @@ const DownloadPreview = (
 
         document.addEventListener('mousedown',handleClickOutside )
         return () => document.removeEventListener('mousedown', handleClickOutside);
-   } , [])
+   } , [handleClickOut])
 
     return (
        <div ref={containerRef} className="w-[70%] h-[95%] absolute top-0 z-10 bg-white " >
@@ -44,8 +44,8 @@ const DownloadPreview = (
                     <span>{title}</span>
                </div>
                 {
-                    metaData?.map((pair, idx) => (
-                    <div className="w-full py-1 flex flex-row flex-start gap-5" >
+                    metaData?.map((pair) => (
+                    <div key={pair[0]} className="w-full py-1 flex flex-row flex-start gap-5" >
                       {
                             pair?.map((data, index) => (
                                 
@@ -73,8 +73,8 @@ const DownloadPreview = (
                         <thead>
                             <tr>
                             {
-                                tableHeaders.map((head, index) => (
-                                    <td key={index} className="text-center" >
+                                tableHeaders.map((head) => (
+                                    <td key={head} className="text-center" >
                                         { head?.toUpperCase()}
                                     </td>
                                 ))
@@ -86,7 +86,7 @@ const DownloadPreview = (
                                 //tabledata used for just iterating, we need to iterate to the number of rows(if data row length is 5 , then iteration should be 5)
                                 tableData?.map((td, idx) => (
                                     <tr key={idx} className="text-center" >
-                                    {tableHeaders?.map((key, index) => (       
+                                    {tableHeaders?.map((key) => (       
                                                 <td key={key}>
                                                     {
 

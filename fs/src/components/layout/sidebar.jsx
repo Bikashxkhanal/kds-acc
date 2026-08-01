@@ -1,24 +1,32 @@
-import {NavLink, Link} from 'react-router-dom'
-import { useEffect, useState } from 'react';
+import {NavLink} from 'react-router-dom'
 import { SIDEBAR_NAVIGATION , ICONS, LINKS} from "../../constants.js";
+
 const SideBar = () => {
-    const [sidebarList, setSideBarList] =  useState(SIDEBAR_NAVIGATION);
-    
-    useEffect(() => {
-        setSideBarList(SIDEBAR_NAVIGATION)
-    }, [ SIDEBAR_NAVIGATION])
-    
-        return <aside className="w-0 md:w-1/5 h-full bg-purple-600 flex flex-col items-center pt-3">
-                    {
-                       sidebarList?.map((sidebar, idx) => <NavLink 
-                       key={idx}
+    return (
+        <aside className="hidden md:flex w-56 lg:w-64 h-full bg-[#12355b] flex-col py-4 shadow-lg">
+            <div className="px-6 mb-6">
+                <p className="text-xs uppercase tracking-wider text-sky-300/70 font-medium">Navigation</p>
+            </div>
+            <nav className="flex flex-col gap-1 px-3">
+                {SIDEBAR_NAVIGATION?.map((sidebar, idx) => (
+                    <NavLink
+                        key={idx}
                         to={LINKS[sidebar]}
-                       className={({isActive}) => (`w-[97%] bg-purple-600 text-white py-4 pl-16 text-center text-xl flex flex-row flex-start gap-5 cursor-pointer ${isActive ? " bg-purple-800 border border-purple-800 rounded-sm" : ""}`)}>
-                        {<i className={`${ICONS[sidebar]} `} />}
-                        {sidebar.charAt(0).toUpperCase() + sidebar.slice(1)}</NavLink>)
-                    }
-                    
-                </aside>
-}
+                        className={({ isActive }) =>
+                            `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                isActive
+                                    ? "bg-white/15 text-white shadow-sm"
+                                    : "text-sky-100/80 hover:bg-white/10 hover:text-white"
+                            }`
+                        }
+                    >
+                        <i className={`${ICONS[sidebar]} text-lg`} />
+                        {sidebar.charAt(0).toUpperCase() + sidebar.slice(1)}
+                    </NavLink>
+                ))}
+            </nav>
+        </aside>
+    );
+};
 
 export default SideBar;

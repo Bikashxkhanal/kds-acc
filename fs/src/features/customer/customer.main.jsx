@@ -23,9 +23,8 @@ const CustomerMainUI = () => {
     ;(async() => {
             try {
             const response = await getAllCustomers({page : page, limit : PAGE_VALUE_LIMIT})
-            console.log(response?.data);
-            const finalTableData = response?.data?.rows;
-        setTotalRows(Math.round(Number(response?.data?.metaData?.[0]?.totalCustomers) / PAGE_VALUE_LIMIT))
+            const finalTableData = response?.data?.rows || [];
+        setTotalRows(Math.max(1, Math.ceil(Number(response?.data?.metaData?.[0]?.totalCustomers || 0) / PAGE_VALUE_LIMIT)))
         
          finalTableData?.forEach((eachData) => 
             eachData.Actions = <Link 
@@ -55,17 +54,11 @@ const CustomerMainUI = () => {
     }
     
     return (
-        <main className="w-full md:w-4/5 min-h-screen flex flex-col items-center gap-4 pt-5 ">
-            
-        <div className="flex flex-col gap-2" >
-            <SearchBar placeholder="Search customer" searchQueryFn={searchCustomer} 
-            />
-            <Button 
-            children="Add New Customer" size='sm'  
-            onClick={() => setIsAddCustomerFrmOpen(true)
-            } />
-
-        </div>
+        <main className="kds-page">
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+                <SearchBar placeholder="Search customer" searchQueryFn={searchCustomer} />
+                <Button children="Add New Customer" size="sm" onClick={() => setIsAddCustomerFrmOpen(true)} />
+            </div>
 
         {
             isAddCustomerFrmOpen && <Form useCase="addNewCustomer" 

@@ -1,30 +1,46 @@
-import { useState, useEffect, forwardRef } from "react";
-
+import { forwardRef } from "react";
 
 const InputBox = forwardRef(({
-    type='text',
-    placeholder="Enter your Email",
+    type = 'text',
+    placeholder = "Enter value",
     onChange,
     value,
     readOnly = false,
-    className, 
+    className = '',
+    label,
+    required = false,
+    icon,
+    error,
     ...rest
-    // manages input box based on use cases, w-full for login, w-1/2 on work form , 
-
 }, ref) => {
-    const baseStyle = `outline-none bg-white w-full h-10 px-3 py-2 border border-white rounded-sm ${className}`;
-   
-
-    return <input 
-            ref={ref}
-            className={`${baseStyle}`}
-            type={type}
-            placeholder={placeholder}
-            {...(value !== undefined) ? {value} : {}}
-            {...(onChange ? {onChange} : {})}
-            readOnly={readOnly}
-            {...rest}
-        />
-})
+    return (
+        <div className="w-full">
+            {label && (
+                <label className="kds-label">
+                    {label}
+                    {required && <span className="text-red-500 ml-0.5">*</span>}
+                </label>
+            )}
+            <div className="relative">
+                {icon && (
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                        <i className={`bi ${icon}`} />
+                    </span>
+                )}
+                <input
+                    ref={ref}
+                    className={`kds-input ${icon ? 'pl-9' : ''} ${readOnly ? 'bg-slate-50' : ''} ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-200' : ''} ${className}`}
+                    type={type}
+                    placeholder={placeholder}
+                    {...(value !== undefined ? { value } : {})}
+                    {...(onChange ? { onChange } : {})}
+                    readOnly={readOnly}
+                    {...rest}
+                />
+            </div>
+            {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+        </div>
+    );
+});
 
 export default InputBox;

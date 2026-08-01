@@ -49,21 +49,21 @@ const StaffAccountDetails = () => {
                  const finalValues = getFinalCreditOrDebitValue(response?.[1]?.data?.result);
                 response?.[1]?.data?.result?.forEach((detail, idx) => detail.Total = finalValues[idx])
 
-                const headers = Object.keys(response?.[1]?.data?.result?.[0])
+                const headers = response?.[1]?.data?.result?.length ? Object.keys(response?.[1]?.data?.result?.[0]) : []
                 setTableHeaders(headers);
 
-                const details = response?.[1]?.data?.result?.map((each) => Object.values(each))
+                const details = response?.[1]?.data?.result?.map((each) => Object.values(each)) || []
                 
                 setStaffRemuAndPayoutDetails(details);
                 
-                setTotalCount(response?.[1]?.data?.totalRows)
+                setTotalCount(Math.max(1, Math.ceil(Number(response?.[1]?.data?.totalRows || 0) / LIMIT)))
             
 
             } catch (error) {
                 toast.error(error?.data?.message);
             }
         })()
-    }, [page])
+    }, [id, page])
 
     // console.log(staffPersonalDetails);
     // console.log(staffRemuAndPayoutDetails);
@@ -85,8 +85,8 @@ const StaffAccountDetails = () => {
            setIsPreviewActive(true)
             
         } catch (error) {
-            toast.error(error?.message);
-            handlePreviewClick(false)
+            toast.error(error?.message || "Failed to load preview");
+            setIsPreviewActive(false)
         }
     }
 
@@ -97,7 +97,7 @@ const StaffAccountDetails = () => {
              await downloadStaffDetailsPDF(id , {startDate : selectedDates?.startDate?.bsDate, endDate : selectedDates?.endDate?.bsDate})
 
         } catch (error) {
-            
+            toast.error(error?.message || "Failed to download PDF")
         }
     }
 
@@ -181,7 +181,7 @@ const StaffAccountDetails = () => {
                     </table>
                 </div>
                     
-                <PaginationBar current={page} total={totalCount} />
+                <PaginationBar current={page} total={totalCount} onPageChange={(page) => setPage(page)} />
             </div>
         )
 

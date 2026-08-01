@@ -1,307 +1,273 @@
-import connectPool from "../db/index.js";
+import connectMongo from "../db/mongo.js";
+import Staff from "../models/staff.model.js";
+import StaffRemuneration from "../models/staffRemuneration.model.js";
+import StaffPayment from "../models/staffPayment.model.js";
+import { getNextSequence } from "../utils/autoIncrement.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import puppeteer from "puppeteer";
 
 const getAStaffPersonalDtls = async (staff_id) => {
-    try {
-       const [details] = await connectPool.execute(
-        `SELECT * FROM staff WHERE id = ? `, [staff_id]
-    );
+    await connectMongo();
+    const details = await Staff.findOne({ id: Number(staff_id) }).lean();
+    return details || null;
+}
 
-  return details?.[0]
-    
-    } catch (error) {
-        throw new ApiError(500, error?.message)
+const buildStaffLedgerRows = (remunerations = [], payments = []) => {
+    const remuRows = remunerations.map((sr) => ({
+        Date: sr.date,
+        Discription: `${sr.title} ${sr.discription || ""}`.trim(),
+        Credit: null,
+        Debit: sr.amount
+    }));
+
+    const payRows = payments.map((sp) => ({
+        Date: sp.date,
+        Discription: sp.discription,
+        Credit: sp.amount,
+        Debit: null
+    }));
+
+    return [...remuRows, ...payRows].sort((a, b) => new Date(b.Date) - new Date(a.Date));
+};
+
+const getAStaffStippendAndPaymentDetailsAndTotalRowCount = async (staff_id, { limit, offset, startDate, endDate } = {}) => {
+    await connectMongo();
+    const sid = Number(staff_id);
+
+    const dateFilter = (field) => {
+        if (startDate && endDate) {
+            const from = new Date(startDate);
+            const to = new Date(endDate);
+            to.setHours(23, 59, 59, 999);
+            return { [field]: { $gte: from, $lte: to } };
+        }
+        return {};
+    };
+
+    const [remunerations, payments] = await Promise.all([
+        StaffRemuneration.find({ staff_id: sid, ...dateFilter("date") }).lean(),
+        StaffPayment.find({ staff_id: sid, ...dateFilter("date") }).lean()
+    ]);
+
+    const allRows = buildStaffLedgerRows(remunerations, payments);
+    const totalRows = allRows.length;
+
+    let result = allRows;
+    if (limit != null && offset != null) {
+        result = allRows.slice(offset, offset + limit);
     }
+
+    return { result, totalRows };
 }
 
-// this function will return stippend and payment details as well as total row count of the stippend and payment of a customer
-const getAStaffStippendAndPaymentDetailsAndTotalRowCount = async (staff_id, {limit , offset, startDate, endDate}) => {
-    try {
+const isStaffExists = async ({ phone_number, staff_id } = {}) => {
+    await connectMongo();
 
-        let query = `
-                        SELECT 
-                            sr.date AS Date,
-                            CONCAT(sr.title,' ' , sr.discription) AS Discription, 
-                            NULL AS Credit, 
-                            sr.amount AS Debit
-                        FROM 
-                            staff_remunation_tbh sr
-                        WHERE 
-                            sr.staff_id = ?
-                        UNION ALL
-                        SELECT 
-                            sp.date AS Date,
-                            sp.discription AS Discription,
-                            sp.amount AS Credit,
-                            NULL AS Debit
-                        FROM 
-                            staff_payment_tbh sp
-                        WHERE
-                            sp.staff_id = ?
-    
-                    `
-        if(startDate && endDate){
-            query += ` AND date BETWEEN ${startDate} AND ${endDate} ORDER BY date DESC`
-        }
-        if(limit && offset && startDate && endDate){
-            query += ` LIMIT ${limit} OFFSET ${offset}`
-        }
+    const conditions = [];
+    if (staff_id != null) conditions.push({ id: Number(staff_id) });
+    if (phone_number != null) conditions.push({ phone_number });
 
-        if(limit && offset && (!startDate && !endDate)){
-            query += `ORDER BY date DESC LIMIT ${limit} OFFSET ${offset}`
-        }
+    if (!conditions.length) throw new ApiError(400, "Staff Id is required");
 
-        const [rowsCount] = await connectPool.execute(`SELECT COUNT(*) AS rowsCount FROM (
-            ${query} )AS stippendAndPayout`, [staff_id, staff_id])
+    const staff = await Staff.findOne({ $or: conditions }).select("id").lean();
+    return Boolean(staff);
+}
 
-        const totalRows = rowsCount?.[0]?.rowsCount;
-        
-        const [result] = await connectPool.execute(
-            query, [staff_id, staff_id]
-        )
+const addAStaff = asyncHandler(async (req, res) => {
+    const { name, phone_number, address, dob, salary } = req.body;
 
-        return {result, totalRows}
-        
-    } catch (error) {
-        throw new ApiError(500, error?.message)
+    if (name?.trim() == null || phone_number?.trim() == null || address?.trim() == null || dob?.trim() == null || !salary) {
+        throw new ApiError(400, "All details of staff is required");
     }
-}
 
+    if (salary <= 0) throw new ApiError(400, "Salary Cannot be negative or Zero");
 
+    const isExists = await isStaffExists({ phone_number })
+    if (isExists) throw new ApiError(400, "Phone number already exist")
 
-const isStaffExists = async({phone_number, staff_id} = {}) =>{
-    if(phone_number === undefined) phone_number = null
-    if(staff_id === undefined) staff_id = null
-    
-    
-    if(phone_number === null && staff_id === null) throw new ApiError(400, "Staff Id is required")
-
-    const [staff] = await connectPool.execute(
-        `SELECT 1 FROM staff WHERE id = ? OR phone_number = ? `, [staff_id, phone_number]
-    )
-   
-   return staff?.length == 0 ? false : true
-}
-
-const addAStaff = asyncHandler(async(req, res) => {
-    const {name, phone_number, address, dob, salary} = req.body;
-
-    if(name?.trim() == null || phone_number?.trim() == null || address?.trim() == null || dob?.trim() == null || !salary) throw new ApiError(400, "All details of staff is required")
-    
-    if(salary <= 0) throw new ApiError(400, "Salary Cannot be negative or Zero");
-
-    const isExists = await isStaffExists({phone_number})
-    if(isExists ==  false) throw new ApiError(400, "Phone number already exist")
-
-    const [result] = await connectPool.execute(
-        `INSERT INTO staff (name, phone_number, address, dob, salary) VALUES (?,?,?,?,?)`, [name, phone_number, address, dob, salary]
-    )
+    await connectMongo();
+    const id = await getNextSequence("staff");
+    await Staff.create({
+        id,
+        name,
+        phone_number,
+        address,
+        dob: new Date(dob),
+        salary: Number(salary)
+    });
 
     return res.status(200).json(
-        new ApiResponse(200, "Staff addeed successfully", {lastInsertedId : result?.insertId})
+        new ApiResponse(200, "Staff addeed successfully", { lastInsertedId: id })
     )
-    
 })
 
-// const getAllStaffs = asyncHandler(async(req, res) => {})
+const getAStaffPersonalDetails = asyncHandler(async (req, res) => {
+    const { staff_id } = req?.params;
 
-const getAStaffPersonalDetails = asyncHandler(async(req, res) => {
+    if (!staff_id) throw new ApiError(400, "Staff id is required")
+    if (isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
 
-    const {staff_id} = req?.params;
+    const isExists = await isStaffExists({ staff_id })
+    if (isExists == false) throw new ApiError(400, "Staff with such id doesnot exist")
 
-    if(!staff_id) throw new ApiError(400, "Staff id is required")
-    if(isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
-    
-    const isExists = await isStaffExists({staff_id})
-    if(isExists == false) throw new ApiError(400, "Staff with such id doesnot exist")
-    
     const staffDetails = await getAStaffPersonalDtls(staff_id);
-    // console.log(staffDetails);
-    
+
     return res.status(200).json(
         new ApiResponse(200, "Staff Details fetched successfully!", staffDetails)
     )
-
 })
 
-//add payment done to staff as well salary and other benfits (money)
-const addAStaffRemunationDetails = asyncHandler(async(req, res) => {
-    // console.log('here');
-    const {staff_id, title, discription, amount} = req?.body;
+const addAStaffRemunationDetails = asyncHandler(async (req, res) => {
+    const { staff_id, title, discription, amount, date } = req?.body;
 
-    if(!staff_id) throw new ApiError("Staff Id is required")
+    if (!staff_id) throw new ApiError("Staff Id is required")
 
-    if(title?.trim() == null | discription?.trim() == null | !amount) throw new ApiError(400, "All details of stippend or payout is required")
-    
-    if(isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
+    if (title?.trim() == null || discription?.trim() == null || !amount) {
+        throw new ApiError(400, "All details of stippend or payout is required")
+    }
 
-    if(amount <= 0) throw new ApiError(400, "Invalid amount, must be greater than 0")
-    
-    const isExists = await isStaffExists({staff_id})
-    if(isExists == false) throw new ApiError(400, "No staff with such id exist")
-    
-    const [result] = await connectPool.execute(
-        `INSERT INTO staff_remunation_tbh (staff_id, title, discription, amount) VALUES (?,?,?,?)`, [staff_id, title, discription, amount]
-    )
+    if (isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
+    if (amount <= 0) throw new ApiError(400, "Invalid amount, must be greater than 0")
+
+    const isExists = await isStaffExists({ staff_id })
+    if (isExists == false) throw new ApiError(400, "No staff with such id exist")
+
+    await connectMongo();
+    const id = await getNextSequence("staffRemuneration");
+    await StaffRemuneration.create({
+        id,
+        staff_id: Number(staff_id),
+        title,
+        discription,
+        amount: Number(amount),
+        date: date ? new Date(date) : new Date()
+    });
 
     return res.status(200).json(
-        new ApiResponse(200, "Staff Stippend details added successfully!",{lastInsertedId : result.insertId})
+        new ApiResponse(200, "Staff Stippend details added successfully!", { lastInsertedId: id })
     )
-
 })
 
-const addAStaffPayoutDetails = asyncHandler(async(req, res) => {
-    // console.log('here');
-    const {staff_id, discription, amount} = req?.body;
+const addAStaffPayoutDetails = asyncHandler(async (req, res) => {
+    const { staff_id, discription, amount, date } = req?.body;
 
-    if(!staff_id) throw new ApiError("Staff Id is required")
+    if (!staff_id) throw new ApiError("Staff Id is required")
 
-    if(discription?.trim() == null || !amount) throw new ApiError(400, "All details of stippend or payout is required")
-    
-    if(isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
+    if (discription?.trim() == null || !amount) {
+        throw new ApiError(400, "All details of stippend or payout is required")
+    }
 
-    if(amount <= 0) throw new ApiError(400, "Invalid amount, must be greater than 0")
-    
-    const staff = await isStaffExists({staff_id})
-    if(staff.length == 0) throw new ApiError(400, "No staff with such id exist")
-    
-    const [result] = await connectPool.execute(
-        `INSERT INTO staff_payment_tbh (staff_id, discription, amount) VALUES (?,?,?)`, [staff_id, discription, amount]
-    )
+    if (isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
+    if (amount <= 0) throw new ApiError(400, "Invalid amount, must be greater than 0")
+
+    const staff = await isStaffExists({ staff_id })
+    if (staff == false) throw new ApiError(400, "No staff with such id exist")
+
+    await connectMongo();
+    const id = await getNextSequence("staffPayment");
+    await StaffPayment.create({
+        id,
+        staff_id: Number(staff_id),
+        discription,
+        amount: Number(amount),
+        date: date ? new Date(date) : new Date()
+    });
 
     return res.status(200).json(
-        new ApiResponse(200, "Staff payout details added successfully!",{lastInsertedId : result.insertId})
+        new ApiResponse(200, "Staff payout details added successfully!", { lastInsertedId: id })
     )
-
 })
 
-//add payment done to staff as well salary and other benfits (money)
-const getAStaffStippendAndPayout = asyncHandler(async(req, res) => {
-    const {staff_id} = req?.params;
+const getAStaffStippendAndPayout = asyncHandler(async (req, res) => {
+    const { staff_id } = req?.params;
+    const { page = 1, limit = 10 } = req?.query;
 
-    const {page = 1, limit = 10} = req?.query;
-
-    if(isNaN(page) || isNaN(limit)) throw new ApiError(400, "Invalid request, query must be integer");
+    if (isNaN(page) || isNaN(limit)) throw new ApiError(400, "Invalid request, query must be integer");
 
     const finalLimit = Number(limit);
-    // console.log(page);
-    
-    const offset =  (Number(page) -1) * finalLimit
+    const offset = (Number(page) - 1) * finalLimit
 
-    if(!staff_id) throw new ApiError(400, "Staff id is required")
-    
-    if(isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
+    if (!staff_id) throw new ApiError(400, "Staff id is required")
+    if (isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
 
     try {
-        const isStaff = await isStaffExists({staff_id})
-    
-        if(isStaff.length == 0) throw new ApiError(400, "No  staff exist with such id")
-        
-        const {result, totalRows} = await getAStaffStippendAndPaymentDetailsAndTotalRowCount(staff_id, {limit: finalLimit , offset : offset});
-    
+        const isStaff = await isStaffExists({ staff_id })
+
+        if (isStaff == false) throw new ApiError(400, "No staff exist with such id")
+
+        const { result, totalRows } = await getAStaffStippendAndPaymentDetailsAndTotalRowCount(staff_id, {
+            limit: finalLimit,
+            offset
+        });
+
         res.status(200).json(
-            new ApiResponse(200, "Staff Stippend and payout details fetched successfully", {result, totalRows} )
+            new ApiResponse(200, "Staff Stippend and payout details fetched successfully", { result, totalRows })
         )
     } catch (error) {
         throw new ApiError(500, error?.message)
     }
+})
 
-}) 
-
- //will be returning name and id only
 const getSearchedStaffs = asyncHandler(async (req, res) => {
-
-    const { q = ''} = req?.query;
-    if(!q?.trim()){
+    const { q = '' } = req?.query;
+    if (!q?.trim()) {
          throw new ApiError(400, "Must have search query");
     }
-    // console.log("Before db call");
 
-    const searchQuery = `SELECT id, name FROM staff WHERE LOWER(name) LIKE LOWER(?)`
+    await connectMongo();
+    const response = await Staff.find({
+        name: { $regex: q.trim(), $options: "i" }
+    }).select("id name").lean();
 
-    try {
-        const [response] = await connectPool.execute(
-                    searchQuery, [`%${q}%`]
-        );
-       
-        return res.status(200).json(
-        new ApiResponse(
-            200, 
-            "Staff Fetched successfully", response
-        )
+    return res.status(200).json(
+        new ApiResponse(200, "Staff Fetched successfully", response)
     )
-
-    } catch (error) {
-        console.log(error?.message); 
-        throw new ApiError(500, error?.message)
-    }
-
 })
 
 const getAllStaffs = asyncHandler(async (req, res) => {
-    const {page = 1, limit = 10} = req?.query;
+    const { page = 1, limit = 10 } = req?.query;
 
-    if(isNaN(page) || isNaN(limit))  throw new ApiError(401, "Invalid request, page and limit must be a number");
-    
+    if (isNaN(page) || isNaN(limit)) throw new ApiError(401, "Invalid request, page and limit must be a number");
+
     const offset = (Number(page) - 1) * Number(limit)
     const finalLimit = Number(limit);
 
-    const staffDetailQuery = `SELECT id, name, 
-                            phone_number,address FROM staff LIMIT ${finalLimit} OFFSET ${offset}`
+    await connectMongo();
 
-    const metaDataQuery = `SELECT COUNT(*) AS staffCount FROM staff`
+    const [staffDetails, staffCount] = await Promise.all([
+        Staff.find({})
+            .select("id name phone_number address")
+            .skip(offset)
+            .limit(finalLimit)
+            .lean(),
+        Staff.countDocuments()
+    ]);
 
-    try {
-        
-        
-        const [staffDetails] = await connectPool.execute(
-            staffDetailQuery
-        );
-        console.log("Here");
-        
-        
-        const [metaData]  = await connectPool.execute(metaDataQuery)
+    const metaData = [{ staffCount }];
 
-        return res.status(200).json(
-            new ApiResponse(
-                200, 
-                "Staff Details fetched successfully", 
-                {
-                    staffDetails, 
-                    metaData
-                }
-            )
-        )
-
-    } catch (error) {
-        throw new ApiError(500, error?.message)
-    }
-    
+    return res.status(200).json(
+        new ApiResponse(200, "Staff Details fetched successfully", { staffDetails, metaData })
+    )
 })
 
 const getAStaffDownloadPreviewDetails = asyncHandler(async (req, res) => {
     try {
-        const {staff_id} = req?.params;
-        const {startDate , endDate} = req?.query;
+        const { staff_id } = req?.params;
+        const { startDate, endDate } = req?.query;
 
-        if(!startDate?.trim() || !endDate?.trim()){
+        if (!startDate?.trim() || !endDate?.trim()) {
             throw new ApiError(400, "date range must be selected")
         }
 
-        // console.log(startDate);
-        
-        const staffDetails = await getAStaffPersonalDtls(staff_id); 
-        
-        
-        const {result, rowsCount} = await getAStaffStippendAndPaymentDetailsAndTotalRowCount(staff_id, {startDate: startDate, endDate : endDate});
+        const staffDetails = await getAStaffPersonalDtls(staff_id);
+        const { result } = await getAStaffStippendAndPaymentDetailsAndTotalRowCount(staff_id, { startDate, endDate });
 
         return res.status(200).json(
             new ApiResponse(
-                200, "preview data fetched successfully", 
-                {metaData : staffDetails, tableData : result}
+                200, "preview data fetched successfully",
+                { metaData: staffDetails, tableData: result }
             )
         )
     } catch (error) {
@@ -309,195 +275,99 @@ const getAStaffDownloadPreviewDetails = asyncHandler(async (req, res) => {
     }
 })
 
-const downlaodAStaffStippendAndPayoutDetailsPDF  = asyncHandler(async (req, res) => {
+const downlaodAStaffStippendAndPayoutDetailsPDF = asyncHandler(async (req, res) => {
+    const { staff_id } = req?.params;
+    const { from, to } = req?.query;
 
-    const {staff_id} = req?.params;
-    console.log("Inside download");
-    
-    
-    // console.log(req?.params);
-    
-    const { from,  to} = req?.query;
-    console.log(req?.query);
-    
-
-    if(!staff_id?.trim() || staff_id?.trim() === ':staff_id') throw new ApiError(400, "Staff must be selected");
-
-    if(!from?.trim() || !to?.trim()) throw new ApiError(400, "Both start and end date are required");
+    if (!staff_id?.trim() || staff_id?.trim() === ':staff_id') throw new ApiError(400, "Staff must be selected");
+    if (!from?.trim() || !to?.trim()) throw new ApiError(400, "Both start and end date are required");
 
     try {
-
-        const isExists = await isStaffExists({staff_id : staff_id});
-        // console.log(isExists);
-        
-        if(isExists == false) throw new ApiError(400, "Invalid staff ID")
+        const isExists = await isStaffExists({ staff_id });
+        if (isExists == false) throw new ApiError(400, "Invalid staff ID")
 
         const staffDetails = await getAStaffPersonalDtls(staff_id);
-
-        console.log(staffDetails);
-        
-
-        const {result : staffWorkAndPayoutDetails, totalRows} = await getAStaffStippendAndPaymentDetailsAndTotalRowCount(staff_id , {startDate : from , endDate : to})
-
+        const { result: staffWorkAndPayoutDetails } = await getAStaffStippendAndPaymentDetailsAndTotalRowCount(
+            staff_id,
+            { startDate: from, endDate: to }
+        )
 
         function getFinalValue(data){
             const values = []
             for (let i = 0; i< data.length ; i++){
                 let sum = 0;
             for(let j = i ; j < data.length; j++){
-                    sum += data[j].Credit - data[j].Debit
-            } 
+                    sum += (data[j].Credit || 0) - (data[j].Debit || 0)
+            }
             values.push(sum);
             }
             return values
         }
 
         let tableHeaders = null;
-        if(staffWorkAndPayoutDetails?.length > 0){
+        if (staffWorkAndPayoutDetails?.length > 0) {
             const calculatedTotalStepByStep = getFinalValue(staffWorkAndPayoutDetails)
-            // console.log(calculatedTotalStepByStep);
-        
-        staffWorkAndPayoutDetails?.forEach((eachData, idx) =>eachData.Total = calculatedTotalStepByStep[idx]);
-         tableHeaders =  Object.keys(staffWorkAndPayoutDetails?.[0]);
+        staffWorkAndPayoutDetails?.forEach((eachData, idx) => eachData.Total = calculatedTotalStepByStep[idx]);
+         tableHeaders = Object.keys(staffWorkAndPayoutDetails?.[0]);
         }
 
           const htmlTemplate = `
                 <html>
                 <head>
                 <style>
-                    /* General page styling for PDF */
                         body {
                             font-family: Arial, sans-serif;
                             font-size: 12px;
                             color: #333;
                             margin: 20px;
                             text-align : center
-                            
                         }
-
                         .customer-container{
                             width: 100%;
                             display : flex;
                             flex-direction : column;
                             gap : 3px;
                         }
-
                         #customer-name{
                             font-size : 16px;
                             font-weight : bold;
                         }
-                        
                         .customer-oth-details {
                                width: 100%;
                                 text-align: center;
                                 display: flex;
                                 flex-direction: row;
                                 justify-content: around;
-                                
-                               
                             }
-
                         .customer-oth-details span{
                             width : 100%;
                             margin-top : 5px;
                         }
-
-
-                        /* Table container */
-                        .table-container {
-                            width: 100%;
-                            margin-top: 20px;
-                        }
-
-                        /* Table styling */
                         table {
                             width: 100%;
                             border-collapse: collapse;
-                            table-layout: fixed; /* important for PDF */
+                            table-layout: fixed;
                         }
-
-                   
-                            th:nth-child(2),
-                            td:nth-child(2) {
-                                width: 35%;
-                            }
-
-                           
-                            th:nth-child(1),
-                            td:nth-child(1) {
-                                width: 15%;
-                            }
-
-                            th:nth-child(3),
-                            td:nth-child(3) {
-                                width: 16%;
-                            }
-
-                            th:nth-child(4),
-                            td:nth-child(4) {
-                                width: 16%;
-                            }
-                            th:nth-child(5),
-                            td:nth-child(5) {
-                                width: 18%;
-                            }
-
-                        /* Table header */
-                        thead {
-                            background-color: #f2f2f2;
-                        }
-
+                            th:nth-child(2), td:nth-child(2) { width: 35%; }
+                            th:nth-child(1), td:nth-child(1) { width: 15%; }
+                            th:nth-child(3), td:nth-child(3) { width: 16%; }
+                            th:nth-child(4), td:nth-child(4) { width: 16%; }
+                            th:nth-child(5), td:nth-child(5) { width: 18%; }
+                        thead { background-color: #f2f2f2; display: table-header-group; }
                         thead th {
                             font-weight: bold;
                             text-align: left;
                             padding: 10px;
                             border: 1px solid #ccc;
                         }
-
-                        /* Table body */
                         tbody td {
                             padding: 8px 10px;
                             border: 1px solid #ccc;
-                            word-wrap: break-word; /* prevent overflow */
+                            word-wrap: break-word;
                         }
-
-                        /* Alternate row shading */
-                        tbody tr:nth-child(even) {
-                            background-color: #fafafa;
-                        }
-
-                        /* Footer (if needed) */
-                        tfoot td {
-                            font-weight: bold;
-                            padding: 10px;
-                            border: 1px solid #ccc;
-                            background-color: #f9f9f9;
-                        }
-
-                        /* Alignment helpers */
-                        .text-center {
-                            text-align: center;
-                        }
-
-                        .text-right {
-                            text-align: right;
-                        }
-
-                        /* Prevent page break inside rows */
-                        tr {
-                            page-break-inside: avoid;
-                        }
-
-                        /* Optional: Header repeat on new pages */
-                        thead {
-                            display: table-header-group;
-                        }
-
-                        tfoot {
-                            display: table-footer-group;
-                        }
+                        tbody tr:nth-child(even) { background-color: #fafafa; }
+                        tr { page-break-inside: avoid; }
                 </style>
-                
                 </head>
                     <body>
                     <h1>REPORT</h1>
@@ -505,68 +375,48 @@ const downlaodAStaffStippendAndPayoutDetailsPDF  = asyncHandler(async (req, res)
                     <div id='customer-name' > <span>${staffDetails?.name?.toUpperCase()} </span> </div>
                     <div class='customer-oth-details' >
                     <div>
-                    <span>Phone Number ${staffDetails?.phone_number} </span> 
-                    <span>Address ${staffDetails?.address} </span> 
+                    <span>Phone Number ${staffDetails?.phone_number} </span>
+                    <span>Address ${staffDetails?.address} </span>
                     </div>
                     <div>
-
-                    <span>DOB ${ staffDetails?.dob} </span> 
-                    <span>Salary ${staffDetails?.salary} </span> 
+                    <span>DOB ${ staffDetails?.dob ? new Date(staffDetails.dob).toISOString().split("T")[0] : ""} </span>
+                    <span>Salary ${staffDetails?.salary} </span>
                     </div>
                     </div>
                     </div>
                     <p>From ${from} To ${to} </p>
-                   
                     ${staffWorkAndPayoutDetails?.length == 0 ? `<p>No data to show for selected range </p>` : `
                            <table>
                         <thead>
                                 <tr>
-                                    ${
-                                    tableHeaders.map((header) => (
-                                        `<th>${header} </th> `
-                                    ))
-                                    }
-                                
+                                    ${tableHeaders.map((header) => (`<th>${header} </th> `)).join("")}
                                 </tr>
-                        
                         </thead>
-                        
                         <tbody>
-                            
-                       ${
-                            staffWorkAndPayoutDetails?.map((eachData) => (
+                       ${staffWorkAndPayoutDetails?.map((eachData) => (
                                 `<tr>
-                                    <td>${ new Date(eachData.date).toLocaleDateString("en-NP")}</td>
+                                    <td>${ new Date(eachData.Date).toLocaleDateString("en-NP")}</td>
                                     <td class="discription" >${eachData.Discription}</td>
                                     <td>${eachData.Credit ?? '-'}</td>
                                     <td>${eachData.Debit ?? '-'}</td>
                                     <td>${eachData.Total }</td>
                                 </tr>`
-                            ))
-                        } 
-
+                            )).join("")}
                          </tbody>
-                    
                     </table>
-                        
-                        
                         `}
-                 
                     </body>
-                
                 </html>
-
         `
 
         const browser = await puppeteer.launch();
         const page = await browser.newPage()
                     await page.setContent(htmlTemplate);
-        
-                    const pdf = await page.pdf(
-            {
-                format: 'A4',
-                printBackground: true,
-                displayHeaderFooter : true,
+
+                    const pdf = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            displayHeaderFooter : true,
                  footerTemplate: `
                         <div style="
                         width: 100%;
@@ -598,15 +448,14 @@ const downlaodAStaffStippendAndPayoutDetailsPDF  = asyncHandler(async (req, res)
     }
 })
 
-export{
+export {
     addAStaff,
     getAStaffPersonalDetails,
     addAStaffRemunationDetails,
     getAStaffStippendAndPayout,
-    getSearchedStaffs, 
-    addAStaffPayoutDetails, 
+    getSearchedStaffs,
+    addAStaffPayoutDetails,
     getAllStaffs,
     getAStaffDownloadPreviewDetails,
     downlaodAStaffStippendAndPayoutDetailsPDF
 }
-

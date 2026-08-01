@@ -1,23 +1,38 @@
 import { SIDEBAR_NAVIGATION } from "../../constants"
 import { NavLink } from "react-router-dom"
 import { LINKS, ICONS } from "../../constants"
-const HangingSideBar = ({show = false}) => {
-    return (
-            <aside className={`bg-purple-400 h-screen py-2 px-4 border border-purple-400 
-                    rounded-r-sm text-sm flex flex-col items-center fixed top-0 left-0 z-10 shadow-3xl
-                    transition-all delay-500 duration-1000 ease-in-out ${show ? 'opacity-120 translate-x-0' : 'opacity-0 -translate-x-30'} `}>
-                    <h1 className="text-4xl text-white text-bold mb-7">KDS</h1>
-                    {
-                       SIDEBAR_NAVIGATION?.map((sidebar, idx) => <NavLink 
-                       key={idx}
-                        to={LINKS[sidebar]}
-                       className={({isActive}) => (`w-[97%] px-7 mr-3 py-2 text-black text-center text-xl flex flex-row flex-start gap-2 ${isActive ? " bg-purple-800 border border-purple-800 rounded-sm" : ""}`)}>
-                        {<i className={`${ICONS[sidebar]} `} />}
-                        {sidebar.charAt(0).toUpperCase() + sidebar.slice(1)}</NavLink>)
-                    }
-                    
-                </aside>
-    )
-}
 
-export default HangingSideBar
+const HangingSideBar = ({ show = false, onClose }) => {
+    return (
+        <aside className={`bg-[#12355b] h-screen py-6 px-4 flex flex-col fixed top-0 left-0 z-50 w-64 shadow-2xl
+                transition-transform duration-300 ease-in-out ${show ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="flex items-center justify-between mb-8 px-2">
+                <h1 className="text-2xl font-bold text-white">KDS</h1>
+                <button type="button" onClick={onClose} className="text-white/70 hover:text-white cursor-pointer">
+                    <i className="bi bi-x-lg text-xl" />
+                </button>
+            </div>
+            <nav className="flex flex-col gap-1">
+                {SIDEBAR_NAVIGATION?.map((sidebar, idx) => (
+                    <NavLink
+                        key={idx}
+                        to={LINKS[sidebar]}
+                        onClick={onClose}
+                        className={({ isActive }) =>
+                            `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                                isActive
+                                    ? "bg-white/15 text-white"
+                                    : "text-sky-100/80 hover:bg-white/10 hover:text-white"
+                            }`
+                        }
+                    >
+                        <i className={`${ICONS[sidebar]} text-lg`} />
+                        {sidebar.charAt(0).toUpperCase() + sidebar.slice(1)}
+                    </NavLink>
+                ))}
+            </nav>
+        </aside>
+    );
+};
+
+export default HangingSideBar;

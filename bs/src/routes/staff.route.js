@@ -21,7 +21,7 @@ staffRouter.route("/all").get(verifyJWT, getAllStaffs)
 staffRouter.route("/").get(verifyJWT, getSearchedStaffs)
 staffRouter.route("/:staff_id").get(verifyJWT, getAStaffPersonalDetails)
 staffRouter.route("/remunation").post(verifyJWT, addAStaffRemunationDetails)
-staffRouter.route("payout").post(verifyJWT, addAStaffPayoutDetails)
+staffRouter.route("/payout").post(verifyJWT, addAStaffPayoutDetails)
 staffRouter.route("/:staff_id/remu-payout-details").get(verifyJWT, getAStaffStippendAndPayout)
 staffRouter.route("/:staff_id/preview").get(verifyJWT, getAStaffDownloadPreviewDetails)
 staffRouter.route("/:staff_id/download").get(verifyJWT, downlaodAStaffStippendAndPayoutDetailsPDF)
@@ -30,4 +30,3 @@ staffRouter.route("/:staff_id/download").get(verifyJWT, downlaodAStaffStippendAn
 export{
     staffRouter
 }
-

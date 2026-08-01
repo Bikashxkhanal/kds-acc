@@ -110,7 +110,7 @@ const downloadStaffDetailsPDF = async (staff_id, {startDate, endDate}) => {
            window.open(fileUrl);
            
 
-        } catch (error) {
+        } catch {
             throw new Error("Failed to download pdf");
         }
 }

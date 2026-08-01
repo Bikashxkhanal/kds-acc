@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 
 
-const StaffUI = ({}) => {
+const StaffUI = () => {
 
     const [activeForm, setActiveForm] = useState('remu');
     const [staffId, setStaffId] = useState(null);

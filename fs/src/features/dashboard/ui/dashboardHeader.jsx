@@ -7,120 +7,95 @@ import { useNavigate } from "react-router-dom";
 import { clearAuthState } from "../../../store/authSlice.js";
 import HangingSideBar from "../../../components/layout/hanging.sidebar.jsx";
 
-const DashboardHeader = ({
-    isSideBarRequired = false
-}) => {
-    const stat = window.innerWidth <= 768 ? true : false;
+const DashboardHeader = () => {
+    const stat = window.innerWidth <= 768;
     const [isActiveBrgIcn, setIsActiveBrgIcn] = useState(stat);
     const [isOpen, setIsOpen] = useState(false);
     const [currentTime, setCurrentTime] = useState((new Date()).toLocaleString())
-    const {user} = useSelector(state => state?.auth);
-
-    //passing data to parent
-    useEffect(() => 
-        {
-            isSideBarRequired(!isActiveBrgIcn)
-        }, [isActiveBrgIcn])
-
+    const { user } = useSelector(state => state?.auth);
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    
+
     useEffect(() => {
         const handleResize = () => {
-            if(innerWidth <= 768){
-            setIsActiveBrgIcn(true)
-        }else{
-            setIsActiveBrgIcn(false)
-        }
-
-        window.addEventListener('resize', handleResize)
-
-        return () => window.removeEventListener('resize', handleResize)
-        }
+            setIsActiveBrgIcn(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, [])
-    
+
     useEffect(() => {
-      const interval =  setInterval(() => {
-       const  curTime = getCurrentTime();
-        setCurrentTime(curTime);
-       
-    }, 1000);
-
-    return () => clearInterval(interval)
-
+        const interval = setInterval(() => setCurrentTime(getCurrentTime()), 1000);
+        return () => clearInterval(interval);
     }, [])
-    
-    
 
+    const handleLogout = async () => {
+        try {
+            await logoutSysUser();
+            dispatch(clearAuthState());
+            navigate("/login", { replace: true });
+        } catch (error) {
+            dispatch(clearAuthState());
+            if (error?.status === 401) {
+                navigate("/login", { replace: true });
+                return;
+            }
+            toast.error(error?.data?.message || "Logout failed");
+        }
+    };
 
-const handleLogout = async () => {
-  try {
-    await logoutSysUser();
-
-    dispatch(clearAuthState());
-    
-    
-    navigate("/login", {replace : true});
-  } catch (error) {
-    dispatch(clearAuthState());
-   
-
-    if (error?.status === 401) {
-        
-        
-      navigate("/login", {replace : true});
-      return;
-    }
-
-    toast.error(error?.data?.message || "Logout failed");
-  }
-};
-
-    return <header className="w-full bg-purple-700 font-bold flex flex-start gap-45 md:flex-row  md:justify-between items-center px-12 py-4" >
-            {/* logo or name or both on the left side */}
-            <h1 className="text-4xl text-white text-bold">KDS</h1>
-            {
-                (isActiveBrgIcn && !isOpen )&& (
+    return (
+        <header className="w-full bg-[#12355b] shadow-md sticky top-0 z-40">
+            <div className="flex items-center justify-between px-4 md:px-8 py-3">
+                <div className="flex items-center gap-4">
+                    {isActiveBrgIcn && (
+                        <button
+                            type="button"
+                            className="text-white p-1 cursor-pointer"
+                            onClick={() => setIsOpen(prev => !prev)}
+                            aria-label="Toggle menu"
+                        >
+                            {isOpen ? <i className="bi bi-x-lg text-xl" /> : (
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="w-5 h-0.5 bg-white rounded" />
+                                    <div className="w-5 h-0.5 bg-white rounded" />
+                                    <div className="w-5 h-0.5 bg-white rounded" />
+                                </div>
+                            )}
+                        </button>
+                    )}
                     <div>
-                    <button className="cursor-pointer flex flex-col gap-1" onClick={() => setIsOpen(prev => !prev)} >
-                        <div className="w-5 h-0 border border-white rounded-lg"></div>
-                        <div className="w-5 h-0 border border-white rounded-lg"></div>
-                        <div className="w-5 h-0 border border-white rounded-lg"></div>
-                    </button>
+                        <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">KDS</h1>
+                        <p className="text-xs text-sky-300/70 hidden sm:block">Business Management System</p>
                     </div>
-                )
-            }
-            {
-                isOpen && (
-                    <button className="cursor-pointer text-white text-xl " onClick={() => setIsOpen(prev => !prev)}>
-                        X
-                    </button>
-                )
-            }
+                </div>
 
-            {
-                isOpen && (
-                    <div className="w-full" >
-                    <HangingSideBar show={true} />
+                <div className="flex items-center gap-4 md:gap-6">
+                    {!isActiveBrgIcn && (
+                        <p className="text-sky-200/80 text-xs hidden lg:block">{currentTime}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
+                            <i className="bi bi-person text-white text-sm" />
+                        </div>
+                        <span className="text-white text-sm hidden sm:block">
+                            {user?.name?.split(" ")?.[0] || "Guest"}
+                        </span>
+                        <button
+                            type="button"
+                            className="text-sky-200 hover:text-white transition-colors cursor-pointer ml-1"
+                            onClick={handleLogout}
+                            title="Logout"
+                        >
+                            <i className="bi bi-box-arrow-right text-lg" />
+                        </button>
                     </div>
-                )
-            }
+                </div>
+            </div>
 
-            <div className="flex flex-row gap-6 items-center">
-            {
-                !isActiveBrgIcn && (
-                    <p className="text-white w-30 text-[13px]">{currentTime} </p>
-                )
-            }
-
-            {!isActiveBrgIcn && (
-                <button className="w-20 flex flex-row gap-2 justify-center items-center cursor-pointer">
-                    <i class="bi bi-box-arrow-right text-white text-2xl" onClick={handleLogout} />
-                    <span className="text-white text-[14px]">Welcome {user?.name?.split(" ")?.[0] || "Guest"}</span>
-                </button>
-            )}
-             </div>
-            </header>
-}
+            {isOpen && <HangingSideBar show={isOpen} onClose={() => setIsOpen(false)} />}
+        </header>
+    );
+};
 
 export default DashboardHeader;
