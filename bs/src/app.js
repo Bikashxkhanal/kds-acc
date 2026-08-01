@@ -21,6 +21,8 @@ app.use(express.json())
 
 app.use(express.urlencoded({extended : true , limit : "16kb"}))
 
+app.set('trust proxy', 1)
+
 app.use(cookieParser())
 
 import { customerRouter } from './routes/customer.route.js'
