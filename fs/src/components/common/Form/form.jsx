@@ -166,7 +166,7 @@ const Form = ({
         }
 
         <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 pt-2">
-            <Button children="Submit" loading={isLoading} />
+            <Button children="Submit" loading={isLoading} type="submit" />
         </div>
        </form>
     )
