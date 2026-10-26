@@ -14,7 +14,7 @@ const LineItemsEditor = ({ items = [], onChange }) => {
   };
 
   const addRow = () => onChange([...items, {
-    productName: "", description: "", quantity: 1, unit: "Cubic Meter",
+    productName: "", description: "", quantity: 1, unit: null,
     rate: 0, discount: 0, total: 0
   }]);
 
@@ -65,8 +65,9 @@ const LineItemsEditor = ({ items = [], onChange }) => {
                     value={item.quantity} onChange={(e) => updateItem(idx, "quantity", e.target.value)} />
                 </td>
                 <td className="px-1 py-1 w-24">
-                  <select className="kds-input h-8 text-xs" value={item.unit}
-                    onChange={(e) => updateItem(idx, "unit", e.target.value)}>
+                  <select className="kds-input h-8 text-xs" value={item.unit ?? ""}
+                    onChange={(e) => updateItem(idx, "unit", e.target.value || null)}>
+                    <option value="">None</option>
                     {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
                   </select>
                 </td>

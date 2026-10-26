@@ -8,7 +8,7 @@ const customerWorkSchema = new mongoose.Schema({
     description: { type: String, trim: true, default: "" },
     title: { type: String, required: true, trim: true },
     quantity: { type: String, required: true, trim: true },
-    quantity_unit_notation: { type: String, required: true, trim: true },
+    quantity_unit_notation: { type: String, trim: true, default: null },
     rate: { type: Number, required: true, min: 0 },
     total: { type: Number, required: true, min: 0 },
     work_date: { type: Date, required: true, index: true },

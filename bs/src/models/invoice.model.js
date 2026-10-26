@@ -11,7 +11,7 @@ const invoiceItemSchema = new mongoose.Schema(
         productName: { type: String, required: true, trim: true },
         description: { type: String, trim: true, default: "" },
         quantity: { type: Number, required: true, min: 0 },
-        unit: { type: String, required: true, trim: true, enum: ["Cubic Meter", "Hours", "Kilograms (Kgs)", "Trips"] },
+        unit: { type: String, trim: true, enum: ["Cubic Meter", "Hours", "Kilograms (Kgs)", "Trips"], default: null },
         rate: { type: Number, required: true, min: 0 },
         discount: moneyField,
         total: moneyField,

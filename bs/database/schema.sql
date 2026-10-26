@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS customer_work_details_tbh(
     vehicle_id INT NOT NULL,
     title TEXT NOT NULL,
     quantity VARCHAR(10) NOT NULL,
-    quantity_unit_notation VARCHAR(10) NOT NULL,
+    quantity_unit_notation VARCHAR(10) NULL,
     rate INT UNSIGNED NOT NULL,
     total INT UNSIGNED NOT NULL,
     work_date DATE NOT NULL ,
@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS bill_info(
     billing_id INT NOT NULL,
     discription VARCHAR(100) NOT NULL,
     quantity INT UNSIGNED NOT NULL,
-    quantity_unit_notation VARCHAR(10) NOT NULL,
+    quantity_unit_notation VARCHAR(10) NULL,
     rate INT UNSIGNED NOT NULL
 
 );

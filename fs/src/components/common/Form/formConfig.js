@@ -6,7 +6,7 @@ export const formConfig = {
             {name : 'vehicle_id', type : 'text' , required : true, min : 1},
             {name : 'title', type : 'text' , required : true},
             {name : 'quantity', type : 'number' , required : true, min : 1, max : 20, watch : true},
-            {name : 'quantity_unit_notation', type : 'select' , options : ['tip', 'hours', 'cubemeter'], required : true},
+            {name : 'quantity_unit_notation', type : 'select' , options : ['tip', 'hours', 'cubemeter'], required : false, allowNone: true},
             {name : 'rate', type : 'number', required : true, min : 1000, watch : true},
             {name : 'work_date', type : 'date', required : true},
             //watched = true is taken to update the value of this input, from the watch value, 

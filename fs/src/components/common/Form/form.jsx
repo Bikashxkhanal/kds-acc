@@ -71,6 +71,7 @@ const Form = ({
         if(datas){
             const formData = { ...datas };
             config?.filter((field) => field.type === 'date').forEach((field) => { formData[field.name] = normalizeISODate(formData[field.name]); });
+            config?.filter((field) => field.allowNone).forEach((field) => { formData[field.name] = formData[field.name] ?? ''; });
             reset(formData)
         }
     }, [reset, datas])
@@ -97,6 +98,7 @@ const Form = ({
         try {
             const payload = { ...data };
             config?.filter((field) => field.type === 'date').forEach((field) => { payload[field.name] = bsToIso(payload[field.name]); });
+            config?.filter((field) => field.allowNone).forEach((field) => { payload[field.name] = payload[field.name] || null; });
             await handleFormSubmit?.(payload)
         } catch (error) {
             const fieldErrors = error?.response?.data?.errors || error?.fieldErrors || [];
@@ -134,7 +136,7 @@ const Form = ({
                         className="kds-input"
                          {...register(fld.name)} 
                              >
-                                <option value="">{t('common.selectA', { field: t(`field.${fld.name}`, { defaultValue: humanizeLabel(fld.name) }) })}</option>
+                                <option value="">{fld.allowNone ? 'None' : t('common.selectA', { field: t(`field.${fld.name}`, { defaultValue: humanizeLabel(fld.name) }) })}</option>
                                 {fld?.options?.map(opt => (<option key={opt} value={opt}>{option(opt)}</option>))}
                         </select>
 

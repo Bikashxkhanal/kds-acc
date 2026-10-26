@@ -53,9 +53,10 @@ export const formSchema = (fields = []) => {
                 break;
 
             case 'select' : 
-                    rule = z.string().min(1, `${field.name.split('_').join(" ")} is requried`)
+                    rule = z.string();
+                    if (field.required) rule = rule.min(1, `${field.name.split('_').join(" ")} is requried`)
                     if(field.options && field.options.length > 0){
-                        rule = rule.refine(val => field.options.some(opt => val === opt), {
+                        rule = rule.refine(val => (field.allowNone && val === '') || field.options.some(opt => val === opt), {
                             message : `${field.name.split('_').join(" ")} is invalid`
                         })
                     }

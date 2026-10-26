@@ -36,8 +36,8 @@ const calculateItems = (items = []) => {
         const discount = Number(item.discount || 0);
 
         if (!item.productName?.trim()) throw new ApiError(400, "Product / service name is required");
-        if (!item.unit?.trim()) throw new ApiError(400, "Item unit is required");
-        if (!INVOICE_UNITS.has(item.unit.trim())) throw new ApiError(400, "Select a valid invoice unit");
+        const unit = item.unit == null || item.unit === "" ? null : String(item.unit).trim();
+        if (unit !== null && !INVOICE_UNITS.has(unit)) throw new ApiError(400, "Select a valid invoice unit");
         if (!Number.isFinite(quantity) || quantity <= 0) throw new ApiError(400, "Item quantity must be greater than zero");
         if (!Number.isFinite(rate) || rate < 0) throw new ApiError(400, "Item rate must be valid");
 
@@ -48,7 +48,7 @@ const calculateItems = (items = []) => {
             productName: item.productName.trim(),
             description: item.description?.trim() || "",
             quantity,
-            unit: item.unit.trim(),
+            unit,
             rate,
             discount,
             total,
@@ -84,6 +84,11 @@ const getPaymentStatus = ({ grandTotal, paidAmount, remainingAmount }) => {
     if (grandTotal === 0 || remainingAmount === 0) return "paid";
     if (paidAmount > 0) return "partial";
     return "unpaid";
+};
+
+const normalizeInvoiceUnits = (invoice) => {
+    const value = typeof invoice?.toObject === "function" ? invoice.toObject() : invoice;
+    return { ...value, items: (value?.items || []).map((item) => ({ ...item, unit: item.unit ?? null })) };
 };
 
 const generateInvoiceNumber = async () => {
@@ -193,7 +198,7 @@ const createABill = asyncHandler(async (req, res) => {
     });
 
     return res.status(201).json(
-        new ApiResponse(201, "Invoice saved successfully", invoice)
+        new ApiResponse(201, "Invoice saved successfully", normalizeInvoiceUnits(invoice))
     );
 });
 
@@ -235,7 +240,7 @@ const getBillings = asyncHandler(async (req, res) => {
 
     return res.status(200).json(
         new ApiResponse(200, "Invoices fetched successfully", {
-            invoices,
+            invoices: invoices.map(normalizeInvoiceUnits),
             pagination: {
                 page,
                 limit,
@@ -254,7 +259,7 @@ const getABillDetails = asyncHandler(async (req, res) => {
     if (!invoice) throw new ApiError(404, "Invoice not found");
 
     return res.status(200).json(
-        new ApiResponse(200, "Invoice details fetched successfully", invoice)
+        new ApiResponse(200, "Invoice details fetched successfully", normalizeInvoiceUnits(invoice))
     );
 });
 
@@ -278,7 +283,7 @@ const updateABill = asyncHandler(async (req, res) => {
     req.activityDetails = { entityId: String(invoice._id), entityName: invoice.invoiceNumber, diff: buildActivityDiff(before, invoice.toObject()) };
 
     return res.status(200).json(
-        new ApiResponse(200, "Invoice updated successfully", invoice)
+        new ApiResponse(200, "Invoice updated successfully", normalizeInvoiceUnits(invoice))
     );
 });
 
@@ -326,7 +331,7 @@ const duplicateABill = asyncHandler(async (req, res) => {
     });
 
     return res.status(201).json(
-        new ApiResponse(201, "Invoice duplicated successfully", duplicate)
+        new ApiResponse(201, "Invoice duplicated successfully", normalizeInvoiceUnits(duplicate))
     );
 });
 
@@ -344,8 +349,7 @@ const downloadBillPDF = asyncHandler(async (req, res) => {
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: "networkidle0" });
         pdf = await page.pdf({
-            format: "A4", printBackground: true, displayHeaderFooter: true,
-            footerTemplate: `<div style="width:100%;font-size:9px;text-align:center;color:#94a3b8;padding:0 10mm">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>`,
+            format: "A4", printBackground: true, displayHeaderFooter: false,
             margin: { top: "8mm", bottom: "12mm", left: "10mm", right: "10mm" }
         });
     } finally { await browser.close(); }

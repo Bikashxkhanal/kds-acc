@@ -4,7 +4,7 @@ export const emptyLineItem = () => ({
   productName: "",
   description: "",
   quantity: 1,
-  unit: "Cubic Meter",
+  unit: null,
   rate: 0,
   discount: 0,
   total: 0

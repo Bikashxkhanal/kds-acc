@@ -260,9 +260,11 @@ const addCustomerWorkDetails = asyncHandler(async (req, res) => {
 
     const f_work_date = parseISODate(work_date, 'work_date');
 
-    if (title == null || !quantity || quantity_unit_notation == null || !rate || !total) {
+    if (title == null || !quantity || !rate || !total) {
         throw new ApiError(400, "All work details of customer is required");
     }
+    const unit = quantity_unit_notation == null || quantity_unit_notation === "" ? null : String(quantity_unit_notation);
+    if (unit !== null && !["tip", "hours", "cubemeter"].includes(unit)) throw new ApiError(400, "Select a valid quantity unit");
 
     const customer = await isCustomerExist({ customer_id })
     if (customer.length == 0) throw new ApiError(400, "Invalid customer Id");
@@ -280,7 +282,7 @@ const addCustomerWorkDetails = asyncHandler(async (req, res) => {
         description: String(description).trim().slice(0, 240),
         title,
         quantity: String(quantity),
-        quantity_unit_notation,
+        quantity_unit_notation: unit,
         rate: Number(rate),
         work_date: f_work_date,
         total: Number(total)
@@ -305,7 +307,7 @@ const getCustomerWorkDetails = asyncHandler(async (req, res) => {
         .lean();
 
     res.status(200).json(
-       new ApiResponse(200, "Customer Work Details fetched successfully", result)
+       new ApiResponse(200, "Customer Work Details fetched successfully", result.map((work) => ({ ...work, quantity_unit_notation: work.quantity_unit_notation ?? null })))
     )
 })
 
@@ -323,7 +325,7 @@ const buildCustomerWorkPaymentRows = (payments = [], works = []) => {
         PaymentId: null,
         Receipt: '',
         date: wd.work_date,
-        discription: `${wd.title} | ${wd.vehicle_type || `Vehicle No: ${wd.vehicle_id}`} | ${wd.description ? `${wd.description} | ` : ""}Qty: ${wd.quantity} ${wd.quantity_unit_notation} | Rate: ${wd.rate}`,
+        discription: `${wd.title} | ${wd.vehicle_type || `Vehicle No: ${wd.vehicle_id}`} | ${wd.description ? `${wd.description} | ` : ""}Qty: ${[wd.quantity, wd.quantity_unit_notation].filter(Boolean).join(" ")} | Rate: ${wd.rate}`,
         Credit: 0,
         Debit: wd.total
     }));
@@ -587,7 +589,7 @@ const addCustomerWorkDetailsBatch = asyncHandler(async (req, res) => {
     await connectMongo();
     for (const entry of entries) {
         const qty = Number(entry.quantity), rate = Number(entry.rate), vehicle = entry.vehicle_type;
-        if (!Number.isInteger(Number(entry.customer_id)) || !WORK_TITLES[vehicle]?.includes(entry.title) || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(rate) || rate <= 0 || !["tip", "hours", "cubemeter"].includes(entry.quantity_unit_notation)) throw new ApiError(400, "A sales entry has invalid customer, title, date, quantity, unit, or rate");
+        if (!Number.isInteger(Number(entry.customer_id)) || !WORK_TITLES[vehicle]?.includes(entry.title) || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(rate) || rate <= 0 || (entry.quantity_unit_notation != null && entry.quantity_unit_notation !== "" && !["tip", "hours", "cubemeter"].includes(entry.quantity_unit_notation))) throw new ApiError(400, "A sales entry has invalid customer, title, date, quantity, unit, or rate");
         parseISODate(entry.work_date, 'work_date');
         if (!(await Customer.exists({ id: Number(entry.customer_id) }))) throw new ApiError(400, "A sales entry refers to an unknown customer");
     }
@@ -595,7 +597,7 @@ const addCustomerWorkDetailsBatch = asyncHandler(async (req, res) => {
     try {
         await session.withTransaction(async () => {
             const documents = [];
-            for (const entry of entries) documents.push({ id: await getNextSequence("customerWork"), customer_id: Number(entry.customer_id), vehicle_type: entry.vehicle_type, title: entry.title, description: String(entry.description || "").trim().slice(0, 240), quantity: String(entry.quantity), quantity_unit_notation: entry.quantity_unit_notation, rate: Number(entry.rate), total: Number(entry.quantity) * Number(entry.rate), work_date: parseISODate(entry.work_date, 'work_date') });
+            for (const entry of entries) documents.push({ id: await getNextSequence("customerWork"), customer_id: Number(entry.customer_id), vehicle_type: entry.vehicle_type, title: entry.title, description: String(entry.description || "").trim().slice(0, 240), quantity: String(entry.quantity), quantity_unit_notation: entry.quantity_unit_notation || null, rate: Number(entry.rate), total: Number(entry.quantity) * Number(entry.rate), work_date: parseISODate(entry.work_date, 'work_date') });
             await CustomerWork.insertMany(documents, { session });
         });
     } finally { await session.endSession(); }

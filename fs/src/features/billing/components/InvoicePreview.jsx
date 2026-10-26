@@ -43,7 +43,7 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
               </div>
             )}
             <h2 className="text-lg font-bold">{company.name || "Company Name"}</h2>
-            {company.pan && <p className="font-semibold text-white mt-1">PAN: {company.pan}</p>}
+            <p className="font-semibold text-white mt-1">PAN: {company.pan || "N/A"}</p>
             <p className="text-sky-200/90 mt-1 max-w-xs">{company.address || "Address"}</p>
             <p className="text-sky-200/80 mt-1">
               {[company.phone, company.email].filter(Boolean).join(" · ") || "Contact"}
@@ -60,7 +60,7 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
               <p className="font-semibold">Customer Name: {customer.name || "Customer Name"}</p>
               <p className="text-sky-100/85">Customer Address: {customer.address || "Address"}</p>
               {customer.phone && <p className="text-sky-100/85">Phone Number: {customer.phone}</p>}
-              {customer.pan && <p className="text-sky-100/85">PAN Number: {customer.pan}</p>}
+              <p className="text-sky-100/85">PAN Number: {customer.pan || "N/A"}</p>
               <p className="mt-2 text-sky-200 text-xs uppercase tracking-wider">{t('invoice.status')}</p>
               <span className="font-semibold capitalize">{t(`purchase.status.${paymentStatus === 'partial' ? 'partial' : paymentStatus}`)}</span>
             </div>
@@ -97,7 +97,7 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
                       {item.description && <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>}
                     </td>
                     <td className="border border-slate-200 px-2 py-1.5 text-center">{item.quantity}</td>
-                    <td className="border border-slate-200 px-2 py-1.5 text-center">{item.unit}</td>
+                    <td className="border border-slate-200 px-2 py-1.5 text-center">{item.unit ?? ""}</td>
                     <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.rate)}</td>
                     <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.discount || 0)}</td>
                     <td className="border border-slate-200 px-2 py-1.5 text-right font-medium">{formatNumber(item.total || 0)}</td>
