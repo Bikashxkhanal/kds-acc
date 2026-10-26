@@ -1,4 +1,13 @@
 {
+  "date.label": "Bikram Sambat date",
+  "date.openPicker": "Open date picker",
+  "date.placeholder": "YYYY-MM-DD or 2082 Baisakh 15",
+  "date.required": "A date is required.",
+  "date.format": "Enter a BS date such as 2082-01-15.",
+  "date.invalid": "That date does not exist in the selected BS month.",
+  "date.range": "This date is outside the supported BS calendar range.",
+  "date.min": "Choose a later date.",
+  "date.max": "Choose an earlier date.",
   "nav.dashboard": "Dashboard",
   "nav.customers": "Customers",
   "nav.sales": "Sales",
@@ -9,6 +18,7 @@
   "nav.users": "User Management",
   "nav.navigation": "Navigation",
   "common.loading": "Loading…",
+  "common.retry": "Retry",
   "common.save": "Save",
   "common.cancel": "Cancel",
   "common.close": "Close",
@@ -24,6 +34,8 @@
   "auth.phone": "Phone Number",
   "auth.phonePlaceholder": "Enter your phone number",
   "auth.password": "Password",
+  "auth.showPassword": "Show password",
+  "auth.hidePassword": "Hide password",
   "auth.signIn": "Sign In",
   "auth.contactDeveloper": "Contact the developer",
   "auth.notAuthorized": "Not authorized",
@@ -304,5 +316,11 @@
   "module.business": "Purchases",
   "module.billings": "Billing",
   "module.sysuser": "Users",
-  "language.switch": "Switch language between English and Nepali"
+  "language.switch": "Switch language between English and Nepali",
+  "purchase.invalidDetails": "Enter a description, supplier, valid BS date, and valid total and paid amounts.",
+  "purchase.saved": "Purchase saved",
+  "purchase.saveError": "Unable to save purchase",
+  "purchase.invalidPayment": "Enter a valid payment amount and BS date within the remaining balance.",
+  "purchase.paymentRecorded": "Payment recorded",
+  "purchase.paymentError": "Unable to record payment"
 }

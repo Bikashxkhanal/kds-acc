@@ -1,4 +1,13 @@
 {
+  "date.label": "विक्रम संवत् मिति",
+  "date.openPicker": "मिति छान्ने पात्रो खोल्नुहोस्",
+  "date.placeholder": "२०८२-०१-१५ वा २०८२ वैशाख १५",
+  "date.required": "मिति आवश्यक छ।",
+  "date.format": "२०८२-०१-१५ जस्तै मान्य BS मिति लेख्नुहोस्।",
+  "date.invalid": "चयन गरिएको BS महिनामा यो मिति छैन।",
+  "date.range": "यो मिति समर्थित BS पात्रोको सीमाभन्दा बाहिर छ।",
+  "date.min": "यसपछिको मिति छान्नुहोस्।",
+  "date.max": "यसअघिको मिति छान्नुहोस्।",
   "nav.dashboard": "ड्यासबोर्ड",
   "nav.customers": "ग्राहकहरू",
   "nav.sales": "बिक्री",
@@ -9,6 +18,7 @@
   "nav.users": "प्रयोगकर्ता व्यवस्थापन",
   "nav.navigation": "मेनु",
   "common.loading": "लोड हुँदैछ…",
+  "common.retry": "पुनः प्रयास गर्नुहोस्",
   "common.save": "सेभ गर्नुहोस्",
   "common.cancel": "रद्द गर्नुहोस्",
   "common.close": "बन्द गर्नुहोस्",
@@ -23,6 +33,8 @@
   "auth.phone": "फोन नम्बर",
   "auth.phonePlaceholder": "फोन नम्बर लेख्नुहोस्",
   "auth.password": "पासवर्ड",
+  "auth.showPassword": "पासवर्ड देखाउनुहोस्",
+  "auth.hidePassword": "पासवर्ड लुकाउनुहोस्",
   "auth.signIn": "प्रवेश गर्नुहोस्",
   "auth.contactDeveloper": "विकासकर्तालाई सम्पर्क गर्नुहोस्",
   "chart.title": "बिक्री र खरिद / खर्च",
@@ -304,5 +316,11 @@
   "module.business": "खरिद",
   "module.billings": "बिलिङ",
   "module.sysuser": "प्रयोगकर्ता",
-  "language.switch": "अङ्ग्रेजी र नेपाली भाषा बदल्नुहोस्"
+  "language.switch": "अङ्ग्रेजी र नेपाली भाषा बदल्नुहोस्",
+  "purchase.invalidDetails": "विवरण, आपूर्तिकर्ता, मान्य विक्रम संवत् मिति र सही कुल तथा तिरेको रकम राख्नुहोस्।",
+  "purchase.saved": "खरिद सुरक्षित भयो",
+  "purchase.saveError": "खरिद सुरक्षित गर्न सकिएन",
+  "purchase.invalidPayment": "बाँकी रकमभित्रको भुक्तानी रकम र मान्य विक्रम संवत् मिति राख्नुहोस्।",
+  "purchase.paymentRecorded": "भुक्तानी लेखियो",
+  "purchase.paymentError": "भुक्तानी लेख्न सकिएन"
 }

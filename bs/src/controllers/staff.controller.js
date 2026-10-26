@@ -9,6 +9,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import puppeteer from "puppeteer";
 import { formatBS } from '../utils/bsDate.js';
 import { buildActivityDiff } from '../services/activityLog.js';
+import { parseISODate } from '../utils/isoDate.js';
 
 const getAStaffPersonalDtls = async (staff_id) => {
     await connectMongo();
@@ -40,10 +41,10 @@ const getAStaffStippendAndPaymentDetailsAndTotalRowCount = async (staff_id, { li
 
     const dateFilter = (field) => {
         if (startDate && endDate) {
-            const from = new Date(startDate);
-            const to = new Date(endDate);
-            to.setHours(23, 59, 59, 999);
-            return { [field]: { $gte: from, $lte: to } };
+            const from = parseISODate(startDate, 'startDate');
+            const to = parseISODate(endDate, 'endDate');
+            if (from > to) throw new ApiError(400, 'Date range is reversed', [{ field: 'endDate', code: 'date_order' }]);
+            return { [field]: { $gte: from, $lt: new Date(to.getTime() + 86400000) } };
         }
         return {};
     };
@@ -97,7 +98,7 @@ const validateStaffInput = (body = {}) => {
     const email = String(body.email || "").trim().toLowerCase();
     const role = body.role || "Other";
     const assignedVehicle = body.assignedVehicle || "None";
-    const dateOfJoining = new Date(body.dateOfJoining || body.dob || "");
+    const dateOfJoining = parseISODate(body.dateOfJoining || body.dob, 'dateOfJoining');
     const salary = Number(body.salary);
     const paymentType = body.paymentType || "Monthly";
     const status = body.status || "Active";
@@ -105,7 +106,6 @@ const validateStaffInput = (body = {}) => {
     if (!/^\d{10}$/.test(phone_number)) throw new ApiError(400, "Phone number must contain exactly 10 digits");
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ApiError(400, "Enter a valid email address");
     if (!STAFF_ROLES.includes(role) || !STAFF_VEHICLES.includes(assignedVehicle)) throw new ApiError(400, "Select a valid role and assigned vehicle");
-    if (!Number.isFinite(dateOfJoining.getTime())) throw new ApiError(400, "Date of joining is required and must be valid");
     if (!Number.isFinite(salary) || salary <= 0) throw new ApiError(400, "Salary or daily wage must be greater than zero");
     if (!["Monthly", "Daily"].includes(paymentType) || !["Active", "Inactive"].includes(status)) throw new ApiError(400, "Select a valid payment type and status");
     const emergencyContactPhone = String(body.emergencyContactPhone || "").trim();

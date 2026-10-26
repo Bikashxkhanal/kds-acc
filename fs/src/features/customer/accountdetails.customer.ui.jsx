@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import BSDatePicker from "../../components/common/BSDatePicker.jsx";
+import BSDateField from "../../components/common/BSDateField.jsx";
 import { bsToday, bsToIso, formatBS, formatAmount } from "../../utils/bsDate.js";
 import { useI18n } from "../../i18n/I18nProvider.jsx";
 import { toast } from "react-toastify";
@@ -72,7 +72,7 @@ const AccountDetailsOfCustomer = () => {
   return <main className="kds-page">
     <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
       <div><p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Customer profile</p><h1 className="mt-1 text-2xl font-bold text-[#12355b]">{customer.name || "Customer Details"}</h1><p className="mt-1 text-sm text-slate-500">Account overview, activity, and billing history in one place.</p></div>
-      <div className="flex flex-wrap items-center gap-2"><BSDatePicker value={dates.startDate} onChange={(startDate) => setDates((prev) => ({ ...prev, startDate }))} className="kds-input w-40" /><BSDatePicker value={dates.endDate} onChange={(endDate) => setDates((prev) => ({ ...prev, endDate }))} className="kds-input w-40" /><Button size="sm" varient="outline" onClick={loadPreview}><i className="bi bi-eye" /> Preview report</Button></div>
+      <div className="flex flex-wrap items-center gap-2"><BSDateField value={dates.startDate} onChange={(startDate) => setDates((prev) => ({ ...prev, startDate }))} className="kds-input w-40" /><BSDateField value={dates.endDate} onChange={(endDate) => setDates((prev) => ({ ...prev, endDate }))} className="kds-input w-40" /><Button size="sm" varient="outline" onClick={loadPreview}><i className="bi bi-eye" /> Preview report</Button></div>
     </div>
 
     {preview && <Card className="customer-report-print" title="Customer Report" subtitle={`Selected period: ${formatBS(bsToIso(dates.startDate), 'long', language)} to ${formatBS(bsToIso(dates.endDate), 'long', language)}`}>

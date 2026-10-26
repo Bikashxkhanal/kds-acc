@@ -4,8 +4,9 @@ import { toast } from 'react-toastify';
 import Button from '../../components/common/button.jsx';
 import Card from '../../components/common/Card.jsx';
 import { createStaff, getAStaffDetails, updateStaff } from '../../services/staff/staff.api.js';
-import BSDatePicker from '../../components/common/BSDatePicker.jsx';
-import { bsToday, bsToIso, isoToBsInput } from '../../utils/bsDate.js';
+import BSDateField from '../../components/common/BSDateField.jsx';
+import { bsToday, normalizeISODate } from '../../utils/bsDate.js';
+import { dateField } from '../../utils/bsDateValidator.js';
 import { useI18n } from '../../i18n/I18nProvider.jsx';
 
 const EMPTY = { name: '', phone_number: '', email: '', role: 'Other', assignedVehicle: 'None', address: '', dateOfJoining: bsToday(), salary: '', paymentType: 'Monthly', idProofType: '', idProofNumber: '', emergencyContactName: '', emergencyContactPhone: '', status: 'Active', notes: '' };
@@ -15,33 +16,41 @@ const Input = ({ className = '', ...props }) => <input className={`kds-input mt-
 
 export default function StaffForm() {
   const { id } = useParams(); const navigate = useNavigate();
-  const { option } = useI18n();
-  const [values, setValues] = useState(EMPTY); const [loading, setLoading] = useState(Boolean(id)); const [saving, setSaving] = useState(false); const [error, setError] = useState('');
+  const { option, t } = useI18n();
+  const [values, setValues] = useState(EMPTY); const [loading, setLoading] = useState(Boolean(id)); const [saving, setSaving] = useState(false); const [error, setError] = useState(''); const [dateServerError, setDateServerError] = useState('');
   useEffect(() => {
     if (!id) return;
     let live = true;
     getAStaffDetails(id).then((response) => {
       if (!live) return;
       const staff = response?.data || {};
-      setValues({ ...EMPTY, ...staff, dateOfJoining: isoToBsInput(staff.dateOfJoining || staff.dob) || bsToday() });
+      setValues({ ...EMPTY, ...staff, dateOfJoining: normalizeISODate(staff.dateOfJoining || staff.dob) || bsToday() });
     }).catch((requestError) => live && setError(requestError?.message || 'Could not load staff profile')).finally(() => live && setLoading(false));
     return () => { live = false; };
   }, [id]);
-  const update = (key, value) => setValues((old) => ({ ...old, [key]: value }));
+  const update = (key, value) => {
+    setValues((old) => ({ ...old, [key]: value }));
+    if (key === 'dateOfJoining' && value) { setError(''); setDateServerError(''); }
+  };
   const submit = async (event) => {
     event.preventDefault(); setError('');
     if (!/^\d{10}$/.test(values.phone_number.trim())) return setError('Phone number must contain exactly 10 digits');
     if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) return setError('Enter a valid email address');
     if (values.emergencyContactPhone && !/^\d{10}$/.test(values.emergencyContactPhone.trim())) return setError('Emergency phone must contain exactly 10 digits');
     if (Number(values.salary) <= 0) return setError('Salary or daily wage must be greater than zero');
-    const dateOfJoining = bsToIso(values.dateOfJoining);
-    if (!dateOfJoining) return setError('Enter a valid Bikram Sambat date of joining');
+    const dateResult = dateField({ required: true }).safeParse(values.dateOfJoining);
+    if (!dateResult.success) return setError(t(dateResult.error.issues[0]?.message || 'date.invalid'));
+    const dateOfJoining = values.dateOfJoining;
     setSaving(true);
     try {
       const response = id ? await updateStaff(id, { ...values, dateOfJoining }) : await createStaff({ ...values, dateOfJoining });
       toast.success(response?.message || (id ? 'Staff updated' : 'Staff added'));
       navigate(id ? '/staff/all' : `/staff/all?q=${encodeURIComponent(values.phone_number)}`, { replace: true });
-    } catch (requestError) { setError(requestError?.message || 'Unable to save staff details'); }
+    } catch (requestError) {
+      const fieldError = requestError?.response?.data?.errors?.find((item) => item.field === 'dateOfJoining');
+      if (fieldError) setDateServerError(t('date.invalid'));
+      setError(fieldError ? t('date.invalid') : requestError?.message || 'Unable to save staff details');
+    }
     finally { setSaving(false); }
   };
   if (loading) return <main className="kds-page"><p role="status">Loading staff profile…</p></main>;
@@ -53,7 +62,7 @@ export default function StaffForm() {
         <Field label="Phone *"><Input required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength="10" value={values.phone_number} onChange={(e) => update('phone_number', e.target.value)} autoComplete="tel" /></Field>
         <Field label="Email"><Input type="email" value={values.email} onChange={(e) => update('email', e.target.value)} autoComplete="email" /></Field>
         <Field label="Address"><Input maxLength="300" value={values.address} onChange={(e) => update('address', e.target.value)} /></Field>
-        <Field label="Date of Joining *"><BSDatePicker className="kds-input mt-1" value={values.dateOfJoining} onChange={(value) => update('dateOfJoining', value)} /></Field>
+        <Field label="Date of Joining *"><BSDateField required className="kds-input mt-1" value={values.dateOfJoining} onChange={(value) => update('dateOfJoining', value)} error={dateServerError} /></Field>
         <Field label="Status"><select className="kds-input mt-1" value={values.status} onChange={(e) => update('status', e.target.value)}><option value="Active">{option('Active')}</option><option value="Inactive">{option('Inactive')}</option></select></Field>
       </div></Card>
       <Card title="Role and compensation"><div className="grid grid-cols-1 gap-4 md:grid-cols-3">

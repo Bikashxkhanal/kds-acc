@@ -6,8 +6,8 @@ import InputBox from "../InputBox";
 import Button from "../button.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { Controller } from "react-hook-form";
-import BSDatePicker from '../BSDatePicker.jsx';
-import { bsToday, bsToIso, isoToBsInput } from '../../../utils/bsDate.js';
+import BSDateField from '../BSDateField.jsx';
+import { bsToday, bsToIso, normalizeISODate } from '../../../utils/bsDate.js';
 import { humanizeLabel } from "../../../utils/labels";
 import { useI18n } from "../../../i18n/I18nProvider.jsx";
 
@@ -38,8 +38,11 @@ const Form = ({
     // console.log(watchedFor);
      
 
-    const {register, control, handleSubmit,setValue, getValues, reset, formState : {errors}}  = useForm({
-        resolver : zodResolver(schema)
+    const {register, control, handleSubmit,setValue, getValues, reset, setError, formState : {errors}}  = useForm({
+        resolver : zodResolver(schema),
+        defaultValues: Object.fromEntries(config.map((field) => [field.name, field.type === 'date' ? bsToday() : ''])),
+        mode: 'onBlur',
+        reValidateMode: 'onChange'
     })
 
 
@@ -67,7 +70,7 @@ const Form = ({
      useEffect(() => {
         if(datas){
             const formData = { ...datas };
-            config?.filter((field) => field.type === 'date').forEach((field) => { formData[field.name] = isoToBsInput(formData[field.name]); });
+            config?.filter((field) => field.type === 'date').forEach((field) => { formData[field.name] = normalizeISODate(formData[field.name]); });
             reset(formData)
         }
     }, [reset, datas])
@@ -78,7 +81,7 @@ const Form = ({
         // console.log("Outside")  
         const resetedValues = {}  
          config?.forEach(field => {
-            resetedValues[field.name] = '' 
+            resetedValues[field.name] = field.type === 'date' ? bsToday() : ''
         })
         if(isSubmitSuccessfull){
             // console.log("Inside"); 
@@ -95,6 +98,12 @@ const Form = ({
             const payload = { ...data };
             config?.filter((field) => field.type === 'date').forEach((field) => { payload[field.name] = bsToIso(payload[field.name]); });
             await handleFormSubmit?.(payload)
+        } catch (error) {
+            const fieldErrors = error?.response?.data?.errors || error?.fieldErrors || [];
+            fieldErrors.forEach(({ field, message, code }) => {
+                if (config.some((entry) => entry.name === field)) setError(field, { type: 'server', message: message || (code === 'invalid_date' ? 'date.invalid' : 'common.invalid') });
+            });
+            if (!fieldErrors.length) throw error;
         } finally {
             setIsLoading(false)
         }
@@ -141,8 +150,8 @@ const Form = ({
                         control={control}
                         name={fld.name}
                         defaultValue={bsToday()}
-                        render={({field}) => (
-                            <BSDatePicker className='kds-input' value={field?.value || bsToday()} onChange={field.onChange} placeholder={t(`field.${field?.name}`, { defaultValue: humanizeLabel(field?.name) })} />
+                        render={({field, fieldState}) => (
+                            <BSDateField required={fld.required} defaultToToday={fld.required !== false} className='kds-input' value={field?.value || ''} onChange={field.onChange} onBlur={field.onBlur} error={fieldState.error?.message} label={t(`field.${field?.name}`, { defaultValue: humanizeLabel(field?.name) })} />
                         
                         )}
                         />
@@ -151,7 +160,7 @@ const Form = ({
 
                     {
                         errors[fld.name] && (
-                            <p className="text-red-600">{errors[fld.name].message}</p>
+                            <p className="text-red-600">{t(errors[fld.name].message, { defaultValue: errors[fld.name].message })}</p>
                             
                         )
 

@@ -11,6 +11,7 @@ function App() {
        const dispatch = useDispatch();
        useEffect(() => {
               ;(async () => {
+                 if (window.location.pathname === '/__date-debug') return;
                  try {
                      
                      dispatch(verifyMeStart());

@@ -3,6 +3,7 @@ import ActivityLog from '../models/activityLog.model.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { recordActivity } from '../services/activityLog.js';
+import { parseISODate } from '../utils/isoDate.js';
 
 export const createActivityEvent = asyncHandler(async (req, res) => {
   if (req.body?.action !== 'print') return res.status(400).json({ message: 'Unsupported activity event' });
@@ -28,16 +29,13 @@ export const getActivityLogs = asyncHandler(async (req, res) => {
     let startDate;
     let endDate;
     if (req.query.from) {
-      const start = new Date(req.query.from);
-      if (!Number.isFinite(start.getTime())) return res.status(400).json({ message: 'Invalid start date' });
+      const start = parseISODate(req.query.from, 'from');
       filter.timestamp.$gte = start; startDate = start;
     }
     if (req.query.to) {
-      const endExclusive = new Date(req.query.to);
-      if (!Number.isFinite(endExclusive.getTime())) return res.status(400).json({ message: 'Invalid end date' });
-      endDate = endExclusive;
-      endExclusive.setUTCDate(endExclusive.getUTCDate() + 1);
-      filter.timestamp.$lt = endExclusive;
+      const end = parseISODate(req.query.to, 'to');
+      endDate = end;
+      filter.timestamp.$lt = new Date(end.getTime() + 86400000);
     }
     if (startDate && endDate && startDate > endDate) return res.status(400).json({ message: 'Date range is reversed' });
   }

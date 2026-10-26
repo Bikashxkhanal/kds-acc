@@ -10,6 +10,7 @@ import puppeteer from 'puppeteer';
 import mongoose from 'mongoose';
 import { formatBS } from '../utils/bsDate.js';
 import { buildActivityDiff } from '../services/activityLog.js';
+import { parseISODate } from '../utils/isoDate.js';
 
 const normalizePhoneDigits = (value) => String(value || '').replace(/[०-९]/g, (digit) => String('०१२३४५६७८९'.indexOf(digit)));
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -191,6 +192,7 @@ const updateACustomerDetails = asyncHandler(async (req, res, next) => {
 
 const addCustomerPaymentDetail = asyncHandler(async (req, res) => {
     const { customer_id, pay_amount, payment_mode, payers_name, payment_date } = req?.body;
+    const normalizedPaymentDate = parseISODate(payment_date, 'payment_date');
 
     if (!customer_id) throw new ApiError(400, "Customer is not selected")
 
@@ -214,7 +216,7 @@ const addCustomerPaymentDetail = asyncHandler(async (req, res) => {
         pay_amount: Number(pay_amount),
         payment_mode,
         payers_name,
-        payment_date: new Date(payment_date)
+        payment_date: normalizedPaymentDate
     });
 
     return res.status(200).json(
@@ -254,7 +256,7 @@ const addCustomerWorkDetails = asyncHandler(async (req, res) => {
     if (!customer_id) throw new ApiError(400, "Customer Id is required")
     if (!["Tractor", "JCB", "Tipper"].includes(vehicle_type)) throw new ApiError(400, "Select a valid vehicle type")
 
-    const f_work_date = work_date ?? null;
+    const f_work_date = parseISODate(work_date, 'work_date');
 
     if (title == null || !quantity || quantity_unit_notation == null || !rate || !total) {
         throw new ApiError(400, "All work details of customer is required");
@@ -278,7 +280,7 @@ const addCustomerWorkDetails = asyncHandler(async (req, res) => {
         quantity: String(quantity),
         quantity_unit_notation,
         rate: Number(rate),
-        work_date: new Date(f_work_date),
+        work_date: f_work_date,
         total: Number(total)
     });
 
@@ -361,22 +363,23 @@ try {
 
 const getACustomerWorkAndPaymentDetailsByDateRange = async ({ customer_id, startDate, endDate }) => {
     if (!customer_id?.toString().trim() || isNaN(customer_id)) throw new Error("Invalid customer Id");
-    if (!startDate?.trim() && !endDate?.trim()) throw new Error("Data range must be selected");
+    if (!startDate?.trim() || !endDate?.trim()) throw new ApiError(400, "Both report dates are required", [{ field: !startDate ? 'from' : 'to', code: 'required' }]);
+    const from = parseISODate(startDate, 'from');
+    const to = parseISODate(endDate, 'to');
+    if (from > to) throw new ApiError(400, 'Date range is reversed', [{ field: 'to', code: 'date_order' }]);
 
     await connectMongo();
     const cid = Number(customer_id);
-    const from = new Date(startDate);
-    const to = new Date(endDate);
-    to.setHours(23, 59, 59, 999);
+    const toExclusive = new Date(to.getTime() + 86400000);
 
     const [payments, works] = await Promise.all([
         CustomerPayment.find({
             customer_id: cid,
-            payment_date: { $gte: from, $lte: to }
+            payment_date: { $gte: from, $lt: toExclusive }
         }).lean(),
         CustomerWork.find({
             customer_id: cid,
-            work_date: { $gte: from, $lte: to }
+            work_date: { $gte: from, $lt: toExclusive }
         }).lean()
     ]);
 
@@ -397,6 +400,7 @@ const getACustomerPreviewData = asyncHandler(async (req, res) => {
             { metaData: customerData?.[0], tableData: response })
         )
     } catch (error) {
+        if (error instanceof ApiError) throw error;
         throw new ApiError(400, error?.message)
     }
 })
@@ -565,6 +569,7 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
         res.status(200).send(pdf);
 
         } catch (error) {
+        if (error instanceof ApiError) throw error;
         throw new ApiError(400, error?.message)
     }
 })
@@ -576,14 +581,15 @@ const addCustomerWorkDetailsBatch = asyncHandler(async (req, res) => {
     await connectMongo();
     for (const entry of entries) {
         const qty = Number(entry.quantity), rate = Number(entry.rate), vehicle = entry.vehicle_type;
-        if (!Number.isInteger(Number(entry.customer_id)) || !WORK_TITLES[vehicle]?.includes(entry.title) || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(new Date(entry.work_date).getTime()) || !["tip", "hours", "cubemeter"].includes(entry.quantity_unit_notation)) throw new ApiError(400, "A sales entry has invalid customer, title, date, quantity, unit, or rate");
+        if (!Number.isInteger(Number(entry.customer_id)) || !WORK_TITLES[vehicle]?.includes(entry.title) || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(rate) || rate <= 0 || !["tip", "hours", "cubemeter"].includes(entry.quantity_unit_notation)) throw new ApiError(400, "A sales entry has invalid customer, title, date, quantity, unit, or rate");
+        parseISODate(entry.work_date, 'work_date');
         if (!(await Customer.exists({ id: Number(entry.customer_id) }))) throw new ApiError(400, "A sales entry refers to an unknown customer");
     }
     const session = await mongoose.startSession();
     try {
         await session.withTransaction(async () => {
             const documents = [];
-            for (const entry of entries) documents.push({ id: await getNextSequence("customerWork"), customer_id: Number(entry.customer_id), vehicle_type: entry.vehicle_type, title: entry.title, description: String(entry.description || "").trim().slice(0, 240), quantity: String(entry.quantity), quantity_unit_notation: entry.quantity_unit_notation, rate: Number(entry.rate), total: Number(entry.quantity) * Number(entry.rate), work_date: new Date(entry.work_date) });
+            for (const entry of entries) documents.push({ id: await getNextSequence("customerWork"), customer_id: Number(entry.customer_id), vehicle_type: entry.vehicle_type, title: entry.title, description: String(entry.description || "").trim().slice(0, 240), quantity: String(entry.quantity), quantity_unit_notation: entry.quantity_unit_notation, rate: Number(entry.rate), total: Number(entry.quantity) * Number(entry.rate), work_date: parseISODate(entry.work_date, 'work_date') });
             await CustomerWork.insertMany(documents, { session });
         });
     } finally { await session.endSession(); }

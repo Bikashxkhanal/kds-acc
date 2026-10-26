@@ -9,17 +9,19 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import NepaliDateModule from 'nepali-date-converter';
 const NepaliDate = NepaliDateModule.default || NepaliDateModule;
 import { parseBS, formatBS, bsKey } from '../utils/bsDate.js';
+import { parseISODate } from '../utils/isoDate.js';
 
 const purchaseView = (p) => { const paidAmount = (p.payments || []).reduce((s, x) => s + Number(x.amount), 0); return { ...p, paidAmount, balance: Math.max(0, p.totalValue - paidAmount), status: paidAmount >= p.totalValue ? 'Paid' : paidAmount > 0 ? 'Partially Paid' : 'Unpaid' }; };
 export const getPurchases = asyncHandler(async (_req, res) => { await connectMongo(); const purchases = await Purchase.find().sort({ date: -1 }).lean(); res.json(new ApiResponse(200, 'Purchases loaded', purchases.map(purchaseView))); });
 export const createPurchase = asyncHandler(async (req, res) => {
   const { billNo = '', description, totalValue, paidAmount = 0, supplier, date, usedBy } = req.body;
-  if (!String(description || '').trim() || !String(supplier || '').trim() || !Number.isFinite(Number(totalValue)) || Number(totalValue) <= 0 || !Number.isFinite(Number(paidAmount)) || Number(paidAmount) < 0 || Number(paidAmount) > Number(totalValue) || !Number.isFinite(new Date(date).getTime()) || !['Tractor', 'JCB', 'Tipper'].includes(usedBy)) throw new ApiError(400, 'Enter valid purchase details; paid amount must be between zero and total value');
-  await connectMongo(); const purchase = await Purchase.create({ billNo, description: description.trim(), totalValue: Number(totalValue), supplier: supplier.trim(), date: new Date(date), usedBy, payments: Number(paidAmount) ? [{ amount: Number(paidAmount), date: new Date(date), note: 'Initial payment' }] : [] });
+  const purchaseDate = parseISODate(date, 'date');
+  if (!String(description || '').trim() || !String(supplier || '').trim() || !Number.isFinite(Number(totalValue)) || Number(totalValue) <= 0 || !Number.isFinite(Number(paidAmount)) || Number(paidAmount) < 0 || Number(paidAmount) > Number(totalValue) || !['Tractor', 'JCB', 'Tipper'].includes(usedBy)) throw new ApiError(400, 'Enter valid purchase details; paid amount must be between zero and total value');
+  await connectMongo(); const purchase = await Purchase.create({ billNo, description: description.trim(), totalValue: Number(totalValue), supplier: supplier.trim(), date: purchaseDate, usedBy, payments: Number(paidAmount) ? [{ amount: Number(paidAmount), date: purchaseDate, note: 'Initial payment' }] : [] });
   res.status(201).json(new ApiResponse(201, 'Purchase saved', purchaseView(purchase.toObject())));
 });
 export const getPurchase = asyncHandler(async (req, res) => { await connectMongo(); const p = await Purchase.findById(req.params.id).lean(); if (!p) throw new ApiError(404, 'Purchase not found'); res.json(new ApiResponse(200, 'Purchase loaded', purchaseView(p))); });
-export const addPurchasePayment = asyncHandler(async (req, res) => { const amount = Number(req.body.amount), date = new Date(req.body.date || Date.now()); if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(date.getTime())) throw new ApiError(400, 'Enter a valid payment amount and date'); await connectMongo(); const p = await Purchase.findById(req.params.id); if (!p) throw new ApiError(404, 'Purchase not found'); const paid = p.payments.reduce((s, x) => s + x.amount, 0); if (paid + amount > p.totalValue) throw new ApiError(400, 'Payment exceeds remaining balance'); p.payments.push({ amount, date, note: String(req.body.note || '').trim() }); await p.save(); res.json(new ApiResponse(200, 'Payment recorded', purchaseView(p.toObject()))); });
+export const addPurchasePayment = asyncHandler(async (req, res) => { const amount = Number(req.body.amount), date = parseISODate(req.body.date, 'date'); if (!Number.isFinite(amount) || amount <= 0) throw new ApiError(400, 'Enter a valid payment amount and date'); await connectMongo(); const p = await Purchase.findById(req.params.id); if (!p) throw new ApiError(404, 'Purchase not found'); const paid = p.payments.reduce((s, x) => s + x.amount, 0); if (paid + amount > p.totalValue) throw new ApiError(400, 'Payment exceeds remaining balance'); p.payments.push({ amount, date, note: String(req.body.note || '').trim() }); await p.save(); res.json(new ApiResponse(200, 'Payment recorded', purchaseView(p.toObject()))); });
 
 const bsGranularityKey = (date, granularity) => {
   const bs = new NepaliDate(date); const fields = bs.getBS();
@@ -36,8 +38,9 @@ export const getSalesVsPurchase = asyncHandler(async (req, res) => {
   const now = new Date();
   let fromBS, toBS;
   if (req.query.from || req.query.to) {
-    if (!req.query.from || !req.query.to || !/^\d{4}-\d{2}-\d{2}$/.test(req.query.from) || !/^\d{4}-\d{2}-\d{2}$/.test(req.query.to)) throw new ApiError(400, 'Provide valid from and to dates');
-    fromBS = req.query.from; toBS = req.query.to;
+    const fromISO = parseISODate(req.query.from, 'from'); const toISO = parseISODate(req.query.to, 'to');
+    const toBSString = (date) => new NepaliDate(new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12)).format('YYYY-MM-DD');
+    fromBS = toBSString(fromISO); toBS = toBSString(toISO);
   } else {
     const current = new NepaliDate(now); toBS = current.format('YYYY-MM-DD');
     if (granularity === 'day') { current.setDate(current.getDate() - 29); fromBS = current.format('YYYY-MM-DD'); }

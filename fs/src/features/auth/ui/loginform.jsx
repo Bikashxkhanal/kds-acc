@@ -17,6 +17,7 @@ const LoginForm = () => {
         phone_number: "",
         password: ""
     });
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('session') === 'expired') toast.info('Your session expired. Please log in again.');
@@ -52,12 +53,14 @@ const LoginForm = () => {
                 onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
             />
             <InputBox
-                type="password"
+                type={showPassword ? "text" : "password"}
                 label={t('auth.password')}
                 placeholder="Enter your password"
                 icon="bi-lock"
                 required
+                value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                rightAdornment={<button type="button" className="rounded p-1 text-slate-500 hover:text-[#12355b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')} aria-pressed={showPassword} onClick={() => setShowPassword((visible) => !visible)}><i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" /></button>}
             />
             <Button size="lg" className="w-full mt-2" children={t('auth.signIn')} loading={isLoading} onClick={handleSubmit} />
         </div>

@@ -11,6 +11,7 @@ const InputBox = forwardRef(({
     required = false,
     icon,
     error,
+    rightAdornment,
     ...rest
 }, ref) => {
     return (
@@ -29,7 +30,7 @@ const InputBox = forwardRef(({
                 )}
                 <input
                     ref={ref}
-                    className={`kds-input ${icon ? 'pl-9' : ''} ${readOnly ? 'bg-slate-50' : ''} ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-200' : ''} ${className}`}
+                    className={`kds-input ${icon ? 'pl-9' : ''} ${rightAdornment ? 'pr-11' : ''} ${readOnly ? 'bg-slate-50' : ''} ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-200' : ''} ${className}`}
                     type={type}
                     placeholder={placeholder}
                     {...(value !== undefined ? { value } : {})}
@@ -37,6 +38,7 @@ const InputBox = forwardRef(({
                     readOnly={readOnly}
                     {...rest}
                 />
+                {rightAdornment && <span className="absolute right-2 top-1/2 -translate-y-1/2">{rightAdornment}</span>}
             </div>
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>

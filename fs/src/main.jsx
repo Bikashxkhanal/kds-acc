@@ -24,6 +24,7 @@ import AdminRoute from './utils/adminRoute.jsx'
 import ActivityLogPage from './features/admin/activity-log.page.jsx'
 import UserManagementPage from './features/admin/user-management.page.jsx'
 import ChangePasswordPage from './features/auth/change-password.page.jsx'
+import DateDebug from './__date_debug.jsx'
 
 
 const router = createBrowserRouter([
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
   path: '/',
   element: <App />,
   children: [
+    { path: '__date-debug', element: <DateDebug /> },
 
     {
       path: 'login',

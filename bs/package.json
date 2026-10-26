@@ -7,6 +7,7 @@
     "start": "nodemon ./src/index.js",
     "build": "nodemon --import dotenv/config ./src/index.js",
     "dev": "nodemon ./src/index.js",
+    "test": "node --test",
     "migrate:mysql-to-mongo": "node --import dotenv/config ./testing/migrateMysqlToMongo.js",
     "seed:user": "node --import dotenv/config ./testing/bcrypt.js",
     "seed:companies": "node --import dotenv/config ./testing/seedCompanies.js",
@@ -14,6 +15,8 @@
     "migrate:staff-phone-index": "node ./testing/migrateStaffPhoneUnique.js",
     "migrate:sales-titles": "node --import dotenv/config ./testing/migrateSalesTitles.js",
     "migrate:roles": "node --import dotenv/config ./testing/migrateRoles.js",
+    "migrate:activity-log": "node --import dotenv/config ./testing/migrateActivityLog.js",
+    "user:create": "node --import dotenv/config ./testing/createSystemUser.js",
     "seed": "node ./testing/seedDummyData.js",
     "seed:clear": "node ./testing/clearDummyData.js"
   },

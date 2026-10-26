@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { dateField } from '../../../utils/bsDateValidator.js';
 
 export const formSchema = (fields = []) => {
     const shape = {}
@@ -67,13 +68,8 @@ export const formSchema = (fields = []) => {
                     })
                      break;
 
-            case 'date' : 
-                rule = z
-                .string({
-                    required_error: `${field.name} is required`,
-                    invalid_type_error: `${field.name} is invalid`,
-                })
-                .min(1, `${field.name} is required`);
+            case 'date' :
+                rule = dateField({ required: Boolean(field.required), min: field.min, max: field.max });
                 break;
                         
                 default:

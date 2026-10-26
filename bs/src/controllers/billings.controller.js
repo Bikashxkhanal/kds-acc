@@ -7,6 +7,7 @@ import Invoice from "../models/invoice.model.js";
 import puppeteer from "puppeteer";
 import { buildInvoiceHtml } from "../utils/invoiceTemplate.js";
 import { buildActivityDiff } from '../services/activityLog.js';
+import { parseISODate } from '../utils/isoDate.js';
 
 const currency = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
@@ -21,12 +22,7 @@ const getUserSnapshot = (user = {}) => ({
 });
 
 const normalizeDate = (value, fieldName, required = false) => {
-    if (!value && !required) return undefined;
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        throw new ApiError(400, `${fieldName} must be a valid date`);
-    }
-    return date;
+    return parseISODate(value, fieldName, { required });
 };
 
 const calculateItems = (items = []) => {

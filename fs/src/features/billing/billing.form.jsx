@@ -13,8 +13,8 @@ import {
   createBill, updateBill, getBillDetails, getCompanies, createCompany
 } from "../../services/billing/billings.api";
 import { emptyLineItem, calculateInvoiceTotals } from "../../utils/invoiceCalculations";
-import BSDatePicker from "../../components/common/BSDatePicker.jsx";
-import { bsToday, bsToIso, isoToBsInput, formatBS } from "../../utils/bsDate.js";
+import BSDateField from "../../components/common/BSDateField.jsx";
+import { bsToday, bsToIso, normalizeISODate, formatBS } from "../../utils/bsDate.js";
 
 const BillingForm = () => {
   const { id } = useParams();
@@ -58,8 +58,8 @@ const BillingForm = () => {
         const inv = res?.data;
         setCompanyId(inv?.company?.id || "");
         setCustomer(inv?.customer || {});
-        setBillDate(isoToBsInput(inv?.billDate) || bsToday());
-        setDueDate(isoToBsInput(inv?.dueDate));
+        setBillDate(normalizeISODate(inv?.billDate) || bsToday());
+        setDueDate(normalizeISODate(inv?.dueDate));
         setRemarks(inv?.remarks || "");
         setItems(inv?.items?.length ? inv.items : [emptyLineItem()]);
         setPaidAmount(inv?.totals?.paidAmount || 0);
@@ -235,8 +235,8 @@ const BillingForm = () => {
                 value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} />
               <InputBox label="Customer PAN" icon="bi-card-text" value={customer.pan}
                 onChange={(e) => setCustomer({ ...customer, pan: e.target.value })} />
-              <label className="kds-label">Bill Date<BSDatePicker className="kds-input mt-1" required value={billDate} onChange={setBillDate} /></label>
-              <label className="kds-label">Due Date<BSDatePicker className="kds-input mt-1" value={dueDate} onChange={setDueDate} /></label>
+              <label className="kds-label">Bill Date<BSDateField className="kds-input mt-1" required value={billDate} onChange={setBillDate} /></label>
+              <label className="kds-label">Due Date<BSDateField className="kds-input mt-1" value={dueDate} onChange={setDueDate} /></label>
               <InputBox label="Remarks / Notes" value={remarks}
                 onChange={(e) => setRemarks(e.target.value)} />
 
