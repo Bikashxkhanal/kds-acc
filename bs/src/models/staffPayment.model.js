@@ -5,6 +5,8 @@ const staffPaymentSchema = new mongoose.Schema({
     staff_id: { type: Number, required: true, index: true },
     discription: { type: String, trim: true, default: "" },
     amount: { type: Number, required: true, min: 0 },
+    receiptNo: { type: String, default: '', index: true },
+    payment_mode: { type: String, enum: ['cash', 'cheque', 'mobile banking', 'bank transfer'], default: 'cash' },
     date: { type: Date, default: Date.now, index: true },
     isDummy: { type: Boolean, default: false, index: true }
 }, { collection: "staffpayments" });

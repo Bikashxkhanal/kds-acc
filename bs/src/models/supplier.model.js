@@ -1,0 +1,4 @@
+import mongoose from 'mongoose';
+const paymentSchema = new mongoose.Schema({ receiptNo: { type: String, required: true }, date: { type: Date, required: true }, amount: { type: Number, required: true, min: 0.01 }, mode: { type: String, enum: ['cash', 'cheque', 'mobile banking', 'bank transfer'], default: 'cash' }, notes: { type: String, trim: true, default: '' } }, { timestamps: true });
+const supplierSchema = new mongoose.Schema({ name: { type: String, required: true, trim: true, index: true }, phone: { type: String, trim: true, default: '' }, address: { type: String, trim: true, default: '' }, notes: { type: String, trim: true, default: '' }, payments: { type: [paymentSchema], default: [] } }, { timestamps: true });
+export default mongoose.models.Supplier || mongoose.model('Supplier', supplierSchema);

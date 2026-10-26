@@ -25,6 +25,7 @@ import ActivityLogPage from './features/admin/activity-log.page.jsx'
 import UserManagementPage from './features/admin/user-management.page.jsx'
 import ChangePasswordPage from './features/auth/change-password.page.jsx'
 import DateDebug from './__date_debug.jsx'
+import SuppliersPage from './features/suppliers/suppliers.page.jsx'
 
 
 const router = createBrowserRouter([
@@ -63,6 +64,8 @@ const router = createBrowserRouter([
             { path: 'sales', element: <SalesPage /> },
             { path: 'purchases', element: <PurchasesPage /> },
             { path: 'purchases/:id', element: <PurchasesPage /> },
+            { path: 'suppliers', element: <SuppliersPage /> },
+            { path: 'suppliers/:id', element: <SuppliersPage /> },
             {
               path: 'staff/new',
               element: <StaffForm />

@@ -6,6 +6,7 @@ import { searchStaffByName ,addStaffRemunation, addStaffPayout} from "../../serv
 import { toast } from "react-toastify";
 import { Button } from "../../components";
 import { useNavigate } from "react-router-dom";
+import ReceiptButtons from "../../components/common/ReceiptButtons.jsx";
 
 
 
@@ -15,6 +16,7 @@ const StaffUI = () => {
     const [staffId, setStaffId] = useState(null);
     const [isRemuSubmitSuccessfull, setIsRemuSubmitSuccessfull] = useState(false)
     const [isPayoutSubmitSuccessfull, setIsPayoutSubmitSuccessfull] = useState(false)
+    const [receiptPaymentId, setReceiptPaymentId] = useState(null)
 
     const navigate = useNavigate()
 
@@ -36,6 +38,7 @@ const StaffUI = () => {
             const result = await addStaffPayout(data);
             toast.success(result?.message)
             setIsPayoutSubmitSuccessfull(true)
+            setReceiptPaymentId(result?.data?.lastInsertedId)
         } catch (error) {
             setIsPayoutSubmitSuccessfull(false)
             toast.error(error?.data?.message);
@@ -81,7 +84,7 @@ const StaffUI = () => {
                 />
             )
         }
-
+        {receiptPaymentId && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4" role="dialog" aria-modal="true"><section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"><h2 className="text-xl font-bold text-[#12355b]">Payment saved</h2><p className="mt-2 text-sm text-slate-500">Receipt STAFF-{String(receiptPaymentId).padStart(6, '0')} is ready.</p><div className="mt-5 flex items-center justify-between"><ReceiptButtons type="staff" id={receiptPaymentId} /><button className="rounded-lg border px-3 py-2 text-sm" onClick={() => setReceiptPaymentId(null)}>Done</button></div></section></div>}
         </main>
     )
 }

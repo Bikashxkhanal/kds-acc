@@ -7,6 +7,7 @@ const staffSchema = new mongoose.Schema({
     address: { type: String, trim: true, default: "" },
     dob: { type: Date, required: true },
     salary: { type: Number, required: true, min: 0 },
+    noSalary: { type: Boolean, default: false, index: true },
     email: { type: String, trim: true, lowercase: true, default: "" },
     role: { type: String, enum: ["Tractor Driver", "JCB Operator", "Tipper Driver", "Helper", "Accountant", "Manager", "Other"], default: "Other", index: true },
     assignedVehicle: { type: String, enum: ["Tractor", "JCB", "Tipper", "None"], default: "None" },

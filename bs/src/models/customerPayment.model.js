@@ -4,6 +4,8 @@ const customerPaymentSchema = new mongoose.Schema({
     id: { type: Number, required: true, unique: true, index: true },
     customer_id: { type: Number, required: true, index: true },
     pay_amount: { type: Number, required: true, min: 0 },
+    receiptNo: { type: String, default: '', index: true },
+    notes: { type: String, trim: true, default: '' },
     payment_mode: {
         type: String,
         enum: ["cheque", "cash", "mobile banking"],

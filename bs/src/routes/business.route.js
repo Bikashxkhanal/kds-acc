@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
-import { getPurchases, createPurchase, getPurchase, addPurchasePayment, getDashboard, getSalesVsPurchase } from '../controllers/business.controller.js';
+import { getPurchases, createPurchase, getPurchase, addPurchasePayment, getDashboard, getSalesVsPurchase, getVehicleRevenue } from '../controllers/business.controller.js';
 const businessRouter = Router();
 businessRouter.get('/dashboard', verifyJWT, getDashboard);
 businessRouter.get('/dashboard/sales-vs-purchase', verifyJWT, getSalesVsPurchase);
+businessRouter.get('/dashboard/vehicle-revenue', verifyJWT, getVehicleRevenue);
 businessRouter.route('/purchases').get(verifyJWT, getPurchases).post(verifyJWT, createPurchase);
 businessRouter.get('/purchases/:id', verifyJWT, getPurchase);
 businessRouter.post('/purchases/:id/payments', verifyJWT, addPurchasePayment);

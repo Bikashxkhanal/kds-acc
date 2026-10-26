@@ -9,7 +9,7 @@ import { bsToday, normalizeISODate } from '../../utils/bsDate.js';
 import { dateField } from '../../utils/bsDateValidator.js';
 import { useI18n } from '../../i18n/I18nProvider.jsx';
 
-const EMPTY = { name: '', phone_number: '', email: '', role: 'Other', assignedVehicle: 'None', address: '', dateOfJoining: bsToday(), salary: '', paymentType: 'Monthly', idProofType: '', idProofNumber: '', emergencyContactName: '', emergencyContactPhone: '', status: 'Active', notes: '' };
+const EMPTY = { name: '', phone_number: '', email: '', role: 'Other', assignedVehicle: 'None', address: '', dateOfJoining: bsToday(), salary: '', noSalary: false, paymentType: 'Monthly', idProofType: '', idProofNumber: '', emergencyContactName: '', emergencyContactPhone: '', status: 'Active', notes: '' };
 const roles = ['Tractor Driver', 'JCB Operator', 'Tipper Driver', 'Helper', 'Accountant', 'Manager', 'Other'];
 const Field = ({ label, children }) => <label className="kds-label">{label}{children}</label>;
 const Input = ({ className = '', ...props }) => <input className={`kds-input mt-1 ${className}`} {...props} />;
@@ -37,7 +37,7 @@ export default function StaffForm() {
     if (!/^\d{10}$/.test(values.phone_number.trim())) return setError('Phone number must contain exactly 10 digits');
     if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) return setError('Enter a valid email address');
     if (values.emergencyContactPhone && !/^\d{10}$/.test(values.emergencyContactPhone.trim())) return setError('Emergency phone must contain exactly 10 digits');
-    if (Number(values.salary) <= 0) return setError('Salary or daily wage must be greater than zero');
+    if (!values.noSalary && Number(values.salary) <= 0) return setError('Salary or daily wage must be greater than zero');
     const dateResult = dateField({ required: true }).safeParse(values.dateOfJoining);
     if (!dateResult.success) return setError(t(dateResult.error.issues[0]?.message || 'date.invalid'));
     const dateOfJoining = values.dateOfJoining;
@@ -68,8 +68,9 @@ export default function StaffForm() {
       <Card title="Role and compensation"><div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Field label="Role / Designation *"><select required className="kds-input mt-1" value={values.role} onChange={(e) => update('role', e.target.value)}>{roles.map((role) => <option key={role} value={role}>{option(role)}</option>)}</select></Field>
         <Field label="Assigned Vehicle"><select className="kds-input mt-1" value={values.assignedVehicle} onChange={(e) => update('assignedVehicle', e.target.value)}>{['Tractor', 'JCB', 'Tipper', 'None'].map((vehicle) => <option key={vehicle} value={vehicle}>{option(vehicle)}</option>)}</select></Field>
-        <Field label="Salary / Daily Wage *"><Input required type="number" min="0.01" step="any" value={values.salary} onChange={(e) => update('salary', e.target.value)} /></Field>
-        <Field label="Payment Type"><select className="kds-input mt-1" value={values.paymentType} onChange={(e) => update('paymentType', e.target.value)}><option value="Monthly">{option('Monthly')}</option><option value="Daily">{option('Daily')}</option></select></Field>
+        <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={Boolean(values.noSalary)} onChange={e=>update('noSalary',e.target.checked)} />No Salary / Wages</label>
+        {!values.noSalary&&<><Field label="Salary / Daily Wage *"><Input required type="number" min="0.01" step="any" value={values.salary} onChange={(e) => update('salary', e.target.value)} /></Field>
+        <Field label="Payment Type"><select className="kds-input mt-1" value={values.paymentType} onChange={(e) => update('paymentType', e.target.value)}><option value="Monthly">{option('Monthly')}</option><option value="Daily">{option('Daily')}</option></select></Field></>}
       </div></Card>
       <Card title="Optional information"><div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Field label="ID Proof Type"><select className="kds-input mt-1" value={values.idProofType} onChange={(e) => update('idProofType', e.target.value)}><option value="">Select proof</option>{['Citizenship', 'Passport', 'Driving License', 'National ID', 'Other'].map((type) => <option key={type}>{type}</option>)}</select></Field>

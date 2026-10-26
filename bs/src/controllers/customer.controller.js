@@ -210,6 +210,7 @@ const addCustomerPaymentDetail = asyncHandler(async (req, res) => {
 
     await connectMongo();
     const id = await getNextSequence("customerPayment");
+    const receiptNo = `CUST-${String(id).padStart(6, '0')}`;
     const result = await CustomerPayment.create({
         id,
         customer_id: Number(customer_id),
@@ -217,13 +218,14 @@ const addCustomerPaymentDetail = asyncHandler(async (req, res) => {
         payment_mode,
         payers_name,
         payment_date: normalizedPaymentDate
+        ,receiptNo, notes: String(req.body.notes || '').trim()
     });
 
     return res.status(200).json(
         new ApiResponse(
             200,
             "Customer payment details added successfully!",
-            { insertId: result.id, affectedRows: 1 }
+            { insertId: result.id, affectedRows: 1, receiptNo: result.receiptNo, payment: result }
         )
     )
 })
@@ -309,6 +311,8 @@ const getCustomerWorkDetails = asyncHandler(async (req, res) => {
 
 const buildCustomerWorkPaymentRows = (payments = [], works = []) => {
     const paymentRows = payments.map((pd) => ({
+        PaymentId: pd.id,
+        Receipt: pd.receiptNo || '',
         date: pd.payment_date,
         discription: `Payer: ${pd.payers_name} | Mode: ${pd.payment_mode}`,
         Credit: pd.pay_amount,
@@ -316,6 +320,8 @@ const buildCustomerWorkPaymentRows = (payments = [], works = []) => {
     }));
 
     const workRows = works.map((wd) => ({
+        PaymentId: null,
+        Receipt: '',
         date: wd.work_date,
         discription: `${wd.title} | ${wd.vehicle_type || `Vehicle No: ${wd.vehicle_id}`} | ${wd.description ? `${wd.description} | ` : ""}Qty: ${wd.quantity} ${wd.quantity_unit_notation} | Rate: ${wd.rate}`,
         Credit: 0,

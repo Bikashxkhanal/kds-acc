@@ -25,6 +25,22 @@ const BillingDetail = () => {
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const printInvoice = async () => {
+    const popup = window.open('', '_blank');
+    if (!popup) { toast.error('Allow pop-ups to print this invoice'); return; }
+    try {
+      const lang = language === 'np' ? 'np' : 'en';
+      const response = await api.get(`/api/v1/billings/${id}/download?lang=${lang}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      popup.location.href = url;
+      popup.addEventListener('load', () => popup.print(), { once: true });
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch {
+      popup.close();
+      toast.error('Failed to prepare invoice for printing');
+    }
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -32,7 +48,7 @@ const BillingDetail = () => {
         setInvoice(res?.data);
         if (searchParams.get("print") === "1") {
           api.post('/api/logs/event', { action: 'print', entityId: id }).catch(() => {});
-          setTimeout(() => window.print(), 500);
+          printInvoice();
         }
       } catch (error) {
         toast.error(error?.message || "Failed to load invoice");
@@ -91,7 +107,7 @@ const BillingDetail = () => {
               {isAdmin && <Button varient="outline" size="sm" onClick={() => navigate(`/billings/${id}/edit`)}>
                 <i className="bi bi-pencil" /> Edit
               </Button>}
-              <Button varient="outline" size="sm" onClick={() => { api.post('/api/logs/event', { action: 'print', entityId: id }).catch(() => {}); window.print(); }}>
+              <Button varient="outline" size="sm" onClick={() => { api.post('/api/logs/event', { action: 'print', entityId: id }).catch(() => {}); printInvoice(); }}>
                 <i className="bi bi-printer" /> Print
               </Button>
               <Button varient="outline" size="sm" onClick={async () => {

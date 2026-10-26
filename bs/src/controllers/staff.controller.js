@@ -19,6 +19,8 @@ const getAStaffPersonalDtls = async (staff_id) => {
 
 const buildStaffLedgerRows = (remunerations = [], payments = []) => {
     const remuRows = remunerations.map((sr) => ({
+        PaymentId: null,
+        Receipt: '',
         Date: sr.date,
         Discription: `${sr.title} ${sr.discription || ""}`.trim(),
         Credit: null,
@@ -26,6 +28,8 @@ const buildStaffLedgerRows = (remunerations = [], payments = []) => {
     }));
 
     const payRows = payments.map((sp) => ({
+        PaymentId: sp.id,
+        Receipt: sp.receiptNo || '',
         Date: sp.date,
         Discription: sp.discription,
         Credit: sp.amount,
@@ -99,20 +103,21 @@ const validateStaffInput = (body = {}) => {
     const role = body.role || "Other";
     const assignedVehicle = body.assignedVehicle || "None";
     const dateOfJoining = parseISODate(body.dateOfJoining || body.dob, 'dateOfJoining');
-    const salary = Number(body.salary);
+    const noSalary = Boolean(body.noSalary);
+    const salary = noSalary ? 0 : Number(body.salary);
     const paymentType = body.paymentType || "Monthly";
     const status = body.status || "Active";
     if (name.length < 2 || name.length > 100) throw new ApiError(400, "Full name must be between 2 and 100 characters");
     if (!/^\d{10}$/.test(phone_number)) throw new ApiError(400, "Phone number must contain exactly 10 digits");
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ApiError(400, "Enter a valid email address");
     if (!STAFF_ROLES.includes(role) || !STAFF_VEHICLES.includes(assignedVehicle)) throw new ApiError(400, "Select a valid role and assigned vehicle");
-    if (!Number.isFinite(salary) || salary <= 0) throw new ApiError(400, "Salary or daily wage must be greater than zero");
+    if (!noSalary && (!Number.isFinite(salary) || salary <= 0)) throw new ApiError(400, "Salary or daily wage must be greater than zero");
     if (!["Monthly", "Daily"].includes(paymentType) || !["Active", "Inactive"].includes(status)) throw new ApiError(400, "Select a valid payment type and status");
     const emergencyContactPhone = String(body.emergencyContactPhone || "").trim();
     if (emergencyContactPhone && !/^\d{10}$/.test(emergencyContactPhone)) throw new ApiError(400, "Emergency contact phone must contain exactly 10 digits");
     return {
         name, phone_number, email, role, assignedVehicle, address: String(body.address || "").trim().slice(0, 300),
-        dob: dateOfJoining, dateOfJoining, salary, paymentType,
+        dob: dateOfJoining, dateOfJoining, salary, noSalary, paymentType,
         idProofType: String(body.idProofType || "").trim().slice(0, 40), idProofNumber: String(body.idProofNumber || "").trim().slice(0, 80),
         emergencyContactName: String(body.emergencyContactName || "").trim().slice(0, 100), emergencyContactPhone,
         status, notes: String(body.notes || "").trim().slice(0, 1000)
@@ -208,16 +213,17 @@ const addAStaffPayoutDetails = asyncHandler(async (req, res) => {
 
     await connectMongo();
     const id = await getNextSequence("staffPayment");
-    await StaffPayment.create({
+    const receiptNo = `STAFF-${String(id).padStart(6, '0')}`;
+    const payment = await StaffPayment.create({
         id,
         staff_id: Number(staff_id),
         discription,
         amount: Number(amount),
-        date: date ? new Date(date) : new Date()
+        date: date ? new Date(date) : new Date(), receiptNo, payment_mode: req.body.payment_mode || 'cash'
     });
 
     return res.status(200).json(
-        new ApiResponse(200, "Staff payout details added successfully!", { lastInsertedId: id })
+        new ApiResponse(200, "Staff payout details added successfully!", { lastInsertedId: id, receiptNo: payment.receiptNo, payment })
     )
 })
 

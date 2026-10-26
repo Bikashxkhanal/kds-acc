@@ -16,6 +16,7 @@
     "migrate:sales-titles": "node --import dotenv/config ./testing/migrateSalesTitles.js",
     "migrate:roles": "node --import dotenv/config ./testing/migrateRoles.js",
     "migrate:activity-log": "node --import dotenv/config ./testing/migrateActivityLog.js",
+    "migrate:suppliers-compensation": "node --import dotenv/config ./testing/migrateSuppliersAndCompensation.js",
     "user:create": "node --import dotenv/config ./testing/createSystemUser.js",
     "seed": "node ./testing/seedDummyData.js",
     "seed:clear": "node ./testing/clearDummyData.js"

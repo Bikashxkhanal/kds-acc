@@ -6,6 +6,7 @@ import { bsToday, bsToIso, formatBS, formatAmount } from '../../utils/bsDate.js'
 import { useI18n } from '../../i18n/I18nProvider.jsx';
 import { searchCustomer, addCustomerPaymentDetail } from '../../services/customer/customer.js';
 import api from '../../services/axios.js';
+import ReceiptButtons from '../../components/common/ReceiptButtons.jsx';
 
 const TITLES = { Tractor: ['cultivation_rotavator', 'cultivation_cultivator', 'boulders', 'gravel', 'soil', 'sand', 'puddling', 'paral', 'dhan', 'others'], JCB: ['excavation'], Tipper: ['gravel', 'soil', 'sand'] };
 const titleLabelKey = { cultivation_rotavator: 'sales.cultivationRotavator', cultivation_cultivator: 'sales.cultivationCultivator', boulders: 'sales.boulders', gravel: 'sales.gravel', soil: 'sales.soil', sand: 'sales.sand', puddling: 'sales.puddling', excavation: 'sales.excavation', paral: 'sales.paral', dhan: 'sales.dhan', others: 'sales.others' };
@@ -21,6 +22,7 @@ export default function SalesPage() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState('sales');
   const [payment, setPayment] = useState({ pay_amount: '', payment_mode: 'cash', payers_name: '', payment_date: bsToday() });
+  const [receiptPaymentId, setReceiptPaymentId] = useState(null);
   const update = (key, value) => setForm((old) => ({ ...old, [key]: value }));
   const add = (event) => {
     event.preventDefault();
@@ -41,7 +43,7 @@ export default function SalesPage() {
     } catch (error) { toast.error(error.response?.data?.message || 'Could not save sales entries'); }
     finally { setLoading(false); }
   };
-  const submitPayment = async (event) => { event.preventDefault(); if (!customer?.id) return toast.error('Select a customer first'); const amount = Number(payment.pay_amount); if (!Number.isFinite(amount) || amount <= 0 || !bsToIso(payment.payment_date)) return toast.error(t('sales.paymentAmountDateInvalid')); setLoading(true); try { const result = await addCustomerPaymentDetail({ ...payment, pay_amount: amount, payment_date: bsToIso(payment.payment_date), customer_id: customer.id }); toast.success(result?.message || 'Payment recorded'); setPayment({ ...payment, pay_amount: '', payers_name: '' }); } catch (error) { toast.error(error?.message || 'Unable to record payment'); } finally { setLoading(false); } };
+  const submitPayment = async (event) => { event.preventDefault(); if (!customer?.id) return toast.error('Select a customer first'); const amount = Number(payment.pay_amount); if (!Number.isFinite(amount) || amount <= 0 || !bsToIso(payment.payment_date)) return toast.error(t('sales.paymentAmountDateInvalid')); setLoading(true); try { const result = await addCustomerPaymentDetail({ ...payment, pay_amount: amount, payment_date: bsToIso(payment.payment_date), customer_id: customer.id }); setReceiptPaymentId(result?.data?.insertId); toast.success(result?.message || 'Payment recorded'); setPayment({ ...payment, pay_amount: '', payers_name: '' }); } catch (error) { toast.error(error?.message || 'Unable to record payment'); } finally { setLoading(false); } };
   return <main className="kds-page"><header><p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Sales</p><h1 className="text-2xl font-bold text-[#12355b]">{t('sales.entryTitle')}</h1></header>
     <SearchBar className="kds-search" placeholder={t('sales.searchCustomer')} searchQueryFn={searchCustomer} onSelect={setCustomer} />
     {customer && <p className="text-sm text-slate-600">{t('sales.selectedCustomer')}: <strong>{customer.name}</strong> · {customer.phone_number}</p>}
@@ -61,5 +63,6 @@ export default function SalesPage() {
     <section className="kds-card overflow-x-auto p-4"><h2 className="mb-3 font-semibold text-[#12355b]">{t('sales.pending')} ({pending.length})</h2><table className="w-full text-left text-sm"><thead className="kds-table-header"><tr>{[t('sales.vehicleCol'), t('sales.workTitle'), t('sales.descriptionCol'), t('sales.dateCol'), t('sales.qtyCol'), t('sales.amountCol'), ''].map((h) => <th key={h} className="p-2">{h}</th>)}</tr></thead><tbody>{pending.map((row, i) => <tr key={i} className="border-b"><td className="p-2">{option(row.vehicle_type)}</td><td>{t(titleLabelKey[legacyTitle[row.title] || row.title])}</td><td>{row.description || '—'}</td><td>{formatBS(bsToIso(row.work_date), 'long', language)}</td><td>{row.quantity} {option(row.quantity_unit_notation)}</td><td>{formatAmount(row.total, language)}</td><td className="whitespace-nowrap"><button className="mr-3 text-blue-700" onClick={() => edit(i)}>{t('common.edit')}</button><button className="text-red-700" onClick={() => setPending((old) => old.filter((_, index) => index !== i))}>{t('sales.remove')}</button></td></tr>)}</tbody></table>
       {pending.length > 0 && <div className="mt-4 flex justify-end"><button disabled={loading} onClick={submit} className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white disabled:opacity-50">{loading ? t('sales.submitting') : t('sales.submitAll')}</button></div>}</section>
     </>}
+    {receiptPaymentId&&<div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4" role="dialog" aria-modal="true"><section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"><h2 className="text-xl font-bold text-[#12355b]">Payment saved</h2><p className="mt-2 text-sm text-slate-500">Receipt {`CUST-${String(receiptPaymentId).padStart(6,'0')}`} is ready.</p><div className="mt-5 flex items-center justify-between"><ReceiptButtons type="customer" id={receiptPaymentId}/><button className="rounded-lg border px-3 py-2 text-sm" onClick={()=>setReceiptPaymentId(null)}>Done</button></div></section></div>}
   </main>;
 }

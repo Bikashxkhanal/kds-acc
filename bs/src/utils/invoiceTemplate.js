@@ -74,9 +74,10 @@ export const buildInvoiceHtml = (invoice = {}, language = 'en') => {
     body { font-family: 'Noto Sans Devanagari', 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #1e293b; line-height: 1.5; }
     .invoice { max-width: 210mm; margin: 0 auto; }
 
-    .header { background: #12355b; color: white; padding: 14px 18px; display: flex; justify-content: space-between; gap: 20px; }
+    .header { background: #fff; color: #1e293b; padding: 20px 20px 18px; display: flex; justify-content: space-between; align-items: flex-start; gap: 28px; border-bottom: 1px solid #e2e8f0; }
+    .header > div { flex: 1; min-width: 0; }
     .header h1 { font-size: 22px; margin-bottom: 4px; }
-    .header p { font-size: 10px; opacity: 0.85; margin-top: 2px; }
+    .header p { font-size: 10px; color: #475569; margin-top: 3px; }
     .header-right { text-align: right; }
     .header-right .title { font-size: 20px; font-weight: bold; letter-spacing: 2px; }
 
@@ -128,12 +129,12 @@ export const buildInvoiceHtml = (invoice = {}, language = 'en') => {
         <p>${l.date}: ${formatDate(billDate, language)}</p>
         ${dueDate ? `<p>${l.due}: ${formatDate(dueDate, language)}</p>` : ""}
         <div style="border-top:1px solid rgba(255,255,255,.3);margin-top:8px;padding-top:8px">
-          <p style="text-transform:uppercase;letter-spacing:1px;font-size:9px">${l.billTo}</p>
-          <p style="font-weight:700;color:#fff">${escapeHtml(customer.name || "")}</p>
+          <p style="text-transform:uppercase;letter-spacing:1px;font-size:9px;color:#64748b">${l.billTo}</p>
+          <p style="font-weight:700;color:#1e293b">${escapeHtml(customer.name || "")}</p>
           <p>${escapeHtml(customer.address || "")}</p>
           ${customer.phone ? `<p>${l.phone}: ${escapeHtml(customer.phone)}</p>` : ""}
           <p style="margin-top:4px;text-transform:uppercase;letter-spacing:1px;font-size:9px">${l.paymentStatus}</p>
-          <p style="font-weight:700;color:#fff;text-transform:capitalize">${escapeHtml(paymentStatus)}</p>
+          <p style="font-weight:700;color:#1e293b;text-transform:capitalize">${escapeHtml(paymentStatus)}</p>
         </div>
       </div>
     </div>
