@@ -7,6 +7,8 @@ import {
         addCustomerPaymentDetail,
         getACustomerPaymentDetails,
         addCustomerWorkDetails,
+        addCustomerWorkDetailsBatch,
+        updateACustomerDetails,
         getCustomerWorkDetails,
         searchCustomer,
         getACustomerWorkAndPaymentDetails,
@@ -21,11 +23,13 @@ const customerRouter =  Router();
 
 customerRouter.route("/search").get(verifyJWT, searchCustomer)
 customerRouter.route("/work-details").post(verifyJWT, addCustomerWorkDetails)
+customerRouter.route("/work-details/batch").post(verifyJWT, addCustomerWorkDetailsBatch)
 customerRouter.route("/preview/:customerId").get(verifyJWT, getACustomerPreviewData)
 customerRouter.route('/download/:customerId').get(verifyJWT, downloadWorkAndPaymentDetailsInPDF)
 customerRouter.route("/:customerId").get(verifyJWT, getACustomer);
 customerRouter.route("/").get(verifyJWT, getAllCustomers)
 customerRouter.route("/").post(verifyJWT, addACustomer)
+customerRouter.route("/:customerId").put(verifyJWT, updateACustomerDetails)
 customerRouter.route("/payment").post(verifyJWT, addCustomerPaymentDetail)
 customerRouter.route("/:customer_id/work-pay-details").get(verifyJWT, getACustomerWorkAndPaymentDetails)
 customerRouter.route("/payment/:customer_id").get(verifyJWT, getACustomerPaymentDetails)

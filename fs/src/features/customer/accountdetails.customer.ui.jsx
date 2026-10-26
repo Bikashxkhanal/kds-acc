@@ -81,7 +81,7 @@ const AccountDetailsOfCustomer = () => {
     </Card>}
 
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-      <Card title="Basic Information" className="xl:col-span-2"><div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><Detail label="Customer Name" value={customer.name} icon="bi-person" /><Detail label="Customer ID" value={customer._id} icon="bi-fingerprint" /><Detail label="Phone Number" value={customer.phone_number} icon="bi-telephone" /><Detail label="Address" value={customer.address} icon="bi-geo-alt" /></div></Card>
+      <Card title="Basic Information" className="xl:col-span-2"><div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><Detail label="Customer Name" value={customer.name} icon="bi-person" /><Detail label="Customer ID" value={customer.id} icon="bi-fingerprint" /><Detail label="Customer Type" value={customer.customer_type || 'Private'} icon="bi-person-lines-fill" /><Detail label="Phone Number" value={customer.phone_number} icon="bi-telephone" /><Detail label="Address" value={customer.address} icon="bi-geo-alt" /></div></Card>
       <Card title="Account Summary"><div className="space-y-3"><Detail label="Total Payments" value={`Rs. ${totals.credit.toLocaleString()}`} icon="bi-arrow-down-circle" /><Detail label="Total Work" value={`Rs. ${totals.debit.toLocaleString()}`} icon="bi-arrow-up-circle" /><Detail label="Current Balance" value={`Rs. ${(totals.debit - totals.credit).toLocaleString()}`} icon="bi-wallet2" /></div></Card>
     </div>
 

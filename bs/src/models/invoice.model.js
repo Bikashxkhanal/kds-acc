@@ -59,6 +59,7 @@ const invoiceSchema = new mongoose.Schema(
             default: "unpaid",
             index: true
         },
+        isDummy: { type: Boolean, default: false, index: true },
         signatureStatus: {
             customerSigned: { type: Boolean, default: false },
             ownerSigned: { type: Boolean, default: false },
@@ -79,7 +80,8 @@ const invoiceSchema = new mongoose.Schema(
                 at: { type: Date, default: Date.now },
                 note: { type: String, trim: true, default: "" }
             }
-        ]
+        ],
+        isDummy: { type: Boolean, default: false, index: true }
     },
     { timestamps: true }
 );

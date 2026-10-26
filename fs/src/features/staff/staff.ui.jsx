@@ -52,7 +52,7 @@ const StaffUI = () => {
             placeholder="Search staff by name" 
             searchQueryFn={ searchStaffByName} 
             onSelect={(data) =>setStaffId(data?.id)} 
-        /><div className="flex justify-center sm:justify-end"><Button children="View Staff" size="sm" onClick={() => navigate('all') } /></div></div>
+        /><div className="flex justify-center gap-2 sm:justify-end"><Button children="Add Staff" size="sm" onClick={() => navigate('/staff/new') } /><Button children="View Staff" size="sm" onClick={() => navigate('/staff/all') } /></div></div>
         <div className="flex justify-center"><ToggleButton
           //remu = remunation: earned value by the staff, payment: amount paid to staff
             options={['remu', 'payout']} 

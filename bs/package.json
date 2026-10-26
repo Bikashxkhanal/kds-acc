@@ -4,12 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --import dotenv/config ./src/index.js",
+    "start": "nodemon ./src/index.js",
     "build":"nodemon --import dotenv/config ./src/index.js",
-    "dev": "nodemon --import dotenv/config ./src/index.js",
+    "dev": "nodemon ./src/index.js",
     "migrate:mysql-to-mongo": "node --import dotenv/config ./testing/migrateMysqlToMongo.js",
     "seed:user": "node --import dotenv/config ./testing/bcrypt.js",
-    "seed:companies": "node --import dotenv/config ./testing/seedCompanies.js"
+    "seed:companies": "node --import dotenv/config ./testing/seedCompanies.js",
+    "migrate:customer-type": "node --import dotenv/config ./testing/migrateCustomerType.js",
+    "migrate:staff-phone-index": "node ./testing/migrateStaffPhoneUnique.js",
+    "seed": "node ./testing/seedDummyData.js",
+    "seed:clear": "node ./testing/clearDummyData.js"
   },
   "keywords": [],
   "author": "",

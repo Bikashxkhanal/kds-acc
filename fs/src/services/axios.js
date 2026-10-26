@@ -1,8 +1,11 @@
 import axios from 'axios'
+import { toast } from 'react-toastify'
 
 
 const api = axios.create({
-    baseURL : import.meta.env.VITE_BASE_URL,
+    // Use Vite's same-origin proxy in development so LAN clients do not
+    // accidentally call their own localhost:8000.
+    baseURL : import.meta.env.DEV ? '' : import.meta.env.VITE_BASE_URL,
     withCredentials : true,
     timeout : 100000,
     headers : {"Content-Type" : 'application/json'} 
@@ -19,6 +22,24 @@ api.interceptors.request.use(
         return config;
     },
     (error) => Promise.reject(error)
+);
+
+let redirectingForExpiredSession = false;
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error?.response?.status;
+        const requestUrl = error?.config?.url || '';
+        if ([401, 403].includes(status) && !requestUrl.includes('/sysuser/login') && !redirectingForExpiredSession) {
+            redirectingForExpiredSession = true;
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            toast.error('Your session expired. Please log in again.');
+            if (window.location.pathname !== '/login') window.location.assign('/login?session=expired');
+            else redirectingForExpiredSession = false;
+        }
+        return Promise.reject(error);
+    }
 );
 
 export default api;

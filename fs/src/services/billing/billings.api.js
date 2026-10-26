@@ -86,8 +86,10 @@ export const downloadBillPDF = async (billingId) => {
     const link = document.createElement("a");
     link.href = url;
     link.download = `invoice-${billingId}.pdf`;
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch {
     throw new Error("Failed to download PDF");
   }

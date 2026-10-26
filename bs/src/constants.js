@@ -1,4 +1,5 @@
- const isHttpsOrigin = process.env.CORS_ORIGIN?.startsWith("https://");
+ const isHttpsOrigin = [process.env.CORS_ORIGIN, process.env.CORS_ORIGIN_NETWORK]
+    .some((origin) => origin?.startsWith("https://"));
 
  const options = {
     httpOnly: true,

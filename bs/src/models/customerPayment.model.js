@@ -10,7 +10,8 @@ const customerPaymentSchema = new mongoose.Schema({
         default: "cash"
     },
     payers_name: { type: String, default: "self", trim: true },
-    payment_date: { type: Date, required: true, index: true }
+    payment_date: { type: Date, required: true, index: true },
+    isDummy: { type: Boolean, default: false, index: true }
 }, { collection: "customerpayments" });
 
 const CustomerPayment = mongoose.models.CustomerPayment

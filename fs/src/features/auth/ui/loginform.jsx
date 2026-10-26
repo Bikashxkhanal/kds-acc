@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button, InputBox } from "../../../components/index.js";
 import { loginSysUser } from "../../../services/auth/auth.js";
 import { toast } from 'react-toastify'
@@ -6,6 +7,7 @@ import { useSelector , useDispatch} from "react-redux";
 import { loginFail, loginStart, loginSuccess } from "../../../store/authSlice.js";
 
 const LoginForm = () => {
+    const [searchParams] = useSearchParams();
     const dispatch = useDispatch();
     const { isLoading } = useSelector(state => state.auth)
 
@@ -13,6 +15,10 @@ const LoginForm = () => {
         phone_number: "",
         password: ""
     });
+
+    useEffect(() => {
+        if (searchParams.get('session') === 'expired') toast.info('Your session expired. Please log in again.');
+    }, [searchParams]);
 
     const handleSubmit = async () => {
         try {

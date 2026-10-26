@@ -5,13 +5,14 @@ import cors from 'cors'
 
 const app = express()
 
-app.use(
-    cors({
-        origin : process.env.CORS_ORIGIN,
-        credentials : true
-    })
-    
-)
+const allowedOrigins = [process.env.CORS_ORIGIN, process.env.CORS_ORIGIN_NETWORK].filter(Boolean);
+app.use(cors({
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    },
+    credentials: true
+}));
 // console.log(process.env.CORS_ORIGIN);
 
 // console.log(process.env.CORS_ORIGIN);
@@ -29,11 +30,13 @@ import { customerRouter } from './routes/customer.route.js'
 import { staffRouter } from './routes/staff.route.js'
 import { billingsRouter } from './routes/billings.route.js'
 import { sysUserRouter } from './routes/sysuser.route.js'
+import businessRouter from './routes/business.route.js'
 
 app.use("/api/v1/customer", customerRouter)
 app.use("/api/v1/staff", staffRouter);
 app.use("/api/v1/billings", billingsRouter);
 app.use("/api/v1/sysuser", sysUserRouter);
+app.use("/api/v1/business", businessRouter);
 
 
 app.use((err, req, res, next) => {
@@ -44,13 +47,3 @@ app.use((err, req, res, next) => {
 
 
 export {app}
-
-
-
-
-
-
-
-
-
- 

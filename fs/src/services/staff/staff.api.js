@@ -36,19 +36,31 @@ const addStaffPayout = async (details) => {
     
 }
 
-const getAllStaffs = async({page = 1, limit = 10} = {}) => {
+const getAllStaffs = async({page = 1, limit = 12, q = '', role = '', status = ''} = {}) => {
     try {
-        const response = await api.get('api/v1/staff/all', {
-            params : {
-                page , 
-                limit
-            }
+        const response = await api.get('/api/v1/staff/all', {
+            params : { page, limit, q, role, status }
         })
 
         return response?.data;
     } catch (error) {
         throw error?.response?.data;
     }
+}
+
+const createStaff = async (payload) => {
+    try { const response = await api.post('/api/v1/staff', payload); return response.data; }
+    catch (error) { throw error?.response?.data || error; }
+}
+
+const updateStaff = async (id, payload) => {
+    try { const response = await api.put(`/api/v1/staff/${id}`, payload); return response.data; }
+    catch (error) { throw error?.response?.data || error; }
+}
+
+const deleteStaff = async (id) => {
+    try { const response = await api.delete(`/api/v1/staff/${id}`); return response.data; }
+    catch (error) { throw error?.response?.data || error; }
 }
 
 const getAStaffDetails = async (staff_id) => {
@@ -120,6 +132,9 @@ export {
     addStaffRemunation, 
     addStaffPayout, 
     getAllStaffs,
+    createStaff,
+    updateStaff,
+    deleteStaff,
     getAStaffDetails, 
     getAStaffRemunationAndPayoutDetails, 
     getAStaffPreviewDetails, 

@@ -339,20 +339,16 @@ const downloadBillPDF = asyncHandler(async (req, res) => {
 
     const html = buildInvoiceHtml(invoice);
     const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
-
-    const pdf = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        displayHeaderFooter: true,
-        footerTemplate: `<div style="width:100%;font-size:9px;text-align:center;color:#94a3b8;padding:0 10mm">
-            Page <span class="pageNumber"></span> of <span class="totalPages"></span>
-        </div>`,
-        margin: { top: "8mm", bottom: "12mm", left: "10mm", right: "10mm" }
-    });
-
-    await browser.close();
+    let pdf;
+    try {
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: "networkidle0" });
+        pdf = await page.pdf({
+            format: "A4", printBackground: true, displayHeaderFooter: true,
+            footerTemplate: `<div style="width:100%;font-size:9px;text-align:center;color:#94a3b8;padding:0 10mm">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>`,
+            margin: { top: "8mm", bottom: "12mm", left: "10mm", right: "10mm" }
+        });
+    } finally { await browser.close(); }
 
     res.set({
         "Content-Type": "application/pdf",

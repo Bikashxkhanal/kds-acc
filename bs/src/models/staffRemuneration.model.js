@@ -6,7 +6,8 @@ const staffRemunerationSchema = new mongoose.Schema({
     title: { type: String, enum: ["salary", "bhatta"], required: true },
     discription: { type: String, trim: true, default: "" },
     amount: { type: Number, required: true, min: 0 },
-    date: { type: Date, required: true, index: true }
+    date: { type: Date, required: true, index: true },
+    isDummy: { type: Boolean, default: false, index: true }
 }, { collection: "staffremunerations" });
 
 const StaffRemuneration = mongoose.models.StaffRemuneration

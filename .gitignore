@@ -81,6 +81,8 @@ web_modules/
 # dotenv environment variable files
 bs/.env
 bs/.env.example
+!bs/.env.example
+bs/.env.demo
 
 
 

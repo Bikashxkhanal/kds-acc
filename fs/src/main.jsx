@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { createBrowserRouter, RouterProvider} from 'react-router-dom'
@@ -9,7 +8,6 @@ import { Provider } from 'react-redux'
 import store from './store/store'
 import PublicRoute from './utils/publicRoute'
 import CustomerMainUI from './features/customer/customer.main'
-import MainContent from './features/dashboradUI/mainContent'
 import AccountDetailsOfCustomer from './features/customer/accountdetails.customer.ui'
 import StaffUI from './features/staff/staff.ui'
 import StaffList from './features/staff/stafflist'
@@ -17,6 +15,10 @@ import StaffAccountDetails from './features/staff/staff.accountdetails.ui'
 import BillingsList from './features/billing/billings.list'
 import BillingForm from './features/billing/billing.form'
 import BillingDetail from './features/billing/billing.detail'
+import SalesPage from './features/sales/sales.page'
+import DashboardPage from './features/dashboard/dashboard.page'
+import PurchasesPage from './features/purchases/purchases.page'
+import StaffForm from './features/staff/staff.form'
 
 
 const router = createBrowserRouter([
@@ -38,7 +40,7 @@ const router = createBrowserRouter([
           children: [
             {
               index: true,
-              element: <MainContent />
+              element: <DashboardPage />
             },
             {
               path: 'customer',
@@ -47,6 +49,19 @@ const router = createBrowserRouter([
             {
               path: 'customer/:id',
               element: <AccountDetailsOfCustomer />
+            },
+            { path: 'customers', element: <CustomerMainUI /> },
+            { path: 'customers/:id', element: <AccountDetailsOfCustomer /> },
+            { path: 'sales', element: <SalesPage /> },
+            { path: 'purchases', element: <PurchasesPage /> },
+            { path: 'purchases/:id', element: <PurchasesPage /> },
+            {
+              path: 'staff/new',
+              element: <StaffForm />
+            },
+            {
+              path: 'staff/:id/edit',
+              element: <StaffForm />
             },
             {
               path: 'staff',

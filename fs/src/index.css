@@ -90,7 +90,22 @@
   z-index: 1;
 }
 
+.chart-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: chart-line-draw 850ms ease-out forwards;
+}
+
+.chart-line-delay { animation-delay: 120ms; }
+.chart-area { animation: chart-area-fade 650ms ease-out both; }
+.chart-point { transition: r 140ms ease, opacity 140ms ease; }
+
+@keyframes chart-line-draw { to { stroke-dashoffset: 0; } }
+@keyframes chart-area-fade { from { opacity: 0; } to { opacity: 1; } }
+
 @media print {
+  @page { size: A4; margin: 12mm; }
+
   body * {
     visibility: hidden;
   }

@@ -6,8 +6,8 @@ import CustomerWork from "../models/customerWork.model.js";
 import { getNextSequence } from "../utils/autoIncrement.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { isVehicleExists } from "./vehicle.controller.js";
 import puppeteer from 'puppeteer';
+import mongoose from 'mongoose';
 
 const getCustomerPerDetails = async (customerId) => {
     await connectMongo();
@@ -42,8 +42,8 @@ const searchCustomer = asyncHandler(async (req, res) => {
 
    await connectMongo();
    const result = await Customer.find({
-       name: { $regex: q.trim(), $options: "i" }
-   }).select("id name").lean();
+       $or: [{ name: { $regex: q.trim(), $options: "i" } }, { phone_number: { $regex: q.trim(), $options: "i" } }]
+   }).select("id name phone_number").lean();
 
    return res.status(200).json(
         new ApiResponse(200, "Search successfull", result)
@@ -69,7 +69,7 @@ const getACustomer = asyncHandler(async (req, res) => {
 });
 
 const getAllCustomers = asyncHandler(async (req, res) => {
-    const { page, limit } = req?.query;
+    const { page, limit, q = "", customer_type, location = "" } = req?.query;
 
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 15;
@@ -77,10 +77,15 @@ const getAllCustomers = asyncHandler(async (req, res) => {
 
     await connectMongo();
 
-    const totalCustomers = await Customer.countDocuments();
+    const query = {};
+    if (q.trim()) query.$or = [{ name: { $regex: q.trim(), $options: "i" } }, { phone_number: { $regex: q.trim(), $options: "i" } }];
+    if (["Private", "Governmental", "NGO"].includes(customer_type)) query.customer_type = customer_type;
+    if (location.trim()) query.address = { $regex: location.trim(), $options: "i" };
+    const totalCustomers = await Customer.countDocuments(query);
     const metaData = [{ totalCustomers }];
 
     const rows = await Customer.aggregate([
+        { $match: query },
         {
             $lookup: {
                 from: "customerpayments",
@@ -118,6 +123,7 @@ const getAllCustomers = asyncHandler(async (req, res) => {
                 name: 1,
                 phone_number: 1,
                 address: 1,
+                customer_type: { $ifNull: ["$customer_type", "Private"] },
                 Total_Paid_Amt: 1,
                 Total_Work_Amt: 1,
                 Payable: 1
@@ -133,15 +139,15 @@ const getAllCustomers = asyncHandler(async (req, res) => {
 })
 
 const addACustomer = asyncHandler(async (req, res) => {
-    const { name, phone_number, address } = req?.body;
+    const { name, phone_number, address, customer_type = "Private" } = req?.body;
 
-    if (name?.trim() === "" || phone_number.trim() === "" || address?.trim() === "") {
-        throw new ApiError(400, "All data is requied");
-    }
+    if (String(name || "").trim().length < 3) throw new ApiError(400, "Customer name must be at least 3 characters");
 
+    if (!["Private", "Governmental", "NGO"].includes(customer_type)) throw new ApiError(400, "Select a valid customer type");
+    if (!/^\d{10}$/.test(String(phone_number || ""))) throw new ApiError(400, "Phone number must contain 10 digits");
     await connectMongo();
     const id = await getNextSequence("customer");
-    await Customer.create({ id, name, phone_number, address });
+    await Customer.create({ id, name, phone_number, address, customer_type });
 
     res.status(200).json(
         new ApiResponse(200, "Customer created successfully")
@@ -153,7 +159,13 @@ const deactiveACustomerAccount = asyncHandler(async (req, res, next) => {
 })
 
 const updateACustomerDetails = asyncHandler(async (req, res, next) => {
-    //details to be updated should be taken
+    const customerId = Number(req.params.customerId);
+    const { name, phone_number, address = "", customer_type = "Private" } = req.body;
+    if (!Number.isInteger(customerId) || String(name || "").trim().length < 3 || !/^\d{10}$/.test(String(phone_number || "")) || !["Private", "Governmental", "NGO"].includes(customer_type)) throw new ApiError(400, "Enter a valid name, 10 digit phone number, and customer type");
+    await connectMongo();
+    const customer = await Customer.findOneAndUpdate({ id: customerId }, { name: name.trim(), phone_number, address, customer_type }, { new: true, runValidators: true });
+    if (!customer) throw new ApiError(404, "Customer not found");
+    return res.status(200).json(new ApiResponse(200, "Customer updated successfully", customer));
 })
 
 const addCustomerPaymentDetail = asyncHandler(async (req, res) => {
@@ -216,10 +228,10 @@ const getACustomerPaymentDetails = asyncHandler(async (req, res) => {
 })
 
 const addCustomerWorkDetails = asyncHandler(async (req, res) => {
-    const { customer_id, vehicle_id, title, quantity, quantity_unit_notation, rate, work_date, total } = req?.body;
+    const { customer_id, vehicle_id, vehicle_type = "Tractor", description = "", title, quantity, quantity_unit_notation, rate, work_date, total } = req?.body;
 
     if (!customer_id) throw new ApiError(400, "Customer Id is required")
-    if (!vehicle_id) throw new ApiError(400, "Vehicle Id is required")
+    if (!["Tractor", "JCB", "Tipper"].includes(vehicle_type)) throw new ApiError(400, "Select a valid vehicle type")
 
     const f_work_date = work_date ?? null;
 
@@ -230,9 +242,6 @@ const addCustomerWorkDetails = asyncHandler(async (req, res) => {
     const customer = await isCustomerExist({ customer_id })
     if (customer.length == 0) throw new ApiError(400, "Invalid customer Id");
 
-    const vehicle = await isVehicleExists({ vehicle_id });
-    if (vehicle.length == 0) throw new ApiError(400, "Invalid Vehicle Id")
-
     if (quantity <= 0) throw new ApiError(400, "Quantity must be greater than 0")
     if (rate <= 0) throw new ApiError(400, "rate must be greater than 0")
 
@@ -241,7 +250,9 @@ const addCustomerWorkDetails = asyncHandler(async (req, res) => {
     await CustomerWork.create({
         id,
         customer_id: Number(customer_id),
-        vehicle_id: Number(vehicle_id),
+        vehicle_id: vehicle_id ? Number(vehicle_id) : null,
+        vehicle_type,
+        description: String(description).trim().slice(0, 240),
         title,
         quantity: String(quantity),
         quantity_unit_notation,
@@ -265,7 +276,7 @@ const getCustomerWorkDetails = asyncHandler(async (req, res) => {
 
     await connectMongo();
     const result = await CustomerWork.find({ customer_id: Number(customer_id) })
-        .select("customer_id vehicle_id title quantity quantity_unit_notation rate work_date")
+        .select("customer_id vehicle_id vehicle_type description title quantity quantity_unit_notation rate work_date")
         .lean();
 
     res.status(200).json(
@@ -283,7 +294,7 @@ const buildCustomerWorkPaymentRows = (payments = [], works = []) => {
 
     const workRows = works.map((wd) => ({
         date: wd.work_date,
-        discription: `${wd.title} | Vehicle No: ${wd.vehicle_id} | Qty: ${wd.quantity} ${wd.quantity_unit_notation} | Rate: ${wd.rate}`,
+        discription: `${wd.title} | ${wd.vehicle_type || `Vehicle No: ${wd.vehicle_id}`} | ${wd.description ? `${wd.description} | ` : ""}Qty: ${wd.quantity} ${wd.quantity_unit_notation} | Rate: ${wd.rate}`,
         Credit: 0,
         Debit: wd.total
     }));
@@ -537,6 +548,27 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
     }
 })
 
+const WORK_TITLES = { Tractor: ["Cultivation Rotavator", "Cultivation Cultivator", "Boulders", "Gravel", "Soil", "Sand", "Puddling"], JCB: ["Excavation"], Tipper: ["Gravel", "Soil", "Sand"] };
+const addCustomerWorkDetailsBatch = asyncHandler(async (req, res) => {
+    const entries = req.body?.entries;
+    if (!Array.isArray(entries) || entries.length < 1 || entries.length > 100) throw new ApiError(400, "Provide between 1 and 100 sales entries");
+    await connectMongo();
+    for (const entry of entries) {
+        const qty = Number(entry.quantity), rate = Number(entry.rate), vehicle = entry.vehicle_type;
+        if (!Number.isInteger(Number(entry.customer_id)) || !WORK_TITLES[vehicle]?.includes(entry.title) || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(new Date(entry.work_date).getTime()) || !["tip", "hours", "cubemeter"].includes(entry.quantity_unit_notation)) throw new ApiError(400, "A sales entry has invalid customer, title, date, quantity, unit, or rate");
+        if (!(await Customer.exists({ id: Number(entry.customer_id) }))) throw new ApiError(400, "A sales entry refers to an unknown customer");
+    }
+    const session = await mongoose.startSession();
+    try {
+        await session.withTransaction(async () => {
+            const documents = [];
+            for (const entry of entries) documents.push({ id: await getNextSequence("customerWork"), customer_id: Number(entry.customer_id), vehicle_type: entry.vehicle_type, title: entry.title, description: String(entry.description || "").trim().slice(0, 240), quantity: String(entry.quantity), quantity_unit_notation: entry.quantity_unit_notation, rate: Number(entry.rate), total: Number(entry.quantity) * Number(entry.rate), work_date: new Date(entry.work_date) });
+            await CustomerWork.insertMany(documents, { session });
+        });
+    } finally { await session.endSession(); }
+    return res.status(201).json(new ApiResponse(201, "All sales entries saved successfully", { count: entries.length }));
+});
+
 export {
     addACustomer,
     getACustomer,
@@ -546,6 +578,7 @@ export {
     addCustomerPaymentDetail,
     getACustomerPaymentDetails,
     addCustomerWorkDetails,
+    addCustomerWorkDetailsBatch,
     getCustomerWorkDetails,
     searchCustomer,
     getACustomerWorkAndPaymentDetails,

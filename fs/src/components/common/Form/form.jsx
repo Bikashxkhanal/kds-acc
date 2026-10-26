@@ -121,7 +121,7 @@ const Form = ({
                          {...register(fld.name)} 
                              >
                                 <option value="">Select a {humanizeLabel(fld.name)}</option>
-                                {fld?.options?.map(opt => (<option key={opt}> {opt} </option>))}
+                                {fld?.options?.map(opt => (<option key={opt} value={opt}>{opt}</option>))}
                         </select>
 
                     }

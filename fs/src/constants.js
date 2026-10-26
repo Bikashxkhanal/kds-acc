@@ -2,6 +2,8 @@ import {Person, Speedometer2, BoxArrowDownRight, Receipt} from 'react-bootstrap-
 const SIDEBAR_NAVIGATION = [
         'dashboard' ,
          'customer',
+        'sales',
+        'purchases',
         'staff',
         'billings',
     
@@ -12,14 +14,16 @@ const ICONS = {
     'customer' : 'bi bi-people',
     'dashboard' : 'bi bi-speedometer2' ,
     'billings' : 'bi bi-receipt' 
+    ,'sales': 'bi bi-graph-up-arrow', 'purchases': 'bi bi-bag-check'
 
 }
 
 const LINKS = {
     'dashboard' : '/',
-    'customer' : '/customer',
+    'customer' : '/customers',
     'staff' : '/staff',
     'billings' : '/billings'
+    ,'sales': '/sales', 'purchases': '/purchases'
 }
 
 export {

@@ -5,7 +5,8 @@ const staffPaymentSchema = new mongoose.Schema({
     staff_id: { type: Number, required: true, index: true },
     discription: { type: String, trim: true, default: "" },
     amount: { type: Number, required: true, min: 0 },
-    date: { type: Date, default: Date.now, index: true }
+    date: { type: Date, default: Date.now, index: true },
+    isDummy: { type: Boolean, default: false, index: true }
 }, { collection: "staffpayments" });
 
 const StaffPayment = mongoose.models.StaffPayment

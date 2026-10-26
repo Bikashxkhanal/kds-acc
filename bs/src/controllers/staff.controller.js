@@ -10,7 +10,7 @@ import puppeteer from "puppeteer";
 
 const getAStaffPersonalDtls = async (staff_id) => {
     await connectMongo();
-    const details = await Staff.findOne({ id: Number(staff_id) }).lean();
+    const details = await Staff.findOne({ id: Number(staff_id), deletedAt: { $exists: false } }).lean();
     return details || null;
 }
 
@@ -71,37 +71,72 @@ const isStaffExists = async ({ phone_number, staff_id } = {}) => {
 
     if (!conditions.length) throw new ApiError(400, "Staff Id is required");
 
-    const staff = await Staff.findOne({ $or: conditions }).select("id").lean();
+    const staff = await Staff.findOne({ $and: [{ $or: conditions }, { deletedAt: { $exists: false } }] }).select("id").lean();
     return Boolean(staff);
 }
 
 const addAStaff = asyncHandler(async (req, res) => {
-    const { name, phone_number, address, dob, salary } = req.body;
-
-    if (name?.trim() == null || phone_number?.trim() == null || address?.trim() == null || dob?.trim() == null || !salary) {
-        throw new ApiError(400, "All details of staff is required");
-    }
-
-    if (salary <= 0) throw new ApiError(400, "Salary Cannot be negative or Zero");
-
-    const isExists = await isStaffExists({ phone_number })
-    if (isExists) throw new ApiError(400, "Phone number already exist")
-
+    const staffData = validateStaffInput(req.body);
     await connectMongo();
+    if (await Staff.exists({ phone_number: staffData.phone_number })) throw new ApiError(409, "Phone number already exists");
     const id = await getNextSequence("staff");
-    await Staff.create({
-        id,
-        name,
-        phone_number,
-        address,
-        dob: new Date(dob),
-        salary: Number(salary)
-    });
+    await Staff.create({ id, ...staffData });
 
     return res.status(200).json(
         new ApiResponse(200, "Staff addeed successfully", { lastInsertedId: id })
     )
 })
+
+const STAFF_ROLES = ["Tractor Driver", "JCB Operator", "Tipper Driver", "Helper", "Accountant", "Manager", "Other"];
+const STAFF_VEHICLES = ["Tractor", "JCB", "Tipper", "None"];
+const validateStaffInput = (body = {}) => {
+    const name = String(body.name || "").trim();
+    const phone_number = String(body.phone_number || "").trim();
+    const email = String(body.email || "").trim().toLowerCase();
+    const role = body.role || "Other";
+    const assignedVehicle = body.assignedVehicle || "None";
+    const dateOfJoining = new Date(body.dateOfJoining || body.dob || "");
+    const salary = Number(body.salary);
+    const paymentType = body.paymentType || "Monthly";
+    const status = body.status || "Active";
+    if (name.length < 2 || name.length > 100) throw new ApiError(400, "Full name must be between 2 and 100 characters");
+    if (!/^\d{10}$/.test(phone_number)) throw new ApiError(400, "Phone number must contain exactly 10 digits");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ApiError(400, "Enter a valid email address");
+    if (!STAFF_ROLES.includes(role) || !STAFF_VEHICLES.includes(assignedVehicle)) throw new ApiError(400, "Select a valid role and assigned vehicle");
+    if (!Number.isFinite(dateOfJoining.getTime())) throw new ApiError(400, "Date of joining is required and must be valid");
+    if (!Number.isFinite(salary) || salary <= 0) throw new ApiError(400, "Salary or daily wage must be greater than zero");
+    if (!["Monthly", "Daily"].includes(paymentType) || !["Active", "Inactive"].includes(status)) throw new ApiError(400, "Select a valid payment type and status");
+    const emergencyContactPhone = String(body.emergencyContactPhone || "").trim();
+    if (emergencyContactPhone && !/^\d{10}$/.test(emergencyContactPhone)) throw new ApiError(400, "Emergency contact phone must contain exactly 10 digits");
+    return {
+        name, phone_number, email, role, assignedVehicle, address: String(body.address || "").trim().slice(0, 300),
+        dob: dateOfJoining, dateOfJoining, salary, paymentType,
+        idProofType: String(body.idProofType || "").trim().slice(0, 40), idProofNumber: String(body.idProofNumber || "").trim().slice(0, 80),
+        emergencyContactName: String(body.emergencyContactName || "").trim().slice(0, 100), emergencyContactPhone,
+        status, notes: String(body.notes || "").trim().slice(0, 1000)
+    };
+};
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const updateAStaff = asyncHandler(async (req, res) => {
+    const staffId = Number(req.params.staff_id);
+    if (!Number.isInteger(staffId) || staffId <= 0) throw new ApiError(400, "Invalid staff ID");
+    const staffData = validateStaffInput(req.body);
+    await connectMongo();
+    if (await Staff.exists({ phone_number: staffData.phone_number, id: { $ne: staffId } })) throw new ApiError(409, "Phone number already exists");
+    const updated = await Staff.findOneAndUpdate({ id: staffId, deletedAt: { $exists: false } }, staffData, { new: true, runValidators: true });
+    if (!updated) throw new ApiError(404, "Staff member not found");
+    res.json(new ApiResponse(200, "Staff updated successfully", updated));
+});
+
+const deleteAStaff = asyncHandler(async (req, res) => {
+    const staffId = Number(req.params.staff_id);
+    if (!Number.isInteger(staffId) || staffId <= 0) throw new ApiError(400, "Invalid staff ID");
+    await connectMongo();
+    const deleted = await Staff.findOneAndUpdate({ id: staffId, deletedAt: { $exists: false } }, { status: "Inactive", deletedAt: new Date() }, { new: true });
+    if (!deleted) throw new ApiError(404, "Staff member not found");
+    res.json(new ApiResponse(200, "Staff archived successfully; payment history was preserved"));
+});
 
 const getAStaffPersonalDetails = asyncHandler(async (req, res) => {
     const { staff_id } = req?.params;
@@ -212,14 +247,16 @@ const getAStaffStippendAndPayout = asyncHandler(async (req, res) => {
 
 const getSearchedStaffs = asyncHandler(async (req, res) => {
     const { q = '' } = req?.query;
-    if (!q?.trim()) {
-         throw new ApiError(400, "Must have search query");
-    }
+    if (!String(q).trim() || String(q).length > 100) throw new ApiError(400, "Search must be between 1 and 100 characters");
+    const search = escapeRegExp(String(q).trim());
 
     await connectMongo();
     const response = await Staff.find({
-        name: { $regex: q.trim(), $options: "i" }
-    }).select("id name").lean();
+        $and: [
+            { $or: [{ name: { $regex: search, $options: "i" } }, { phone_number: { $regex: search, $options: "i" } }] },
+            { deletedAt: { $exists: false } }
+        ]
+    }).select("id name phone_number role assignedVehicle status").lean();
 
     return res.status(200).json(
         new ApiResponse(200, "Staff Fetched successfully", response)
@@ -227,28 +264,42 @@ const getSearchedStaffs = asyncHandler(async (req, res) => {
 })
 
 const getAllStaffs = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10 } = req?.query;
+    const { page = 1, limit = 12, q = "", role, status } = req?.query;
 
-    if (isNaN(page) || isNaN(limit)) throw new ApiError(401, "Invalid request, page and limit must be a number");
+    if (!/^\d+$/.test(String(page)) || !/^\d+$/.test(String(limit)) || Number(page) < 1 || Number(limit) < 1 || Number(limit) > 100) throw new ApiError(400, "Page and limit must be valid positive numbers");
 
     const offset = (Number(page) - 1) * Number(limit)
     const finalLimit = Number(limit);
+    if (String(q).length > 100) throw new ApiError(400, "Search query cannot exceed 100 characters");
+    if (role && !STAFF_ROLES.includes(role)) throw new ApiError(400, "Invalid staff role filter");
+    if (status && !["Active", "Inactive"].includes(status)) throw new ApiError(400, "Invalid staff status filter");
 
     await connectMongo();
+    const filter = { deletedAt: { $exists: false } };
+    if (String(q).trim()) {
+        const search = escapeRegExp(String(q).trim());
+        filter.$or = [{ name: { $regex: search, $options: "i" } }, { phone_number: { $regex: search, $options: "i" } }];
+    }
+    if (role === "Other") filter.$and = [{ $or: [{ role: "Other" }, { role: { $exists: false } }] }];
+    else if (role) filter.role = role;
+    if (status === "Inactive") filter.status = "Inactive";
+    if (status === "Active") filter.$and = [...(filter.$and || []), { $or: [{ status: "Active" }, { status: { $exists: false } }] }];
 
     const [staffDetails, staffCount] = await Promise.all([
-        Staff.find({})
-            .select("id name phone_number address")
+        Staff.find(filter)
+            .select("id name phone_number address role assignedVehicle status email salary paymentType dateOfJoining")
+            .sort({ name: 1 })
             .skip(offset)
             .limit(finalLimit)
             .lean(),
-        Staff.countDocuments()
+        Staff.countDocuments(filter)
     ]);
+    const normalizedStaff = staffDetails.map((staff) => ({ ...staff, role: staff.role || "Other", assignedVehicle: staff.assignedVehicle || "None", status: staff.status || "Active" }));
 
     const metaData = [{ staffCount }];
 
     return res.status(200).json(
-        new ApiResponse(200, "Staff Details fetched successfully", { staffDetails, metaData })
+        new ApiResponse(200, "Staff Details fetched successfully", { staffDetails: normalizedStaff, metaData })
     )
 })
 
@@ -452,6 +503,8 @@ const downlaodAStaffStippendAndPayoutDetailsPDF = asyncHandler(async (req, res) 
 
 export {
     addAStaff,
+    updateAStaff,
+    deleteAStaff,
     getAStaffPersonalDetails,
     addAStaffRemunationDetails,
     getAStaffStippendAndPayout,

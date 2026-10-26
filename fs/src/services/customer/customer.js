@@ -36,7 +36,7 @@ const addCustomerPaymentDetail = async (data) => {
 const getAllCustomers = async (params) => {
     try {
         const res = await api.get('/api/v1/customer', {
-            params : {page : params?.page , limit : params?.limit}
+            params : {page : params?.page , limit : params?.limit, q: params?.q, customer_type: params?.customer_type, location: params?.location}
         });
 
         console.log(res?.data);
@@ -124,8 +124,13 @@ const addNewCustomer = async (customerDetails) => {
 
         return response?.data;
     } catch (error) {
-        return error.response.data;
+        throw error?.response?.data || error;
     }
+}
+
+const updateCustomer = async (id, customerDetails) => {
+    const response = await api.put(`/api/v1/customer/${id}`, customerDetails);
+    return response?.data;
 }
 
 
@@ -138,6 +143,7 @@ export {
     getACustomerPersonalDetails, 
     getACustomerWorkAndPaymentPreviewData, 
     downLoadWorkAndPaymentDataPdf, 
-    addNewCustomer
+    addNewCustomer,
+    updateCustomer
 
 }

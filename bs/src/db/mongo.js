@@ -15,7 +15,7 @@ const connectMongo = async () => {
 
     if (!mongoConnectionPromise) {
         mongoConnectionPromise = mongoose.connect(uri, {
-            dbName: process.env.MONGODB_DB_NAME || undefined
+            dbName: process.env.MONGODB_DB_NAME || process.env.MONGO_DB_NAME || undefined
         });
     }
 
