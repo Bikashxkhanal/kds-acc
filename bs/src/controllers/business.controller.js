@@ -1,5 +1,7 @@
+import mongoose from 'mongoose';
 import connectMongo from '../db/mongo.js';
 import Purchase from '../models/purchase.model.js';
+import Supplier from '../models/supplier.model.js';
 import Customer from '../models/customer.model.js';
 import CustomerPayment from '../models/customerPayment.model.js';
 import CustomerWork from '../models/customerWork.model.js';
@@ -16,11 +18,16 @@ import StaffRemuneration from '../models/staffRemuneration.model.js';
 const purchaseView = (p) => { const paidAmount = (p.payments || []).reduce((s, x) => s + Number(x.amount), 0); return { ...p, paidAmount, balance: Math.max(0, p.totalValue - paidAmount), status: paidAmount >= p.totalValue ? 'Paid' : paidAmount > 0 ? 'Partially Paid' : 'Unpaid' }; };
 export const getPurchases = asyncHandler(async (_req, res) => { await connectMongo(); const purchases = await Purchase.find().sort({ date: -1 }).lean(); res.json(new ApiResponse(200, 'Purchases loaded', purchases.map(purchaseView))); });
 export const createPurchase = asyncHandler(async (req, res) => {
-  const { billNo = '', description, totalValue, paidAmount = 0, supplier, supplierId, title = 'Others', customTitle = '', date, usedBy } = req.body;
+  const { billNo = '', description, totalValue, paidAmount = 0, supplierId, title = 'Others', customTitle = '', date, usedBy } = req.body;
   const purchaseDate = parseISODate(date, 'date');
-  if (!String(description || '').trim() || !String(supplier || '').trim() || !Number.isFinite(Number(totalValue)) || Number(totalValue) <= 0 || !Number.isFinite(Number(paidAmount)) || Number(paidAmount) < 0 || Number(paidAmount) > Number(totalValue) || !['Tractor', 'JCB', 'Tipper'].includes(usedBy)) throw new ApiError(400, 'Enter valid purchase details; paid amount must be between zero and total value');
+  if (!supplierId) throw new ApiError(400, 'Please select a supplier');
+  if (!String(description || '').trim() || !Number.isFinite(Number(totalValue)) || Number(totalValue) <= 0 || !Number.isFinite(Number(paidAmount)) || Number(paidAmount) < 0 || Number(paidAmount) > Number(totalValue) || !['Tractor', 'JCB', 'Tipper'].includes(usedBy)) throw new ApiError(400, 'Enter valid purchase details; paid amount must be between zero and total value');
   if (!['Fuel', 'Mobil (oil)', 'Parts', 'Others'].includes(title) || (title === 'Others' && !String(customTitle || description).trim())) throw new ApiError(400, 'Select a valid purchase title');
-  await connectMongo(); const purchase = await Purchase.create({ billNo, description: description.trim(), title, customTitle: title === 'Others' ? String(customTitle || description).trim() : '', supplierId: supplierId || null, totalValue: Number(totalValue), supplier: supplier.trim(), date: purchaseDate, usedBy, payments: Number(paidAmount) ? [{ amount: Number(paidAmount), date: purchaseDate, note: 'Initial payment' }] : [] });
+  await connectMongo();
+  if (!mongoose.isValidObjectId(supplierId)) throw new ApiError(400, 'Please select a valid supplier');
+  const selectedSupplier = await Supplier.findById(supplierId).select('name');
+  if (!selectedSupplier) throw new ApiError(400, 'Please select a valid supplier');
+  const purchase = await Purchase.create({ billNo, description: description.trim(), title, customTitle: title === 'Others' ? String(customTitle || description).trim() : '', supplierId: selectedSupplier._id, totalValue: Number(totalValue), supplier: selectedSupplier.name, date: purchaseDate, usedBy, payments: Number(paidAmount) ? [{ amount: Number(paidAmount), date: purchaseDate, note: 'Initial payment' }] : [] });
   res.status(201).json(new ApiResponse(201, 'Purchase saved', purchaseView(purchase.toObject())));
 });
 export const getPurchase = asyncHandler(async (req, res) => { await connectMongo(); const p = await Purchase.findById(req.params.id).lean(); if (!p) throw new ApiError(404, 'Purchase not found'); res.json(new ApiResponse(200, 'Purchase loaded', purchaseView(p))); });
