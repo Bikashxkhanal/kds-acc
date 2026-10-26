@@ -10,7 +10,9 @@ import { parseISODate } from '../utils/isoDate.js';
 const summary = async (supplier) => {
   const purchases = await Purchase.find({ supplierId: supplier._id }).sort({ date: -1 }).lean();
   const purchased = purchases.reduce((sum, p) => sum + Number(p.totalValue || 0), 0);
-  const paid = (supplier.payments || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const purchasePayments = purchases.reduce((sum, purchase) => sum + (purchase.payments || []).reduce((paid, payment) => paid + Number(payment.amount || 0), 0), 0);
+  const supplierPayments = (supplier.payments || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const paid = purchasePayments + supplierPayments;
   return { ...supplier, totalPurchased: purchased, totalPaid: paid, balance: purchased - paid, purchases };
 };
 export const listSuppliers = asyncHandler(async (_req, res) => {
