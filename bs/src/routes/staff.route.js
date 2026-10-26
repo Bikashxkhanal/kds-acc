@@ -13,6 +13,7 @@ import {
         downlaodAStaffStippendAndPayoutDetailsPDF
  } from "../controllers/staff.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { requireAdmin } from "../middlewares/auth.middleware.js";
 
 
 const staffRouter = Router()
@@ -21,7 +22,7 @@ const staffRouter = Router()
 staffRouter.route("/").post(verifyJWT, addAStaff)
 staffRouter.route("/all").get(verifyJWT, getAllStaffs)
 staffRouter.route("/").get(verifyJWT, getSearchedStaffs)
-staffRouter.route("/:staff_id").get(verifyJWT, getAStaffPersonalDetails).put(verifyJWT, updateAStaff).delete(verifyJWT, deleteAStaff)
+staffRouter.route("/:staff_id").get(verifyJWT, getAStaffPersonalDetails).put(verifyJWT, requireAdmin, updateAStaff).delete(verifyJWT, requireAdmin, deleteAStaff)
 staffRouter.route("/remunation").post(verifyJWT, addAStaffRemunationDetails)
 staffRouter.route("/payout").post(verifyJWT, addAStaffPayoutDetails)
 staffRouter.route("/:staff_id/remu-payout-details").get(verifyJWT, getAStaffStippendAndPayout)

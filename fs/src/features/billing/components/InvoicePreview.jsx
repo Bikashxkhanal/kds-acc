@@ -1,16 +1,15 @@
 import { formatCurrency, formatNumber } from "../../../utils/currency";
 import { amountToWords } from "../../../utils/numberToWords";
+import { formatBS } from "../../../utils/bsDate.js";
+import { useI18n } from "../../../i18n/I18nProvider.jsx";
 
 const formatDate = (value) => {
   if (!value) return "—";
-  return new Date(value).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
+  return formatBS(value, 'long', document.documentElement.lang || 'en');
 };
 
 const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => {
+  const { t } = useI18n();
   const {
     invoiceNumber = "DRAFT",
     billNumber = "",
@@ -51,19 +50,19 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
             </p>
           </div>
           <div className="md:text-right">
-            <p className="text-2xl font-bold tracking-wide">INVOICE</p>
-            <p className="mt-2">Invoice Number: <strong>{invoiceNumber}</strong></p>
-            {billNumber && <p>Bill Number: <strong>{billNumber}</strong></p>}
-            <p className="mt-1">Invoice Date: {formatDate(billDate)}</p>
-            {dueDate && <p>Due Date: {formatDate(dueDate)}</p>}
+            <p className="text-2xl font-bold tracking-wide">{t('invoice.title')}</p>
+            <p className="mt-2">{t('invoice.number')}: <strong>{invoiceNumber}</strong></p>
+            {billNumber && <p>{t('invoice.billNumber')}: <strong>{billNumber}</strong></p>}
+            <p className="mt-1">{t('invoice.date')}: {formatDate(billDate)}</p>
+            {dueDate && <p>{t('invoice.due')}: {formatDate(dueDate)}</p>}
             <div className="mt-3 border-t border-white/20 pt-3 text-sm md:ml-auto md:max-w-xs">
-              <p className="text-sky-200 text-xs uppercase tracking-wider">Bill To</p>
+              <p className="text-sky-200 text-xs uppercase tracking-wider">{t('invoice.billTo')}</p>
               <p className="font-semibold">Customer Name: {customer.name || "Customer Name"}</p>
               <p className="text-sky-100/85">Customer Address: {customer.address || "Address"}</p>
               {customer.phone && <p className="text-sky-100/85">Phone Number: {customer.phone}</p>}
               {customer.pan && <p className="text-sky-100/85">PAN Number: {customer.pan}</p>}
-              <p className="mt-2 text-sky-200 text-xs uppercase tracking-wider">Payment Status</p>
-              <span className="font-semibold capitalize">{paymentStatus}</span>
+              <p className="mt-2 text-sky-200 text-xs uppercase tracking-wider">{t('invoice.status')}</p>
+              <span className="font-semibold capitalize">{t(`purchase.status.${paymentStatus === 'partial' ? 'partial' : paymentStatus}`)}</span>
             </div>
           </div>
         </div>
@@ -74,12 +73,12 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
             <thead>
               <tr className="bg-slate-100 text-xs uppercase tracking-wider">
                 <th className="border border-slate-200 px-2 py-2 text-left w-8">#</th>
-                <th className="border border-slate-200 px-2 py-2 text-left">Product / Service</th>
-                <th className="border border-slate-200 px-2 py-2 text-center w-16">Qty</th>
-                <th className="border border-slate-200 px-2 py-2 text-center w-16">Unit</th>
-                <th className="border border-slate-200 px-2 py-2 text-right w-24">Rate</th>
-                <th className="border border-slate-200 px-2 py-2 text-right w-20">Disc.</th>
-                <th className="border border-slate-200 px-2 py-2 text-right w-28">Total</th>
+                <th className="border border-slate-200 px-2 py-2 text-left">{t('invoice.product')}</th>
+                <th className="border border-slate-200 px-2 py-2 text-center w-16">{t('invoice.quantity')}</th>
+                <th className="border border-slate-200 px-2 py-2 text-center w-16">{t('invoice.unit')}</th>
+                <th className="border border-slate-200 px-2 py-2 text-right w-24">{t('invoice.rate')}</th>
+                <th className="border border-slate-200 px-2 py-2 text-right w-20">{t('invoice.discount')}</th>
+                <th className="border border-slate-200 px-2 py-2 text-right w-28">{t('invoice.total')}</th>
               </tr>
             </thead>
             <tbody>
@@ -119,18 +118,18 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
               </div>
             )}
             <p className="text-xs text-slate-500 italic">
-              Amount in words: <strong>{amountToWords(totals.grandTotal || 0)}</strong>
+              {t('invoice.amountWords')}: <strong>{amountToWords(totals.grandTotal || 0)}</strong>
             </p>
           </div>
           <div className="w-full md:w-64 space-y-1 text-sm">
             {[
-              ["Subtotal", totals.subtotal],
-              ["Discount", totals.discount],
-              ["Taxable Amount", totals.taxableAmount],
-              [`Tax Amount (${totals.taxRate || 0}%)`, totals.tax],
-              ["Grand Total", totals.grandTotal, true],
-              ["Paid Amount", totals.paidAmount],
-              ["Remaining", totals.remainingAmount]
+              [t('invoice.subtotal'), totals.subtotal],
+              [t('invoice.discount'), totals.discount],
+              [t('invoice.taxable'), totals.taxableAmount],
+              [`${t('invoice.tax')} (${totals.taxRate || 0}%)`, totals.tax],
+              [t('invoice.grandTotal'), totals.grandTotal, true],
+              [t('invoice.paid'), totals.paidAmount],
+              [t('invoice.remaining'), totals.remainingAmount]
             ].map(([label, value, bold]) => (
               <div key={label} className={`flex justify-between py-1 ${bold ? "border-t border-slate-300 pt-2 font-bold text-[#12355b]" : ""}`}>
                 <span className="text-slate-600">{label}</span>

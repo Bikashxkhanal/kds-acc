@@ -19,7 +19,7 @@ export const formConfig = {
             {name : 'name' , type : 'text' , required : true , min : 3}, 
             {name : 'phone_number', type :'text', required: true, min : 10 , max : 10}, 
             {name : 'address', type : 'text', required: false},
-            {name: 'customer_type', type: 'select', options: ['Private', 'Governmental', 'NGO'], required: true}
+            {name: 'customer_type', type: 'select', options: ['private', 'governmental', 'ngo'], required: true}
             
     ],
 

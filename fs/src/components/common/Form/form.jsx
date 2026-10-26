@@ -6,10 +6,10 @@ import InputBox from "../InputBox";
 import Button from "../button.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { Controller } from "react-hook-form";
-import DatePicker from '@sbmdkl/nepali-datepicker-reactjs'
-import "@sbmdkl/nepali-datepicker-reactjs/dist/index.css";
-import NepaliDate from "nepali-date-converter";
+import BSDatePicker from '../BSDatePicker.jsx';
+import { bsToday, bsToIso, isoToBsInput } from '../../../utils/bsDate.js';
 import { humanizeLabel } from "../../../utils/labels";
+import { useI18n } from "../../../i18n/I18nProvider.jsx";
 
 const Form = ({
     //use case of the form
@@ -25,6 +25,7 @@ const Form = ({
    
 }) => {
     const [isLoading, setIsLoading] = useState(false);
+    const { option, t } = useI18n();
     const config = useMemo(() => formConfig[useCase] || [], [useCase]);
     const schema = formSchema(config);
     
@@ -65,7 +66,9 @@ const Form = ({
 
      useEffect(() => {
         if(datas){
-            reset(datas)
+            const formData = { ...datas };
+            config?.filter((field) => field.type === 'date').forEach((field) => { formData[field.name] = isoToBsInput(formData[field.name]); });
+            reset(formData)
         }
     }, [reset, datas])
 
@@ -89,7 +92,9 @@ const Form = ({
     const onSubmitHandler = async (data) => {
         setIsLoading(true)
         try {
-            await handleFormSubmit?.(data)
+            const payload = { ...data };
+            config?.filter((field) => field.type === 'date').forEach((field) => { payload[field.name] = bsToIso(payload[field.name]); });
+            await handleFormSubmit?.(payload)
         } finally {
             setIsLoading(false)
         }
@@ -103,7 +108,7 @@ const Form = ({
                     {
                        ( fld.type === 'text' || fld.type === 'tel') && 
                             <InputBox 
-                            placeholder={humanizeLabel(fld.name)}
+                            placeholder={t(`field.${fld.name}`, { defaultValue: humanizeLabel(fld.name) })}
                              {...register(fld.name) }
                              
                              />
@@ -111,7 +116,7 @@ const Form = ({
                     }
                     {
                         fld.type === 'readOnly' && 
-                        <InputBox className='bg-gray-900 readOnly:cursor-not-allowed text-gray-600' placeholder={humanizeLabel(fld.name)} {...register(fld.name)} readOnly />
+                        <InputBox className='bg-gray-900 readOnly:cursor-not-allowed text-gray-600' placeholder={t(`field.${fld.name}`, { defaultValue: humanizeLabel(fld.name) })} {...register(fld.name)} readOnly />
                     }
 
                     {
@@ -120,31 +125,24 @@ const Form = ({
                         className="kds-input"
                          {...register(fld.name)} 
                              >
-                                <option value="">Select a {humanizeLabel(fld.name)}</option>
-                                {fld?.options?.map(opt => (<option key={opt} value={opt}>{opt}</option>))}
+                                <option value="">{t('common.selectA', { field: t(`field.${fld.name}`, { defaultValue: humanizeLabel(fld.name) }) })}</option>
+                                {fld?.options?.map(opt => (<option key={opt} value={opt}>{option(opt)}</option>))}
                         </select>
 
                     }
 
                     {
                         fld.type === 'number' && 
-                            <InputBox {...register(fld.name)} placeholder={humanizeLabel(fld.name)} />
+                            <InputBox {...register(fld.name)} placeholder={t(`field.${fld.name}`, { defaultValue: humanizeLabel(fld.name) })} />
                         
                     }
                     {  fld.type === 'date' &&
                     <Controller 
                         control={control}
                         name={fld.name}
-                        defaultValue={new NepaliDate().format('YYYY-MM-DD')}
+                        defaultValue={bsToday()}
                         render={({field}) => (
-                            <DatePicker 
-                            className='kds-input'
-                            value={field?.value || "" }
-                            onChange={({bsDate}) => {
-                                field?.onChange(bsDate)}}
-                            placeholder={humanizeLabel(field?.name)}
-                            language="en"
-                            />
+                            <BSDatePicker className='kds-input' value={field?.value || bsToday()} onChange={field.onChange} placeholder={t(`field.${field?.name}`, { defaultValue: humanizeLabel(field?.name) })} />
                         
                         )}
                         />

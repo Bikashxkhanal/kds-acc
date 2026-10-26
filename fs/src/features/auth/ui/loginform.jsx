@@ -5,11 +5,13 @@ import { loginSysUser } from "../../../services/auth/auth.js";
 import { toast } from 'react-toastify'
 import { useSelector , useDispatch} from "react-redux";
 import { loginFail, loginStart, loginSuccess } from "../../../store/authSlice.js";
+import { useI18n } from "../../../i18n/I18nProvider.jsx";
 
 const LoginForm = () => {
     const [searchParams] = useSearchParams();
     const dispatch = useDispatch();
     const { isLoading } = useSelector(state => state.auth)
+    const { t } = useI18n();
 
     const [formData, setFormData] = useState({
         phone_number: "",
@@ -38,26 +40,26 @@ const LoginForm = () => {
                 <div className="w-14 h-14 mx-auto bg-[#12355b]/10 rounded-xl flex items-center justify-center mb-3">
                     <i className="bi bi-shield-lock text-2xl text-[#12355b]" />
                 </div>
-                <p className="text-2xl font-bold text-[#12355b]">Welcome Back</p>
-                <p className="text-sm text-slate-500 mt-1">Sign in to your account</p>
+                <p className="text-2xl font-bold text-[#12355b]">{t('auth.welcome')}</p>
+                <p className="text-sm text-slate-500 mt-1">{t('auth.signInPrompt')}</p>
             </div>
             <InputBox
                 type="text"
-                label="Phone Number"
-                placeholder="Enter your phone number"
+                label={t('auth.phone')}
+                placeholder={t('auth.phonePlaceholder')}
                 icon="bi-telephone"
                 required
                 onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
             />
             <InputBox
                 type="password"
-                label="Password"
+                label={t('auth.password')}
                 placeholder="Enter your password"
                 icon="bi-lock"
                 required
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             />
-            <Button size="lg" className="w-full mt-2" children="Sign In" loading={isLoading} onClick={handleSubmit} />
+            <Button size="lg" className="w-full mt-2" children={t('auth.signIn')} loading={isLoading} onClick={handleSubmit} />
         </div>
     );
 }

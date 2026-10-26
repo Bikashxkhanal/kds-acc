@@ -5,7 +5,7 @@ const customerSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true, index: true },
     phone_number: { type: String, required: true, trim: true, index: true },
     address: { type: String, trim: true, default: "" },
-    customer_type: { type: String, enum: ["Private", "Governmental", "NGO"], default: "Private", index: true },
+    customer_type: { type: String, enum: ["private", "governmental", "ngo"], default: "private", index: true },
     isDummy: { type: Boolean, default: false, index: true }
 }, { collection: "customers" });
 

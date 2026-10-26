@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "bootstrap-icons/font/bootstrap-icons.css";
+@import "@fontsource/noto-sans-devanagari/devanagari-400.css";
 
 @theme {
   --color-primary: #12355b;
@@ -14,7 +15,7 @@
   --color-danger: #ef4444;
   --color-surface: #ffffff;
   --color-background: #f0f4f8;
-  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-sans: "Noto Sans Devanagari", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
@@ -23,7 +24,7 @@
   }
 
   body {
-    font-family: var(--font-sans);
+    font-family: var(--font-sans), "Noto Sans Devanagari", "Nirmala UI", sans-serif;
     background-color: var(--color-background);
     color: #1e293b;
     -webkit-font-smoothing: antialiased;

@@ -6,15 +6,17 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { clearAuthState } from "../../../store/authSlice.js";
 import HangingSideBar from "../../../components/layout/hanging.sidebar.jsx";
+import { useI18n } from "../../../i18n/I18nProvider.jsx";
 
 const DashboardHeader = () => {
     const stat = window.innerWidth <= 768;
     const [isActiveBrgIcn, setIsActiveBrgIcn] = useState(stat);
     const [isOpen, setIsOpen] = useState(false);
-    const [currentTime, setCurrentTime] = useState((new Date()).toLocaleString())
+    const [currentTime, setCurrentTime] = useState(() => getCurrentTime(localStorage.getItem('kds-language') === 'np' ? 'np' : 'en'))
     const { user } = useSelector(state => state?.auth);
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const { language, setLanguage, t } = useI18n();
 
     useEffect(() => {
         const handleResize = () => {
@@ -25,9 +27,9 @@ const DashboardHeader = () => {
     }, [])
 
     useEffect(() => {
-        const interval = setInterval(() => setCurrentTime(getCurrentTime()), 1000);
+        const interval = setInterval(() => setCurrentTime(getCurrentTime(language)), 1000);
         return () => clearInterval(interval);
-    }, [])
+    }, [language])
 
     const handleLogout = async () => {
         try {
@@ -70,10 +72,11 @@ const DashboardHeader = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 md:gap-6">
+                <div className="flex items-center gap-3 md:gap-6">
                     {!isActiveBrgIcn && (
                         <p className="text-sky-200/80 text-xs hidden lg:block">{currentTime}</p>
                     )}
+                    <button type="button" onClick={() => setLanguage(language === 'en' ? 'np' : 'en')} className="rounded-md border border-white/30 px-2 py-1 text-xs font-semibold text-white" aria-label="Change language">{language === 'en' ? 'EN / NP' : 'NP / EN'}</button>
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
                             <i className="bi bi-person text-white text-sm" />
@@ -85,7 +88,7 @@ const DashboardHeader = () => {
                             type="button"
                             className="text-sky-200 hover:text-white transition-colors cursor-pointer ml-1"
                             onClick={handleLogout}
-                            title="Logout"
+                            title={t('auth.logout')}
                         >
                             <i className="bi bi-box-arrow-right text-lg" />
                         </button>

@@ -1,8 +1,12 @@
 import { SIDEBAR_NAVIGATION } from "../../constants"
 import { NavLink } from "react-router-dom"
 import { LINKS, ICONS } from "../../constants"
+import { useI18n } from "../../i18n/I18nProvider.jsx";
+import { useSelector } from 'react-redux';
 
 const HangingSideBar = ({ show = false, onClose }) => {
+    const { t } = useI18n();
+    const role = useSelector((state) => state.auth.user?.role);
     return (
         <aside className={`bg-[#12355b] h-screen py-6 px-4 flex flex-col fixed top-0 left-0 z-50 w-64 shadow-2xl
                 transition-transform duration-300 ease-in-out ${show ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -14,6 +18,7 @@ const HangingSideBar = ({ show = false, onClose }) => {
             </div>
             <nav className="flex flex-col gap-1">
                 {SIDEBAR_NAVIGATION?.map((sidebar, idx) => (
+                    (['activity', 'users'].includes(sidebar) && role !== 'admin') ? null :
                     <NavLink
                         key={idx}
                         to={LINKS[sidebar]}
@@ -27,7 +32,7 @@ const HangingSideBar = ({ show = false, onClose }) => {
                         }
                     >
                         <i className={`${ICONS[sidebar]} text-lg`} />
-                        {sidebar.charAt(0).toUpperCase() + sidebar.slice(1)}
+                        {t(`nav.${sidebar === 'customer' ? 'customers' : sidebar === 'billings' ? 'billing' : sidebar}`)}
                     </NavLink>
                 ))}
             </nav>

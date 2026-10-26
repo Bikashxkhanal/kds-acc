@@ -4,7 +4,7 @@ import { searchCustomer , addWorkDetailsOfCustomer, addCustomerPaymentDetail} fr
 import { useState } from "react";
 import ToggleButton from "../../components/common/toggleButton.jsx";
 
-import NepaliDate from "nepali-date-converter";
+import { bsToday, bsToIso } from '../../utils/bsDate.js';
 import { toast } from "react-toastify";
 
 
@@ -15,7 +15,7 @@ const MainContent = () => {
         const [isWorkDetailsSubmitSuccessfull, setIsWorkDetailsSubmitSuccessfull] = useState(false)
         const [isPaymentDetailsSubmitSuccessfull, setIsPaymentDetailsSubmitSuccessfull] = useState(false)
 
-        const todayNepaliDate = new NepaliDate().format('YYYY-MM-DD');
+        const todayNepaliDate = bsToIso(bsToday());
 
 
         const handleWorkFormSubmit = async(data) => {
@@ -76,7 +76,7 @@ const MainContent = () => {
                          <Form useCase="createCustomerPaymentEntry" 
                                 datas={{
                                  customer_id : customer_id,
-                                  work_date : todayNepaliDate
+                                  payment_date : todayNepaliDate
                                   }} 
 
                         handleFormSubmit={(data) => handlePaymentFormSubmit(data)} 

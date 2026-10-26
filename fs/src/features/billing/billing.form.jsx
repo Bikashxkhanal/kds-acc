@@ -13,6 +13,8 @@ import {
   createBill, updateBill, getBillDetails, getCompanies, createCompany
 } from "../../services/billing/billings.api";
 import { emptyLineItem, calculateInvoiceTotals } from "../../utils/invoiceCalculations";
+import BSDatePicker from "../../components/common/BSDatePicker.jsx";
+import { bsToday, bsToIso, isoToBsInput, formatBS } from "../../utils/bsDate.js";
 
 const BillingForm = () => {
   const { id } = useParams();
@@ -29,7 +31,7 @@ const BillingForm = () => {
 
   const [companyId, setCompanyId] = useState("");
   const [customer, setCustomer] = useState({ name: "", address: "", phone: "", pan: "" });
-  const [billDate, setBillDate] = useState(new Date().toISOString().split("T")[0]);
+  const [billDate, setBillDate] = useState(bsToday());
   const [dueDate, setDueDate] = useState("");
   const [remarks, setRemarks] = useState("");
   const [items, setItems] = useState([emptyLineItem()]);
@@ -56,8 +58,8 @@ const BillingForm = () => {
         const inv = res?.data;
         setCompanyId(inv?.company?.id || "");
         setCustomer(inv?.customer || {});
-        setBillDate(inv?.billDate ? new Date(inv.billDate).toISOString().split("T")[0] : "");
-        setDueDate(inv?.dueDate ? new Date(inv.dueDate).toISOString().split("T")[0] : "");
+        setBillDate(isoToBsInput(inv?.billDate) || bsToday());
+        setDueDate(isoToBsInput(inv?.dueDate));
         setRemarks(inv?.remarks || "");
         setItems(inv?.items?.length ? inv.items : [emptyLineItem()]);
         setPaidAmount(inv?.totals?.paidAmount || 0);
@@ -102,8 +104,8 @@ const BillingForm = () => {
       logoUrl: selectedCompany.logoUrl
     } : {},
     customer,
-    billDate,
-    dueDate,
+    billDate: bsToIso(billDate),
+    dueDate: dueDate ? bsToIso(dueDate) : undefined,
     remarks,
     items: calcItems,
     totals,
@@ -122,8 +124,8 @@ const BillingForm = () => {
   const buildPayload = () => ({
     companyId,
     customer,
-    billDate,
-    dueDate: dueDate || undefined,
+    billDate: bsToIso(billDate),
+    dueDate: dueDate ? bsToIso(dueDate) : undefined,
     remarks,
     items: calcItems.map((item, index) => ({ ...item, sortOrder: index })),
     taxRate: totals.taxRate,
@@ -233,10 +235,8 @@ const BillingForm = () => {
                 value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} />
               <InputBox label="Customer PAN" icon="bi-card-text" value={customer.pan}
                 onChange={(e) => setCustomer({ ...customer, pan: e.target.value })} />
-              <InputBox label="Bill Date" type="date" required value={billDate}
-                onChange={(e) => setBillDate(e.target.value)} />
-              <InputBox label="Due Date" type="date" value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)} />
+              <label className="kds-label">Bill Date<BSDatePicker className="kds-input mt-1" required value={billDate} onChange={setBillDate} /></label>
+              <label className="kds-label">Due Date<BSDatePicker className="kds-input mt-1" value={dueDate} onChange={setDueDate} /></label>
               <InputBox label="Remarks / Notes" value={remarks}
                 onChange={(e) => setRemarks(e.target.value)} />
 
@@ -261,7 +261,7 @@ const BillingForm = () => {
             <Card title="Creator Information">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-slate-500">Creator:</span> <strong>{user.name}</strong></div>
-                <div><span className="text-slate-500">Date:</span> {new Date().toLocaleDateString()}</div>
+                <div><span className="text-slate-500">Date:</span> {formatBS(new Date(), 'long', document.documentElement.lang || 'en')}</div>
               </div>
             </Card>
           )}

@@ -7,6 +7,9 @@ const sysUserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, trim: true },
     address: { type: String, required: true, trim: true },
     hashed_password: { type: String, required: true },
+    role: { type: String, enum: ['admin', 'operator'], default: 'operator', index: true },
+    isActive: { type: Boolean, default: true, index: true },
+    forcePasswordChange: { type: Boolean, default: false },
     isDummy: { type: Boolean, default: false, index: true }
 }, { collection: "sysusers" });
 

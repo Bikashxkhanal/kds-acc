@@ -30,7 +30,9 @@ api.interceptors.response.use(
     (error) => {
         const status = error?.response?.status;
         const requestUrl = error?.config?.url || '';
-        if ([401, 403].includes(status) && !requestUrl.includes('/sysuser/login') && !redirectingForExpiredSession) {
+        if (status === 403) {
+            toast.error(error?.response?.data?.message || 'You are not authorized to perform this action.');
+        } else if (status === 401 && !requestUrl.includes('/sysuser/login') && !redirectingForExpiredSession) {
             redirectingForExpiredSession = true;
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');

@@ -1,10 +1,11 @@
 import { useSelector } from "react-redux";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 
 const ProtectedRoute = () => {
 
     const {user, authStatus, isLoading} = useSelector(state => state.auth);
+    const location = useLocation();
 
      if(isLoading){
         return <h1>Loading...</h1>
@@ -15,6 +16,7 @@ const ProtectedRoute = () => {
         
     }
 
+    if (user.forcePasswordChange && location.pathname !== '/change-password') return <Navigate to="/change-password" replace />;
     return <Outlet />
     
 }

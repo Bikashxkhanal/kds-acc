@@ -80,7 +80,8 @@ export const createCompany = async (payload) => {
 
 export const downloadBillPDF = async (billingId) => {
   try {
-    const res = await api.get(`/api/v1/billings/${billingId}/download`, { responseType: "blob" });
+    const language = localStorage.getItem('kds-language') === 'np' ? 'np' : 'en';
+    const res = await api.get(`/api/v1/billings/${billingId}/download?lang=${language}`, { responseType: "blob" });
     const blob = new Blob([res.data], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

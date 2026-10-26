@@ -11,11 +11,16 @@ import {
   getBillings, deleteBill, duplicateBill, downloadBillPDF
 } from "../../services/billing/billings.api";
 import { formatCurrency } from "../../utils/currency";
+import { formatBS } from "../../utils/bsDate.js";
+import { useI18n } from "../../i18n/I18nProvider.jsx";
+import { useSelector } from 'react-redux';
 
 const PAGE_LIMIT = 10;
 
 const BillingsList = () => {
   const navigate = useNavigate();
+  const { language } = useI18n();
+  const isAdmin = useSelector((state) => state.auth.user?.role === 'admin');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -65,7 +70,7 @@ const BillingsList = () => {
         Customer: inv.customer?.name || "—",
         Phone: inv.customer?.phone || "—",
         Company: inv.company?.name || "—",
-        "Bill Date": inv.billDate ? new Date(inv.billDate).toLocaleDateString() : "—",
+        "Bill Date": inv.billDate ? formatBS(inv.billDate, 'long', language) : "—",
         Total: formatCurrency(inv.totals?.grandTotal),
         Paid: formatCurrency(inv.totals?.paidAmount),
         Remaining: formatCurrency(inv.totals?.remainingAmount),
@@ -74,15 +79,15 @@ const BillingsList = () => {
         Actions: (
           <div className="flex gap-1 flex-wrap">
             <Link to={`/billings/${inv._id}`} className="text-[#12355b] hover:underline text-xs">View</Link>
-            <Link to={`/billings/${inv._id}/edit`} className="text-sky-600 hover:underline text-xs">Edit</Link>
+            {isAdmin && <Link to={`/billings/${inv._id}/edit`} className="text-sky-600 hover:underline text-xs">Edit</Link>}
             <button type="button" className="text-slate-600 hover:underline text-xs cursor-pointer"
               onClick={() => handlePrint(inv._id)}>Print</button>
             <button type="button" className="text-emerald-600 hover:underline text-xs cursor-pointer"
               onClick={() => handleDownload(inv._id)}>PDF</button>
-            <button type="button" className="text-orange-600 hover:underline text-xs cursor-pointer"
-              onClick={() => handleDuplicate(inv._id)}>Duplicate</button>
-            <button type="button" className="text-red-500 hover:underline text-xs cursor-pointer"
-              onClick={() => setDeleteTarget(inv)}>Delete</button>
+            {isAdmin && <button type="button" className="text-orange-600 hover:underline text-xs cursor-pointer"
+              onClick={() => handleDuplicate(inv._id)}>Duplicate</button>}
+            {isAdmin && <button type="button" className="text-red-500 hover:underline text-xs cursor-pointer"
+              onClick={() => setDeleteTarget(inv)}>Delete</button>}
           </div>
         )
       }));
@@ -92,7 +97,7 @@ const BillingsList = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search, paymentFilter, navigate]);
+  }, [page, search, paymentFilter, navigate, isAdmin]);
 
   useEffect(() => { fetchBillings(); }, [fetchBillings]);
 

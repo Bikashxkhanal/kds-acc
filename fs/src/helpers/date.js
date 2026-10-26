@@ -1,13 +1,5 @@
-const getCurrentTime = () => {
-    return new Date().toLocaleDateString('en-NP', {
-    month: "short",   
-  day: "2-digit",   
-  year: "numeric",  
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: true
-    }).split(",")
-}
+import { formatBS } from '../utils/bsDate.js';
 
-export {getCurrentTime} 
+const getCurrentTime = (language = 'en') => `${formatBS(new Date(), 'long', language)} · ${new Intl.DateTimeFormat(language === 'np' ? 'ne-NP' : 'en-NP', { hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date())}`;
+
+export {getCurrentTime}

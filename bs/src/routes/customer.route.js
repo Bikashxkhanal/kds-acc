@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { requireAdmin } from "../middlewares/auth.middleware.js";
 import {
         getACustomer,
         getAllCustomers,
@@ -29,7 +30,7 @@ customerRouter.route('/download/:customerId').get(verifyJWT, downloadWorkAndPaym
 customerRouter.route("/:customerId").get(verifyJWT, getACustomer);
 customerRouter.route("/").get(verifyJWT, getAllCustomers)
 customerRouter.route("/").post(verifyJWT, addACustomer)
-customerRouter.route("/:customerId").put(verifyJWT, updateACustomerDetails)
+customerRouter.route("/:customerId").put(verifyJWT, requireAdmin, updateACustomerDetails)
 customerRouter.route("/payment").post(verifyJWT, addCustomerPaymentDetail)
 customerRouter.route("/:customer_id/work-pay-details").get(verifyJWT, getACustomerWorkAndPaymentDetails)
 customerRouter.route("/payment/:customer_id").get(verifyJWT, getACustomerPaymentDetails)

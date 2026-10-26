@@ -6,6 +6,7 @@ import Company from "../models/company.model.js";
 import Invoice from "../models/invoice.model.js";
 import puppeteer from "puppeteer";
 import { buildInvoiceHtml } from "../utils/invoiceTemplate.js";
+import { buildActivityDiff } from '../services/activityLog.js';
 
 const currency = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
@@ -268,6 +269,7 @@ const updateABill = asyncHandler(async (req, res) => {
 
     if (!invoice) throw new ApiError(404, "Invoice not found");
 
+    const before = invoice.toObject();
     const payload = await buildInvoicePayload(req.body, req.user, invoice);
     Object.assign(invoice, payload);
     invoice.timeline.push({
@@ -277,6 +279,7 @@ const updateABill = asyncHandler(async (req, res) => {
     });
 
     await invoice.save();
+    req.activityDetails = { entityId: String(invoice._id), entityName: invoice.invoiceNumber, diff: buildActivityDiff(before, invoice.toObject()) };
 
     return res.status(200).json(
         new ApiResponse(200, "Invoice updated successfully", invoice)
@@ -289,6 +292,7 @@ const deleteABill = asyncHandler(async (req, res) => {
     const invoice = await Invoice.findByIdAndDelete(billing_id);
 
     if (!invoice) throw new ApiError(404, "Invoice not found");
+    req.activityDetails = { entityId: String(invoice._id), entityName: invoice.invoiceNumber, snapshot: invoice.toObject() };
 
     return res.status(200).json(
         new ApiResponse(200, "Invoice deleted successfully", { id: billing_id })
@@ -337,7 +341,7 @@ const downloadBillPDF = asyncHandler(async (req, res) => {
 
     if (!invoice) throw new ApiError(404, "Invoice not found");
 
-    const html = buildInvoiceHtml(invoice);
+    const html = buildInvoiceHtml(invoice, req.query.lang === 'np' ? 'np' : 'en');
     const browser = await puppeteer.launch({ headless: true });
     let pdf;
     try {

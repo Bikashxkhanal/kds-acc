@@ -4,14 +4,18 @@ import { toast } from 'react-toastify';
 import Button from '../../components/common/button.jsx';
 import Card from '../../components/common/Card.jsx';
 import { createStaff, getAStaffDetails, updateStaff } from '../../services/staff/staff.api.js';
+import BSDatePicker from '../../components/common/BSDatePicker.jsx';
+import { bsToday, bsToIso, isoToBsInput } from '../../utils/bsDate.js';
+import { useI18n } from '../../i18n/I18nProvider.jsx';
 
-const EMPTY = { name: '', phone_number: '', email: '', role: 'Other', assignedVehicle: 'None', address: '', dateOfJoining: '', salary: '', paymentType: 'Monthly', idProofType: '', idProofNumber: '', emergencyContactName: '', emergencyContactPhone: '', status: 'Active', notes: '' };
+const EMPTY = { name: '', phone_number: '', email: '', role: 'Other', assignedVehicle: 'None', address: '', dateOfJoining: bsToday(), salary: '', paymentType: 'Monthly', idProofType: '', idProofNumber: '', emergencyContactName: '', emergencyContactPhone: '', status: 'Active', notes: '' };
 const roles = ['Tractor Driver', 'JCB Operator', 'Tipper Driver', 'Helper', 'Accountant', 'Manager', 'Other'];
 const Field = ({ label, children }) => <label className="kds-label">{label}{children}</label>;
 const Input = ({ className = '', ...props }) => <input className={`kds-input mt-1 ${className}`} {...props} />;
 
 export default function StaffForm() {
   const { id } = useParams(); const navigate = useNavigate();
+  const { option } = useI18n();
   const [values, setValues] = useState(EMPTY); const [loading, setLoading] = useState(Boolean(id)); const [saving, setSaving] = useState(false); const [error, setError] = useState('');
   useEffect(() => {
     if (!id) return;
@@ -19,7 +23,7 @@ export default function StaffForm() {
     getAStaffDetails(id).then((response) => {
       if (!live) return;
       const staff = response?.data || {};
-      setValues({ ...EMPTY, ...staff, dateOfJoining: staff.dateOfJoining ? new Date(staff.dateOfJoining).toISOString().slice(0, 10) : staff.dob ? new Date(staff.dob).toISOString().slice(0, 10) : '' });
+      setValues({ ...EMPTY, ...staff, dateOfJoining: isoToBsInput(staff.dateOfJoining || staff.dob) || bsToday() });
     }).catch((requestError) => live && setError(requestError?.message || 'Could not load staff profile')).finally(() => live && setLoading(false));
     return () => { live = false; };
   }, [id]);
@@ -30,9 +34,11 @@ export default function StaffForm() {
     if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) return setError('Enter a valid email address');
     if (values.emergencyContactPhone && !/^\d{10}$/.test(values.emergencyContactPhone.trim())) return setError('Emergency phone must contain exactly 10 digits');
     if (Number(values.salary) <= 0) return setError('Salary or daily wage must be greater than zero');
+    const dateOfJoining = bsToIso(values.dateOfJoining);
+    if (!dateOfJoining) return setError('Enter a valid Bikram Sambat date of joining');
     setSaving(true);
     try {
-      const response = id ? await updateStaff(id, values) : await createStaff(values);
+      const response = id ? await updateStaff(id, { ...values, dateOfJoining }) : await createStaff({ ...values, dateOfJoining });
       toast.success(response?.message || (id ? 'Staff updated' : 'Staff added'));
       navigate(id ? '/staff/all' : `/staff/all?q=${encodeURIComponent(values.phone_number)}`, { replace: true });
     } catch (requestError) { setError(requestError?.message || 'Unable to save staff details'); }
@@ -47,14 +53,14 @@ export default function StaffForm() {
         <Field label="Phone *"><Input required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength="10" value={values.phone_number} onChange={(e) => update('phone_number', e.target.value)} autoComplete="tel" /></Field>
         <Field label="Email"><Input type="email" value={values.email} onChange={(e) => update('email', e.target.value)} autoComplete="email" /></Field>
         <Field label="Address"><Input maxLength="300" value={values.address} onChange={(e) => update('address', e.target.value)} /></Field>
-        <Field label="Date of Joining *"><Input required type="date" value={values.dateOfJoining} onChange={(e) => update('dateOfJoining', e.target.value)} /></Field>
-        <Field label="Status"><select className="kds-input mt-1" value={values.status} onChange={(e) => update('status', e.target.value)}><option>Active</option><option>Inactive</option></select></Field>
+        <Field label="Date of Joining *"><BSDatePicker className="kds-input mt-1" value={values.dateOfJoining} onChange={(value) => update('dateOfJoining', value)} /></Field>
+        <Field label="Status"><select className="kds-input mt-1" value={values.status} onChange={(e) => update('status', e.target.value)}><option value="Active">{option('Active')}</option><option value="Inactive">{option('Inactive')}</option></select></Field>
       </div></Card>
       <Card title="Role and compensation"><div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Field label="Role / Designation *"><select required className="kds-input mt-1" value={values.role} onChange={(e) => update('role', e.target.value)}>{roles.map((role) => <option key={role}>{role}</option>)}</select></Field>
-        <Field label="Assigned Vehicle"><select className="kds-input mt-1" value={values.assignedVehicle} onChange={(e) => update('assignedVehicle', e.target.value)}>{['Tractor', 'JCB', 'Tipper', 'None'].map((vehicle) => <option key={vehicle}>{vehicle}</option>)}</select></Field>
+        <Field label="Role / Designation *"><select required className="kds-input mt-1" value={values.role} onChange={(e) => update('role', e.target.value)}>{roles.map((role) => <option key={role} value={role}>{option(role)}</option>)}</select></Field>
+        <Field label="Assigned Vehicle"><select className="kds-input mt-1" value={values.assignedVehicle} onChange={(e) => update('assignedVehicle', e.target.value)}>{['Tractor', 'JCB', 'Tipper', 'None'].map((vehicle) => <option key={vehicle} value={vehicle}>{option(vehicle)}</option>)}</select></Field>
         <Field label="Salary / Daily Wage *"><Input required type="number" min="0.01" step="any" value={values.salary} onChange={(e) => update('salary', e.target.value)} /></Field>
-        <Field label="Payment Type"><select className="kds-input mt-1" value={values.paymentType} onChange={(e) => update('paymentType', e.target.value)}><option>Monthly</option><option>Daily</option></select></Field>
+        <Field label="Payment Type"><select className="kds-input mt-1" value={values.paymentType} onChange={(e) => update('paymentType', e.target.value)}><option value="Monthly">{option('Monthly')}</option><option value="Daily">{option('Daily')}</option></select></Field>
       </div></Card>
       <Card title="Optional information"><div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Field label="ID Proof Type"><select className="kds-input mt-1" value={values.idProofType} onChange={(e) => update('idProofType', e.target.value)}><option value="">Select proof</option>{['Citizenship', 'Passport', 'Driving License', 'National ID', 'Other'].map((type) => <option key={type}>{type}</option>)}</select></Field>

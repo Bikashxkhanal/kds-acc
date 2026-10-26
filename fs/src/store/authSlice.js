@@ -33,10 +33,7 @@ const authSlice = createSlice({
         },
 
         loginFail : (state) => {
-             state.user.id = null;
-            state.user.name = null;
-            state.user.email = null;
-            state.user.phone_number = null;
+            state.user = { id: null, name: null, email: null, phone_number: null, role: null, forcePasswordChange: false };
             state.authStatus = "idle";
             state.isLoading = false;
         },
@@ -61,10 +58,7 @@ const authSlice = createSlice({
         },
 
         clearAuthState: (state) => {
-            state.user.id = null;
-            state.user.name = null;
-            state.user.email = null;
-            state.user.phone_number = null;
+            state.user = { id: null, name: null, email: null, phone_number: null, role: null, forcePasswordChange: false };
 
             state.authStatus = "idle";
             state.isLoading = false;

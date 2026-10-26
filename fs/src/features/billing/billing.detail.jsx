@@ -7,10 +7,16 @@ import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import InvoicePreview from "./components/InvoicePreview";
 import { getBillDetails, deleteBill, duplicateBill, downloadBillPDF } from "../../services/billing/billings.api";
+import { formatBS } from "../../utils/bsDate.js";
+import { useI18n } from "../../i18n/I18nProvider.jsx";
 import { formatCurrency } from "../../utils/currency";
 import Modal from "../../components/common/Modal";
+import { useSelector } from 'react-redux';
+import api from '../../services/axios.js';
 
 const BillingDetail = () => {
+  const { language } = useI18n();
+  const isAdmin = useSelector((state) => state.auth.user?.role === 'admin');
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -25,6 +31,7 @@ const BillingDetail = () => {
         const res = await getBillDetails(id);
         setInvoice(res?.data);
         if (searchParams.get("print") === "1") {
+          api.post('/api/logs/event', { action: 'print', entityId: id }).catch(() => {});
           setTimeout(() => window.print(), 500);
         }
       } catch (error) {
@@ -81,10 +88,10 @@ const BillingDetail = () => {
               <Button varient="secondary" size="sm" onClick={() => navigate("/billings")}>
                 <i className="bi bi-arrow-left" /> Back
               </Button>
-              <Button varient="outline" size="sm" onClick={() => navigate(`/billings/${id}/edit`)}>
+              {isAdmin && <Button varient="outline" size="sm" onClick={() => navigate(`/billings/${id}/edit`)}>
                 <i className="bi bi-pencil" /> Edit
-              </Button>
-              <Button varient="outline" size="sm" onClick={() => window.print()}>
+              </Button>}
+              <Button varient="outline" size="sm" onClick={() => { api.post('/api/logs/event', { action: 'print', entityId: id }).catch(() => {}); window.print(); }}>
                 <i className="bi bi-printer" /> Print
               </Button>
               <Button varient="outline" size="sm" onClick={async () => {
@@ -93,12 +100,12 @@ const BillingDetail = () => {
               }}>
                 <i className="bi bi-download" /> PDF
               </Button>
-              <Button varient="outline" size="sm" onClick={handleDuplicate}>
+              {isAdmin && <Button varient="outline" size="sm" onClick={handleDuplicate}>
                 <i className="bi bi-copy" /> Duplicate
-              </Button>
-              <Button varient="danger" size="sm" onClick={() => setShowDelete(true)}>
+              </Button>}
+              {isAdmin && <Button varient="danger" size="sm" onClick={() => setShowDelete(true)}>
                 <i className="bi bi-trash" /> Delete
-              </Button>
+              </Button>}
             </>
           }
         />
@@ -131,14 +138,14 @@ const BillingDetail = () => {
           <Card title="Creator & Timeline" className="lg:col-span-1">
             <div className="space-y-1 text-sm mb-4">
               <p><span className="text-slate-500">Created by:</span> {invoice.creator?.name || "—"}</p>
-              <p><span className="text-slate-500">Created:</span> {new Date(invoice.createdAt).toLocaleString()}</p>
+              <p><span className="text-slate-500">Created:</span> {formatBS(invoice.createdAt, 'long', language)}</p>
               <p><span className="text-slate-500">Last updated by:</span> {invoice.lastUpdatedBy?.name || "—"}</p>
             </div>
             <div className="border-t border-slate-100 pt-3 space-y-2 max-h-40 overflow-y-auto">
               {(invoice.timeline || []).map((entry, idx) => (
                 <div key={idx} className="text-xs border-l-2 border-[#12355b]/30 pl-3">
                   <p className="font-medium text-[#12355b]">{entry.action}</p>
-                  <p className="text-slate-500">{entry.by} · {new Date(entry.at).toLocaleString()}</p>
+                  <p className="text-slate-500">{entry.by} · {formatBS(entry.at, 'long', language)}</p>
                   {entry.note && <p className="text-slate-600">{entry.note}</p>}
                 </div>
               ))}

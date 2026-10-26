@@ -6,8 +6,10 @@ const variants = {
 };
 
 const Badge = ({ status, children, className = "" }) => {
+  const { option } = useI18n();
   const variant = variants[status] || variants.default;
-  return <span className={`${variant} ${className}`}>{children}</span>;
+  return <span className={`${variant} ${className}`}>{option(children ?? status)}</span>;
 };
 
 export default Badge;
+import { useI18n } from '../../i18n/I18nProvider.jsx';

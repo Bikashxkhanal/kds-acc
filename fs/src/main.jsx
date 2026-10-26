@@ -19,6 +19,11 @@ import SalesPage from './features/sales/sales.page'
 import DashboardPage from './features/dashboard/dashboard.page'
 import PurchasesPage from './features/purchases/purchases.page'
 import StaffForm from './features/staff/staff.form'
+import { I18nProvider } from './i18n/I18nProvider.jsx'
+import AdminRoute from './utils/adminRoute.jsx'
+import ActivityLogPage from './features/admin/activity-log.page.jsx'
+import UserManagementPage from './features/admin/user-management.page.jsx'
+import ChangePasswordPage from './features/auth/change-password.page.jsx'
 
 
 const router = createBrowserRouter([
@@ -42,6 +47,7 @@ const router = createBrowserRouter([
               index: true,
               element: <DashboardPage />
             },
+            { path: 'change-password', element: <ChangePasswordPage /> },
             {
               path: 'customer',
               element: <CustomerMainUI />
@@ -61,7 +67,7 @@ const router = createBrowserRouter([
             },
             {
               path: 'staff/:id/edit',
-              element: <StaffForm />
+              element: <AdminRoute><StaffForm /></AdminRoute>
             },
             {
               path: 'staff',
@@ -85,8 +91,10 @@ const router = createBrowserRouter([
             },
             {
               path: 'billings/:id/edit',
-              element: <BillingForm />
+              element: <AdminRoute><BillingForm /></AdminRoute>
             },
+            { path: 'activity-log', element: <AdminRoute><ActivityLogPage /></AdminRoute> },
+            { path: 'users', element: <AdminRoute><UserManagementPage /></AdminRoute> },
             {
               path: 'billings/:id',
               element: <BillingDetail />
@@ -102,8 +110,10 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')).render(
   <Provider store={store}>
+  <I18nProvider>
   <RouterProvider router={router} >
   </RouterProvider>
+  </I18nProvider>
   </Provider>
 
 )

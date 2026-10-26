@@ -8,6 +8,12 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import puppeteer from 'puppeteer';
 import mongoose from 'mongoose';
+import { formatBS } from '../utils/bsDate.js';
+import { buildActivityDiff } from '../services/activityLog.js';
+
+const normalizePhoneDigits = (value) => String(value || '').replace(/[०-९]/g, (digit) => String('०१२३४५६७८९'.indexOf(digit)));
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const customerTypes = { private: ['private', 'Private'], governmental: ['governmental', 'Governmental'], ngo: ['ngo', 'NGO'] };
 
 const getCustomerPerDetails = async (customerId) => {
     await connectMongo();
@@ -34,7 +40,7 @@ const isCustomerExist = async ({ customer_id, phone_number }) => {
 }
 
 const searchCustomer = asyncHandler(async (req, res) => {
-   const { q = "" } = req?.query;
+   const q = normalizePhoneDigits(req?.query?.q || '');
 
    if (!q?.trim()) {
     throw new ApiError("Search params connot be empty");
@@ -42,7 +48,7 @@ const searchCustomer = asyncHandler(async (req, res) => {
 
    await connectMongo();
    const result = await Customer.find({
-       $or: [{ name: { $regex: q.trim(), $options: "i" } }, { phone_number: { $regex: q.trim(), $options: "i" } }]
+       $or: [{ name: { $regex: escapeRegex(q.trim()), $options: "i" } }, { phone_number: { $regex: escapeRegex(q.trim()), $options: "i" } }]
    }).select("id name phone_number").lean();
 
    return res.status(200).json(
@@ -69,7 +75,8 @@ const getACustomer = asyncHandler(async (req, res) => {
 });
 
 const getAllCustomers = asyncHandler(async (req, res) => {
-    const { page, limit, q = "", customer_type, location = "" } = req?.query;
+    const { page, limit, customer_type, location = "" } = req?.query;
+    const q = normalizePhoneDigits(req?.query?.q || '');
 
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 15;
@@ -78,9 +85,15 @@ const getAllCustomers = asyncHandler(async (req, res) => {
     await connectMongo();
 
     const query = {};
-    if (q.trim()) query.$or = [{ name: { $regex: q.trim(), $options: "i" } }, { phone_number: { $regex: q.trim(), $options: "i" } }];
-    if (["Private", "Governmental", "NGO"].includes(customer_type)) query.customer_type = customer_type;
-    if (location.trim()) query.address = { $regex: location.trim(), $options: "i" };
+    if (q.trim()) query.$or = [{ name: { $regex: escapeRegex(q.trim()), $options: "i" } }, { phone_number: { $regex: escapeRegex(q.trim()), $options: "i" } }];
+    const typeCode = String(customer_type || '').trim().toLowerCase();
+    if (typeCode && typeCode !== 'all' && !customerTypes[typeCode]) throw new ApiError(400, 'Select a valid customer type filter');
+    if (typeCode && customerTypes[typeCode]) {
+        query.customer_type = typeCode === 'private'
+            ? { $in: [...customerTypes[typeCode], null] }
+            : { $in: customerTypes[typeCode] };
+    }
+    if (String(location).trim()) query.address = { $regex: escapeRegex(String(location).trim().slice(0, 100)), $options: "i" };
     const totalCustomers = await Customer.countDocuments(query);
     const metaData = [{ totalCustomers }];
 
@@ -123,7 +136,11 @@ const getAllCustomers = asyncHandler(async (req, res) => {
                 name: 1,
                 phone_number: 1,
                 address: 1,
-                customer_type: { $ifNull: ["$customer_type", "Private"] },
+                customer_type: { $switch: { branches: [
+                    { case: { $in: ["$customer_type", ["private", "Private", null]] }, then: "private" },
+                    { case: { $in: ["$customer_type", ["governmental", "Governmental"]] }, then: "governmental" },
+                    { case: { $in: ["$customer_type", ["ngo", "NGO"]] }, then: "ngo" }
+                ], default: "private" } },
                 Total_Paid_Amt: 1,
                 Total_Work_Amt: 1,
                 Payable: 1
@@ -139,15 +156,16 @@ const getAllCustomers = asyncHandler(async (req, res) => {
 })
 
 const addACustomer = asyncHandler(async (req, res) => {
-    const { name, phone_number, address, customer_type = "Private" } = req?.body;
+    const { name, phone_number, address, customer_type = "private" } = req?.body;
+    const normalizedType = String(customer_type).trim().toLowerCase();
 
     if (String(name || "").trim().length < 3) throw new ApiError(400, "Customer name must be at least 3 characters");
 
-    if (!["Private", "Governmental", "NGO"].includes(customer_type)) throw new ApiError(400, "Select a valid customer type");
+    if (!customerTypes[normalizedType]) throw new ApiError(400, "Select a valid customer type");
     if (!/^\d{10}$/.test(String(phone_number || ""))) throw new ApiError(400, "Phone number must contain 10 digits");
     await connectMongo();
     const id = await getNextSequence("customer");
-    await Customer.create({ id, name, phone_number, address, customer_type });
+    await Customer.create({ id, name, phone_number, address, customer_type: normalizedType });
 
     res.status(200).json(
         new ApiResponse(200, "Customer created successfully")
@@ -160,11 +178,14 @@ const deactiveACustomerAccount = asyncHandler(async (req, res, next) => {
 
 const updateACustomerDetails = asyncHandler(async (req, res, next) => {
     const customerId = Number(req.params.customerId);
-    const { name, phone_number, address = "", customer_type = "Private" } = req.body;
-    if (!Number.isInteger(customerId) || String(name || "").trim().length < 3 || !/^\d{10}$/.test(String(phone_number || "")) || !["Private", "Governmental", "NGO"].includes(customer_type)) throw new ApiError(400, "Enter a valid name, 10 digit phone number, and customer type");
+    const { name, phone_number, address = "", customer_type = "private" } = req.body;
+    const normalizedType = String(customer_type).trim().toLowerCase();
+    if (!Number.isInteger(customerId) || String(name || "").trim().length < 3 || !/^\d{10}$/.test(String(phone_number || "")) || !customerTypes[normalizedType]) throw new ApiError(400, "Enter a valid name, 10 digit phone number, and customer type");
     await connectMongo();
-    const customer = await Customer.findOneAndUpdate({ id: customerId }, { name: name.trim(), phone_number, address, customer_type }, { new: true, runValidators: true });
+    const before = await Customer.findOne({ id: customerId }).lean();
+    const customer = await Customer.findOneAndUpdate({ id: customerId }, { name: name.trim(), phone_number, address, customer_type: normalizedType }, { new: true, runValidators: true });
     if (!customer) throw new ApiError(404, "Customer not found");
+    req.activityDetails = { entityId: String(customerId), entityName: customer.name, diff: buildActivityDiff(before, customer.toObject()) };
     return res.status(200).json(new ApiResponse(200, "Customer updated successfully", customer));
 })
 
@@ -490,7 +511,7 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
                         <tbody>
                        ${data?.map((eachData) => (
                                 `<tr>
-                                    <td>${ new Date(eachData.date).toLocaleDateString("en-NP")}</td>
+                                    <td>${ formatBS(eachData.date, 'long', 'en')}</td>
                                     <td class="discription" >${eachData.discription}</td>
                                     <td>${eachData.Credit ?? '-'}</td>
                                     <td>${eachData.Debit ?? '-'}</td>
@@ -501,7 +522,7 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
                     </table>
                         `}
                     <footer style="margin-top:16px;color:#64748b;font-size:10px;display:flex;justify-content:space-between">
-                      <span>Generated Date: ${new Date().toLocaleDateString("en-NP")}</span>
+                      <span>Generated Date: ${formatBS(new Date(), 'long', 'en')}</span>
                       <span>Generated By: ${req.user?.name || "System User"}</span>
                     </footer>
                     </body>
@@ -548,7 +569,7 @@ const downloadWorkAndPaymentDetailsInPDF = asyncHandler(async (req, res) => {
     }
 })
 
-const WORK_TITLES = { Tractor: ["Cultivation Rotavator", "Cultivation Cultivator", "Boulders", "Gravel", "Soil", "Sand", "Puddling"], JCB: ["Excavation"], Tipper: ["Gravel", "Soil", "Sand"] };
+const WORK_TITLES = { Tractor: ["cultivation_rotavator", "cultivation_cultivator", "boulders", "gravel", "soil", "sand", "puddling", "paral", "dhan", "others", "Cultivation Rotavator", "Cultivation Cultivator", "Boulders", "Gravel", "Soil", "Sand", "Puddling", "Paral", "Dhan", "Others"], JCB: ["excavation", "Excavation"], Tipper: ["gravel", "soil", "sand", "Gravel", "Soil", "Sand"] };
 const addCustomerWorkDetailsBatch = asyncHandler(async (req, res) => {
     const entries = req.body?.entries;
     if (!Array.isArray(entries) || entries.length < 1 || entries.length > 100) throw new ApiError(400, "Provide between 1 and 100 sales entries");

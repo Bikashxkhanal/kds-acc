@@ -4,10 +4,14 @@ import { toast } from 'react-toastify';
 import PaginationBar from '../../components/common/Pagination/paginationbar.jsx';
 import Table from '../../components/common/Table/table.jsx';
 import { deleteStaff, getAllStaffs } from '../../services/staff/staff.api.js';
+import { useSelector } from 'react-redux';
+import { useI18n } from '../../i18n/I18nProvider.jsx';
 
 const PAGE_LIMIT = 12;
 const roles = ['Tractor Driver', 'JCB Operator', 'Tipper Driver', 'Helper', 'Accountant', 'Manager', 'Other'];
 export default function StaffList() {
+  const isAdmin = useSelector((state) => state.auth.user?.role === 'admin');
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const [rows, setRows] = useState([]); const [page, setPage] = useState(1); const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState(() => ({ q: searchParams.get('q') || '', role: '', status: '' })); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [refresh, setRefresh] = useState(0);
@@ -34,7 +38,7 @@ export default function StaffList() {
     Phone: staff.phone_number,
     'Assigned Vehicle': staff.assignedVehicle || 'None',
     Status: <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${staff.status === 'Inactive' ? 'bg-slate-100 text-slate-600' : 'bg-emerald-100 text-emerald-800'}`}>{staff.status || 'Active'}</span>,
-    Actions: <div className="flex items-center gap-3"><Link to={`/staff/${staff.id}`} className="font-medium text-[#12355b] hover:underline">View</Link><Link to={`/staff/${staff.id}/edit`} className="font-medium text-blue-700 hover:underline">Edit</Link><button type="button" onClick={() => removeStaff(staff)} className="font-medium text-red-700 hover:underline">Delete</button></div>
+    Actions: <div className="flex items-center gap-3"><Link to={`/staff/${staff.id}`} className="font-medium text-[#12355b] hover:underline">{t('common.viewDetails')}</Link>{isAdmin&&<><Link to={`/staff/${staff.id}/edit`} className="font-medium text-blue-700 hover:underline">{t('common.edit')}</Link><button type="button" onClick={() => removeStaff(staff)} className="font-medium text-red-700 hover:underline">{t('common.delete')}</button></>}</div>
   }));
   return <main className="kds-page">
     <header className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Human resources</p><h1 className="text-2xl font-bold text-[#12355b]">Staff Directory</h1><p className="text-sm text-slate-500">Search, filter, and manage staff profiles.</p></div><Link className="rounded-lg bg-[#12355b] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a4a7a]" to="/staff/new">Add Staff</Link></header>
