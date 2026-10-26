@@ -16,6 +16,7 @@ api.interceptors.request.use(
         const token = localStorage.getItem("accessToken");
 
         if (token) {
+            config.hadAccessToken = true;
             config.headers.Authorization = `Bearer ${token}`;
         }
 
@@ -32,7 +33,7 @@ api.interceptors.response.use(
         const requestUrl = error?.config?.url || '';
         if (status === 403) {
             toast.error(error?.response?.data?.message || 'You are not authorized to perform this action.');
-        } else if (status === 401 && !requestUrl.includes('/sysuser/login') && !redirectingForExpiredSession) {
+        } else if (status === 401 && error?.config?.hadAccessToken && !requestUrl.includes('/sysuser/login') && !requestUrl.includes('/sysuser/logout') && !redirectingForExpiredSession) {
             redirectingForExpiredSession = true;
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');

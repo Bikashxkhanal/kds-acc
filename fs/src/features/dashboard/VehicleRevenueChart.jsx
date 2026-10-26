@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../services/axios.js';
-import { formatAmount } from '../../utils/bsDate.js';
+import { bsToISO, formatBS, formatAmount } from '../../utils/bsDate.js';
 import { useI18n } from '../../i18n/I18nProvider.jsx';
 
 const colors = { Tractor: '#2563eb', JCB: '#f97316', Tipper: '#059669' };
@@ -35,7 +35,7 @@ export default function VehicleRevenueChart() {
       {[30, 77, 125, 172, 220].map((y) => <line key={y} x1="0" x2={view.width} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 5" />)}
       <line x1={view.todayX} x2={view.todayX} y1="18" y2="225" stroke="#0f172a" strokeDasharray="5 4" strokeWidth="2"/><rect x={view.todayX - 27} y="2" width="54" height="20" rx="10" fill="#12355b"/><text x={view.todayX} y="16" textAnchor="middle" fill="white" fontSize="11" fontWeight="600">Today</text>
       {['Tractor', 'JCB', 'Tipper'].map((vehicle) => <g key={vehicle}><path d={view.series(vehicle)} fill="none" stroke={colors[vehicle]} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>{view.points.map((point, i) => <circle key={`${vehicle}-${point.key}`} cx={view.points.length < 2 ? view.width / 2 : 24 + i * (view.width - 48) / (view.points.length - 1)} cy={220 - (point.revenues?.[vehicle] || 0) / view.max * 190} r="2.5" fill={colors[vehicle]} />)}</g>)}
-      {view.points.map((point, i) => (i % Math.max(1, Math.ceil(view.points.length / 12)) === 0 || point.key === data?.today) && <text key={point.key} x={view.points.length < 2 ? view.width / 2 : 24 + i * (view.width - 48) / (view.points.length - 1)} y="246" textAnchor="middle" fill="#64748b" fontSize="10">{point.key}</text>)}
+      {view.points.map((point, i) => (i % Math.max(1, Math.ceil(view.points.length / 12)) === 0 || point.key === data?.today) && <text key={point.key} x={view.points.length < 2 ? view.width / 2 : 24 + i * (view.width - 48) / (view.points.length - 1)} y="246" textAnchor="middle" fill="#64748b" fontSize="10">{(() => { const bsKey = point.key.includes('-W') ? `${point.key.slice(0, 7)}-01` : point.key.length === 7 ? `${point.key}-01` : point.key; const iso = bsToISO(bsKey); return iso ? formatBS(iso, granularity === 'day' ? 'short' : granularity) : point.key; })()}</text>)}
     </svg></div>}
     <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600">{Object.entries(colors).map(([vehicle, color]) => <span key={vehicle} className="inline-flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />{vehicle}</span>)}</div>
     {!!view.points.length && <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">{['Tractor', 'JCB', 'Tipper'].map((vehicle) => <p key={vehicle} className="rounded-lg bg-slate-50 p-2"><strong style={{ color: colors[vehicle] }}>{vehicle}</strong> today: {formatAmount(view.points.find((point) => point.key === data?.today)?.revenues?.[vehicle] || 0, language)}</p>)}</div>}

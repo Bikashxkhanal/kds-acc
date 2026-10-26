@@ -104,9 +104,11 @@ export const getVehicleRevenue = asyncHandler(async (req, res) => {
   else end.setMonth(end.getMonth() + 6);
   const bucket = (date) => {
     const d = new Date(date); d.setHours(12, 0, 0, 0);
-    if (granularity === 'month') return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    if (granularity === 'week') { const monday = new Date(d); monday.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return monday.toISOString().slice(0, 10); }
-    return d.toISOString().slice(0, 10);
+    const bs = new NepaliDate(d); const fields = bs.getBS();
+    const month = String(fields.month + 1).padStart(2, '0');
+    if (granularity === 'month') return `${fields.year}-${month}`;
+    if (granularity === 'week') return `${fields.year}-${month}-W${Math.ceil(fields.date / 7)}`;
+    return bs.format('YYYY-MM-DD');
   };
   await connectMongo();
   const rows = await CustomerWork.aggregate([
@@ -147,7 +149,8 @@ export const getDashboard = asyncHandler(async (req, res) => {
   const lastMonthRevenue = await CustomerWork.aggregate([{ $match: { work_date: { $gte:lastMonth,$lt:nextMonth } } },{ $group:{_id:null,total:{$sum:'$total'}}}]);
   const lastMonthCost = purchases.filter(p=>new Date(p.date)>=lastMonth&&new Date(p.date)<nextMonth).reduce((s,p)=>s+p.totalValue,0);
   const lastMonthRecovered = payments.filter(p=>new Date(p.payment_date)>=lastMonth&&new Date(p.payment_date)<nextMonth).reduce((s,p)=>s+p.pay_amount,0);
-  const yearStart = new Date(now.getFullYear(), 0, 1);
+  const bsYear = nowBS.getYear();
+  const yearStart = parseBS(`${bsYear}-01-01`);
   const [yearWorks, allYearPayments, remunerations, allStaff] = await Promise.all([
     CustomerWork.find({ work_date: { $gte: yearStart, $lte: now } }).lean(),
     CustomerPayment.find({ payment_date: { $gte: yearStart, $lte: now } }).lean(),
@@ -171,5 +174,5 @@ export const getDashboard = asyncHandler(async (req, res) => {
   for (const rem of remunerations) { const person=allStaff.find(s=>s.id===rem.staff_id); if (person?.noSalary) continue; const key=person?.assignedVehicle && person.assignedVehicle!=='None' ? person.assignedVehicle : 'Unallocated / General'; totals[key].cost+=Number(rem.amount||0); }
   const vehicleAnalytics=Object.values(totals).map(x=>({...x,revenueFuelRatio:x.fuel?x.revenue/x.fuel:null,revenueCostRatio:x.cost?x.revenue/x.cost:null}));
   const yearCostsByTitle = purchases.filter(p=>new Date(p.date)>=yearStart&&new Date(p.date)<=now).reduce((acc,p)=>{acc[p.title]=(acc[p.title]||0)+(p.payments||[]).filter(x=>new Date(x.date)>=yearStart&&new Date(x.date)<=now).reduce((s,x)=>s+Number(x.amount||0),0);return acc;},{});
-  res.json(new ApiResponse(200,'Dashboard data loaded',{ chart:[...chart.values()].sort((a,b)=>a.month.localeCompare(b.month)), summary:{revenue:summaryRevenue,cost:costThisYear,recovered:summaryRecovered,due:Math.max(0,(allTimeRevenue[0]?.total||0)-(allTimeRecovered[0]?.total||0)),year:now.getFullYear()}, vehicleAnalytics, yearCostsByTitle, dueCustomers,monthKey }));
+  res.json(new ApiResponse(200,'Dashboard data loaded',{ chart:[...chart.values()].sort((a,b)=>a.month.localeCompare(b.month)), summary:{revenue:summaryRevenue,cost:costThisYear,recovered:summaryRecovered,due:Math.max(0,(allTimeRevenue[0]?.total||0)-(allTimeRecovered[0]?.total||0)),year:bsYear}, vehicleAnalytics, yearCostsByTitle, dueCustomers,monthKey }));
 });

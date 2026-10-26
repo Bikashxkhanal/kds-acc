@@ -26,7 +26,10 @@ const CustomerMainUI = () => {
 
   const makeRow = useCallback((row) => ({
     "Customer ID": row.id,
-    ...row,
+    Name: row.name,
+    "Phone Number": row.phone_number,
+    Address: row.address,
+    "Customer Type": row.customer_type,
     Actions: <><Link to={`/customers/${row.id}`} className="mr-3 font-medium text-[#12355b] hover:text-sky-600 hover:underline">{t('customer.view')}</Link>{role === 'admin' && <button className="text-blue-700" onClick={() => setEditing({ id: row.id, name: row.name, phone_number: row.phone_number, address: row.address || '', customer_type: String(row.customer_type || 'private').toLowerCase() })}>{t('common.edit')}</button>}</>
   }), [role, t]);
 

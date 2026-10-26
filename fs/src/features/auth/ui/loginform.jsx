@@ -8,7 +8,7 @@ import { loginFail, loginStart, loginSuccess } from "../../../store/authSlice.js
 import { useI18n } from "../../../i18n/I18nProvider.jsx";
 
 const LoginForm = () => {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const dispatch = useDispatch();
     const { isLoading } = useSelector(state => state.auth)
     const { t } = useI18n();
@@ -27,8 +27,10 @@ const LoginForm = () => {
         try {
             dispatch(loginStart())
             const data = await loginSysUser({ loginData: formData })
+            toast.dismiss();
             toast.success(data?.message)
             dispatch(loginSuccess(data?.data?.user))
+            if (searchParams.has('session')) setSearchParams({}, { replace: true });
         } catch (message) {
             dispatch(loginFail())
             toast.error(message)

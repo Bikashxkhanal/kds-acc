@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router-dom"
-import { toast, ToastContainer } from "react-toastify"
+import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css";
 import { verifyUser } from "./services/auth/auth.js";
 import { useDispatch } from "react-redux";
@@ -12,6 +12,10 @@ function App() {
        useEffect(() => {
               ;(async () => {
                  if (window.location.pathname === '/__date-debug') return;
+                 if (!localStorage.getItem('accessToken')) {
+                     dispatch(verifyMeFail());
+                     return;
+                 }
                  try {
                      
                      dispatch(verifyMeStart());
@@ -23,7 +27,6 @@ function App() {
                      
                  } catch {
                      // console.log("Failed");     
-                     toast.error("Session expired please login!")
                      dispatch(verifyMeFail())
                      
                  }    
