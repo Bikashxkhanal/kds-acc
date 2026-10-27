@@ -145,18 +145,10 @@ export const getDashboard = asyncHandler(async (req, res) => {
   const chart = new Map(); const keyOf = (d) => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`; };
   for (const w of works) { const k = keyOf(w.work_date); const row = chart.get(k) || { month: k, sales: 0, cost: 0 }; row.sales += Number(w.total || 0); chart.set(k, row); }
   for (const p of purchases) { const k = keyOf(p.date); const row = chart.get(k) || { month: k, sales: 0, cost: 0 }; row.cost += Number(p.totalValue || 0); chart.set(k, row); }
-  const nowBS = new NepaliDate(now); const currentMonthStart = parseBS(`${nowBS.getYear()}-${String(nowBS.getMonth() + 1).padStart(2, '0')}-01`);
-  const priorMonthBS = new NepaliDate(now); priorMonthBS.setDate(1); priorMonthBS.setMonth(priorMonthBS.getMonth() - 1);
-  const lastMonth = parseBS(`${priorMonthBS.getYear()}-${String(priorMonthBS.getMonth() + 1).padStart(2, '0')}-01`), nextMonth = currentMonthStart;
-  const monthKey = `${nowBS.getYear()}-${String(nowBS.getMonth() + 1).padStart(2, '0')}`, monthStart = currentMonthStart, monthWork = await CustomerWork.aggregate([{ $match: { work_date: { $gte: monthStart } } }, { $group: { _id: null, total: { $sum: '$total' } } }]);
-  const monthCost = purchases.filter(p => new Date(p.date) >= monthStart).reduce((s,p) => s + p.totalValue,0);
-  const recovered = payments.filter(p => new Date(p.payment_date) >= monthStart).reduce((s,p) => s + p.pay_amount,0);
+  const nowBS = new NepaliDate(now);
   const [allWorks, allPays] = await Promise.all([CustomerWork.aggregate([{ $group: { _id: '$customer_id', total: { $sum: '$total' }, oldest: { $min: '$work_date' } } }]), CustomerPayment.aggregate([{ $group: { _id: '$customer_id', total: { $sum: '$pay_amount' }, last: { $max: '$payment_date' } } }])]);
   const payMap = new Map(allPays.map(p => [p._id, p])); const customerMap = new Map(customers.map(c => [c.id,c])); const cutoff = new Date(now.getTime() - 90*86400000);
   const dueCustomers = allWorks.map(w => { const paid = payMap.get(w._id); const due = Math.max(0,w.total-(paid?.total||0)); const refDate = paid?.last || w.oldest; const days = Math.floor((now-new Date(refDate))/86400000); return { customer: customerMap.get(w._id), due, lastPaymentDate: paid?.last || null, daysOverdue: days }; }).filter(x => x.customer && x.due > 0 && new Date(x.lastPaymentDate || allWorks.find(w => w._id === x.customer.id)?.oldest || now) < cutoff).map(x => ({ id:x.customer.id, name:x.customer.name, phone:x.customer.phone_number, amountDue:x.due, lastPaymentDate:x.lastPaymentDate, daysOverdue:x.daysOverdue }));
-  const lastMonthRevenue = await CustomerWork.aggregate([{ $match: { work_date: { $gte:lastMonth,$lt:nextMonth } } },{ $group:{_id:null,total:{$sum:'$total'}}}]);
-  const lastMonthCost = purchases.filter(p=>new Date(p.date)>=lastMonth&&new Date(p.date)<nextMonth).reduce((s,p)=>s+p.totalValue,0);
-  const lastMonthRecovered = payments.filter(p=>new Date(p.payment_date)>=lastMonth&&new Date(p.payment_date)<nextMonth).reduce((s,p)=>s+p.pay_amount,0);
   const bsYear = nowBS.getYear();
   const yearStart = parseBS(`${bsYear}-01-01`);
   const [yearWorks, allYearPayments, remunerations, allStaff] = await Promise.all([
@@ -170,7 +162,7 @@ export const getDashboard = asyncHandler(async (req, res) => {
   const allTimeRevenue = await CustomerWork.aggregate([{ $match: { work_date: { $lte: now } } }, { $group: { _id: null, total: { $sum: '$total' } } }]);
   const allTimeRecovered = await CustomerPayment.aggregate([{ $match: { payment_date: { $lte: now } } }, { $group: { _id: null, total: { $sum: '$pay_amount' } } }]);
   const noSalaryIds = new Set(allStaff.filter(s=>s.noSalary).map(s=>s.id));
-  const costThisYear = purchases.filter(p => new Date(p.date) >= yearStart && new Date(p.date) <= now).reduce((s,p) => s + (p.payments || []).filter(x => new Date(x.date) >= yearStart && new Date(x.date) <= now).reduce((a,x)=>a+Number(x.amount||0),0),0) + remunerations.filter(r=>!noSalaryIds.has(r.staff_id)).reduce((s,r)=>s+Number(r.amount||0),0);
+  const costThisYear = allPurchases.reduce((s,p) => s + (p.payments || []).filter(x => new Date(x.date) >= yearStart && new Date(x.date) <= now).reduce((a,x)=>a+Number(x.amount||0),0),0) + remunerations.filter(r=>!noSalaryIds.has(r.staff_id)).reduce((s,r)=>s+Number(r.amount||0),0);
   const totals = Object.fromEntries(['Tractor','JCB','Tipper','Unallocated / General'].map(v=>[v,{vehicle:v,revenue:0,cost:0,fuel:0,due:0}]));
   const workTotals = await CustomerWork.aggregate([{ $match: { work_date: { $lte: now } } },{ $group: { _id: '$vehicle_type', revenue: { $sum: '$total' }, total: { $sum: '$total' } } }]);
   const payTotals = await CustomerPayment.aggregate([{ $match: { payment_date: { $lte: now } } },{ $group: { _id: '$customer_id', total: { $sum: '$pay_amount' } } }]);
@@ -181,6 +173,6 @@ export const getDashboard = asyncHandler(async (req, res) => {
   for (const p of allPurchases) { const bucket=totals[p.usedBy]||totals['Unallocated / General']; const paid=(p.payments||[]).filter(x=>new Date(x.date)<=now).reduce((s,x)=>s+Number(x.amount||0),0); bucket.cost+=paid; if(['Fuel','Mobil (oil)'].includes(p.title)) bucket.fuel+=paid; }
   for (const rem of remunerations) { const person=allStaff.find(s=>s.id===rem.staff_id); if (person?.noSalary) continue; const key=person?.assignedVehicle && person.assignedVehicle!=='None' ? person.assignedVehicle : 'Unallocated / General'; totals[key].cost+=Number(rem.amount||0); }
   const vehicleAnalytics=Object.values(totals).map(x=>({...x,revenueFuelRatio:x.fuel?x.revenue/x.fuel:null,revenueCostRatio:x.cost?x.revenue/x.cost:null}));
-  const yearCostsByTitle = purchases.filter(p=>new Date(p.date)>=yearStart&&new Date(p.date)<=now).reduce((acc,p)=>{acc[p.title]=(acc[p.title]||0)+(p.payments||[]).filter(x=>new Date(x.date)>=yearStart&&new Date(x.date)<=now).reduce((s,x)=>s+Number(x.amount||0),0);return acc;},{});
-  res.json(new ApiResponse(200,'Dashboard data loaded',{ chart:[...chart.values()].sort((a,b)=>a.month.localeCompare(b.month)), summary:{revenue:summaryRevenue,cost:costThisYear,recovered:summaryRecovered,due:Math.max(0,(allTimeRevenue[0]?.total||0)-(allTimeRecovered[0]?.total||0)),year:bsYear}, vehicleAnalytics, yearCostsByTitle, dueCustomers,monthKey }));
+  const yearCostsByTitle = allPurchases.reduce((acc,p)=>{const paid=(p.payments||[]).filter(x=>new Date(x.date)>=yearStart&&new Date(x.date)<=now).reduce((s,x)=>s+Number(x.amount||0),0);if(paid)acc[p.title]=(acc[p.title]||0)+paid;return acc;},{});
+  res.json(new ApiResponse(200,'Dashboard data loaded',{ chart:[...chart.values()].sort((a,b)=>a.month.localeCompare(b.month)), summary:{revenue:summaryRevenue,cost:costThisYear,recovered:summaryRecovered,due:Math.max(0,(allTimeRevenue[0]?.total||0)-(allTimeRecovered[0]?.total||0)),year:bsYear}, vehicleAnalytics, yearCostsByTitle, dueCustomers }));
 });

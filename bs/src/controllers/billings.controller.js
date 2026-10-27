@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import connectMongo from "../db/mongo.js";
 import Company from "../models/company.model.js";
 import Invoice from "../models/invoice.model.js";
-import puppeteer from "puppeteer";
+import { launchPdfBrowser, logPdfError } from "../utils/pdf.js";
 import { buildInvoiceHtml } from "../utils/invoiceTemplate.js";
 import { buildActivityDiff } from '../services/activityLog.js';
 import { parseISODate } from '../utils/isoDate.js';
@@ -343,16 +343,20 @@ const downloadBillPDF = asyncHandler(async (req, res) => {
     if (!invoice) throw new ApiError(404, "Invoice not found");
 
     const html = buildInvoiceHtml(invoice, req.query.lang === 'np' ? 'np' : 'en');
-    const browser = await puppeteer.launch({ headless: true });
+    let browser;
     let pdf;
     try {
+        browser = await launchPdfBrowser();
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: "networkidle0" });
         pdf = await page.pdf({
             format: "A4", printBackground: true, displayHeaderFooter: false,
             margin: { top: "8mm", bottom: "12mm", left: "10mm", right: "10mm" }
         });
-    } finally { await browser.close(); }
+    } catch (error) {
+        logPdfError(`invoice ${invoice.invoiceNumber}`, error);
+        throw new ApiError(500, "Unable to generate invoice PDF. Please try again.");
+    } finally { if (browser) await browser.close(); }
 
     res.set({
         "Content-Type": "application/pdf",

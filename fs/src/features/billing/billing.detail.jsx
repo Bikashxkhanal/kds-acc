@@ -6,7 +6,7 @@ import Badge from "../../components/common/Badge";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import InvoicePreview from "./components/InvoicePreview";
-import { getBillDetails, deleteBill, duplicateBill, downloadBillPDF } from "../../services/billing/billings.api";
+import { getBillDetails, deleteBill, duplicateBill, downloadBillPDF, printBillPDF } from "../../services/billing/billings.api";
 import { formatBS } from "../../utils/bsDate.js";
 import { useI18n } from "../../i18n/I18nProvider.jsx";
 import { formatCurrency } from "../../utils/currency";
@@ -26,19 +26,8 @@ const BillingDetail = () => {
   const [deleting, setDeleting] = useState(false);
 
   const printInvoice = async () => {
-    const popup = window.open('', '_blank');
-    if (!popup) { toast.error('Allow pop-ups to print this invoice'); return; }
-    try {
-      const lang = language === 'np' ? 'np' : 'en';
-      const response = await api.get(`/api/v1/billings/${id}/download?lang=${lang}`, { responseType: 'blob' });
-      const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      popup.location.href = url;
-      popup.addEventListener('load', () => popup.print(), { once: true });
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch {
-      popup.close();
-      toast.error('Failed to prepare invoice for printing');
-    }
+    try { await printBillPDF(id); }
+    catch (error) { toast.error(error?.message || 'Unable to prepare invoice for printing. Please try again.'); }
   };
 
   useEffect(() => {

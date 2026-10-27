@@ -95,3 +95,19 @@ export const downloadBillPDF = async (billingId) => {
     throw new Error("Failed to download PDF");
   }
 };
+
+export const printBillPDF = async (billingId) => {
+  const popup = window.open('', '_blank');
+  if (!popup) throw new Error('Allow pop-ups to print this invoice');
+  try {
+    const language = localStorage.getItem('kds-language') === 'np' ? 'np' : 'en';
+    const res = await api.get(`/api/v1/billings/${billingId}/download?lang=${language}`, { responseType: 'blob' });
+    const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+    popup.addEventListener('load', () => popup.print(), { once: true });
+    popup.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (error) {
+    popup.close();
+    throw error;
+  }
+};

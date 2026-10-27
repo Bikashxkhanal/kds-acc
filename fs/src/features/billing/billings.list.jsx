@@ -8,7 +8,7 @@ import Table from "../../components/common/Table/table";
 import PaginationBar from "../../components/common/Pagination/paginationbar";
 import Modal from "../../components/common/Modal";
 import {
-  getBillings, deleteBill, duplicateBill, downloadBillPDF
+  getBillings, deleteBill, duplicateBill, downloadBillPDF, printBillPDF
 } from "../../services/billing/billings.api";
 import { formatCurrency } from "../../utils/currency";
 import { formatBS } from "../../utils/bsDate.js";
@@ -30,8 +30,9 @@ const BillingsList = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const handlePrint = (id) => {
-    window.open(`/billings/${id}?print=1`, "_blank");
+  const handlePrint = async (id) => {
+    try { await printBillPDF(id); }
+    catch (error) { toast.error(error?.message || 'Unable to prepare invoice for printing. Please try again.'); }
   };
 
   const handleDownload = async (id) => {

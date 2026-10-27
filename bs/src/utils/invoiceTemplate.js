@@ -76,7 +76,7 @@ export const buildInvoiceHtml = (invoice = {}, language = 'en') => {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     @font-face { font-family: 'Noto Sans Devanagari'; src: url(data:font/woff2;base64,${devanagariFont}) format('woff2'); font-weight: 400; }
-    body { font-family: 'Noto Sans Devanagari', 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #1e293b; line-height: 1.5; }
+    body { background: #fff; font-family: 'Noto Sans Devanagari', 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #1e293b; line-height: 1.5; }
     .invoice { max-width: 210mm; margin: 0 auto; }
 
     .header { background: #12355b; color: #fff; padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 28px; border-radius: 8px 8px 0 0; }
