@@ -49,7 +49,7 @@ try {
 
   await connectMongo();
   if (await SysUser.exists({ phone_number })) throw new Error('A system user already uses that phone number.');
-  const email = `${phone_number}@local.invalid`;
+  // const email = `${phone_number}@local.invalid`;
   if (await SysUser.exists({ email })) throw new Error('Generated placeholder email is already in use.');
   if (role === 'operator' && !(await SysUser.exists({ role: 'admin', isActive: { $ne: false } }))) throw new Error('Create an Admin first; the system must always have an active Admin.');
 
