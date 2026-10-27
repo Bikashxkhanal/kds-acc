@@ -7,5 +7,15 @@ export const launchPdfBrowser = () => puppeteer.launch({
 });
 
 export const logPdfError = (context, error) => {
-  console.error(`[pdf] ${context}`, error?.stack || error);
+  console.error(`[pdf] ${context}`, {
+    name: error?.name,
+    message: error?.message || String(error),
+    stack: error?.stack,
+    code: error?.code,
+    cause: error?.cause ? { name: error.cause.name, message: error.cause.message, stack: error.cause.stack } : undefined
+  });
+};
+
+export const logPdfStage = (context, stage, details = {}) => {
+  console.info(`[pdf] ${context} ${stage}`, details);
 };

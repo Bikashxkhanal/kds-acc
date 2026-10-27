@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import connectMongo from "../db/mongo.js";
 import Company from "../models/company.model.js";
 import Invoice from "../models/invoice.model.js";
-import { launchPdfBrowser, logPdfError } from "../utils/pdf.js";
+import { launchPdfBrowser, logPdfError, logPdfStage } from "../utils/pdf.js";
 import { buildInvoiceHtml } from "../utils/invoiceTemplate.js";
 import { buildActivityDiff } from '../services/activityLog.js';
 import { parseISODate } from '../utils/isoDate.js';
@@ -336,26 +336,34 @@ const duplicateABill = asyncHandler(async (req, res) => {
 });
 
 const downloadBillPDF = asyncHandler(async (req, res) => {
-    await connectMongo();
     const { billing_id } = req.params;
+    const context = `invoice id=${billing_id}`;
+    logPdfStage(context, "request received", { billingId: billing_id, language: req.query.lang === "np" ? "np" : "en" });
+    await connectMongo();
     const invoice = await Invoice.findById(billing_id).lean();
 
     if (!invoice) throw new ApiError(404, "Invoice not found");
 
+    logPdfStage(context, "data fetched", { found: true, invoiceNumber: invoice.invoiceNumber, itemCount: invoice.items?.length || 0, companyFound: !!invoice.company, customerFound: !!invoice.customer });
     const html = buildInvoiceHtml(invoice, req.query.lang === 'np' ? 'np' : 'en');
+    logPdfStage(context, "html built", { htmlLength: html.length });
     let browser;
     let pdf;
     try {
+        logPdfStage(context, "launching browser");
         browser = await launchPdfBrowser();
         const page = await browser.newPage();
+        logPdfStage(context, "setting page content");
         await page.setContent(html, { waitUntil: "networkidle0" });
+        logPdfStage(context, "rendering pdf");
         pdf = await page.pdf({
             format: "A4", printBackground: true, displayHeaderFooter: false,
             margin: { top: "8mm", bottom: "12mm", left: "10mm", right: "10mm" }
         });
+        logPdfStage(context, "pdf produced", { bytes: pdf.length });
     } catch (error) {
-        logPdfError(`invoice ${invoice.invoiceNumber}`, error);
-        throw new ApiError(500, "Unable to generate invoice PDF. Please try again.");
+        logPdfError(context, error);
+        throw new ApiError(500, "Unable to generate this invoice PDF. Please retry; if it continues, contact support with the invoice number.");
     } finally { if (browser) await browser.close(); }
 
     res.set({
@@ -363,6 +371,7 @@ const downloadBillPDF = asyncHandler(async (req, res) => {
         "Content-Disposition": `attachment; filename="${invoice.invoiceNumber}.pdf"`
     });
     res.status(200).send(pdf);
+    logPdfStage(context, "response sent", { status: 200, bytes: pdf.length });
 });
 
 export {
