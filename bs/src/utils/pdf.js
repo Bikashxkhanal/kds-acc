@@ -6,8 +6,9 @@ export const launchPdfBrowser = () => puppeteer.launch({
   args: ['--no-sandbox', '--disable-setuid-sandbox']
 });
 
-export const logPdfError = (context, error) => {
-  console.error(`[pdf] ${context}`, {
+export const logPdfError = (context, error, stage = 'unknown') => {
+  console.error(`[pdf] ${context} failed at stage=${stage}`, {
+    stage,
     name: error?.name,
     message: error?.message || String(error),
     stack: error?.stack,
