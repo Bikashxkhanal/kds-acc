@@ -338,40 +338,52 @@ const duplicateABill = asyncHandler(async (req, res) => {
 const downloadBillPDF = asyncHandler(async (req, res) => {
     const { billing_id } = req.params;
     const context = `invoice id=${billing_id}`;
-    logPdfStage(context, "request received", { billingId: billing_id, language: req.query.lang === "np" ? "np" : "en" });
-    await connectMongo();
-    const invoice = await Invoice.findById(billing_id).lean();
-
-    if (!invoice) throw new ApiError(404, "Invoice not found");
-
-    logPdfStage(context, "data fetched", { found: true, invoiceNumber: invoice.invoiceNumber, itemCount: invoice.items?.length || 0, companyFound: !!invoice.company, customerFound: !!invoice.customer });
-    const html = buildInvoiceHtml(invoice, req.query.lang === 'np' ? 'np' : 'en');
-    logPdfStage(context, "html built", { htmlLength: html.length });
     let browser;
-    let pdf;
+    let stage = "request received";
     try {
-        logPdfStage(context, "launching browser");
+        logPdfStage(context, stage, { billingId: billing_id, language: req.query.lang === "np" ? "np" : "en" });
+        stage = "connecting to database";
+        await connectMongo();
+        stage = "loading invoice";
+        const invoice = await Invoice.findById(billing_id).lean();
+        if (!invoice) throw new ApiError(404, "Invoice not found");
+
+        logPdfStage(context, "data fetched", { found: true, invoiceNumber: invoice.invoiceNumber, itemCount: invoice.items?.length || 0, companyFound: !!invoice.company, customerFound: !!invoice.customer });
+        stage = "building HTML";
+        const html = buildInvoiceHtml(invoice, req.query.lang === 'np' ? 'np' : 'en');
+        logPdfStage(context, "html built", { htmlLength: html.length });
+        stage = "launching browser";
+        logPdfStage(context, stage);
         browser = await launchPdfBrowser();
         const page = await browser.newPage();
-        logPdfStage(context, "setting page content");
+        stage = "setting page content";
+        logPdfStage(context, stage);
         await page.setContent(html, { waitUntil: "networkidle0" });
-        logPdfStage(context, "rendering pdf");
-        pdf = await page.pdf({
+        stage = "rendering pdf";
+        logPdfStage(context, stage);
+        const pdf = await page.pdf({
             format: "A4", printBackground: true, displayHeaderFooter: false,
             margin: { top: "8mm", bottom: "12mm", left: "10mm", right: "10mm" }
         });
         logPdfStage(context, "pdf produced", { bytes: pdf.length });
+        stage = "sending PDF response";
+        res.set({
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="${String(invoice.invoiceNumber || billing_id).replace(/[\\\"\r\n]/g, "_")}.pdf"`
+        });
+        res.status(200).send(pdf);
+        logPdfStage(context, "response sent", { status: 200, bytes: pdf.length });
     } catch (error) {
-        logPdfError(context, error);
+        logPdfError(context, error, stage);
+        if (res.headersSent) return;
+        if (error instanceof ApiError) throw error;
         throw new ApiError(500, "Unable to generate this invoice PDF. Please retry; if it continues, contact support with the invoice number.");
-    } finally { if (browser) await browser.close(); }
-
-    res.set({
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${invoice.invoiceNumber}.pdf"`
-    });
-    res.status(200).send(pdf);
-    logPdfStage(context, "response sent", { status: 200, bytes: pdf.length });
+    } finally {
+        if (browser) {
+            try { await browser.close(); }
+            catch (error) { logPdfError(context, error, "closing PDF browser"); }
+        }
+    }
 });
 
 export {
