@@ -137,10 +137,10 @@ export const buildInvoiceHtml = (invoice = {}, language = 'en') => {
         ${dueDate ? `<p>${l.due}: ${formatDate(dueDate, language)}</p>` : ""}
         <div style="border-top:1px solid rgba(255,255,255,.3);margin-top:8px;padding-top:8px">
           <p style="text-transform:uppercase;letter-spacing:1px;font-size:9px;color:#64748b">${l.billTo}</p>
-          <p style="font-weight:700;color:#fff">Customer Name: ${escapeHtml(customer.name || "Customer Name")}</p>
-          <p>Customer Address: ${escapeHtml(customer.address || "Address")}</p>
-          ${customer.phone ? `<p>Phone Number: ${escapeHtml(customer.phone)}</p>` : ""}
-          <p>PAN Number: ${escapeHtml(customer.pan || "N/A")}</p>
+          <p style="font-weight:700;color:#fff">${language === 'np' ? 'ग्राहकको नाम' : 'Customer Name'}: ${escapeHtml(customer.name || (language === 'np' ? 'ग्राहकको नाम' : 'Customer Name'))}</p>
+          <p>${language === 'np' ? 'ठेगाना' : 'Customer Address'}: ${escapeHtml(customer.address || (language === 'np' ? 'ठेगाना' : 'Address'))}</p>
+          ${customer.phone ? `<p>${language === 'np' ? 'फोन नं.' : 'Phone Number'}: ${escapeHtml(customer.phone)}</p>` : ""}
+          <p>${language === 'np' ? 'स्थायी लेखा नं. (PAN)' : 'PAN Number'}: ${escapeHtml(customer.pan || "N/A")}</p>
           <p style="margin-top:4px;text-transform:uppercase;letter-spacing:1px;font-size:9px">${l.paymentStatus}</p>
           <p style="font-weight:700;color:#fff;text-transform:capitalize">${escapeHtml(displayStatus)}</p>
         </div>
@@ -167,7 +167,7 @@ export const buildInvoiceHtml = (invoice = {}, language = 'en') => {
     <div class="summary">
       <div class="summary-left">
         ${remarks ? `<div class="label">${l.remarks}</div><p style="margin-bottom:8px">${escapeHtml(remarks)}</p>` : ""}
-        <p class="words">${l.amountWords}: <strong>${amountToWords(totals.grandTotal || 0)}</strong></p>
+        <p class="words">${l.amountWords}: <strong>${amountToWords(totals.grandTotal || 0, language)}</strong></p>
       </div>
       <div class="summary-right">
         <div class="summary-row"><span>${l.subtotal}</span><span>${currencySymbol} ${currency.format(totals.subtotal || 0)}</span></div>
@@ -200,7 +200,7 @@ export const buildInvoiceHtml = (invoice = {}, language = 'en') => {
       </div>
     </div>
 
-    ${lastUpdatedBy?.name || updatedAt ? `<div class="footer"><span>Created by ${escapeHtml(creator.name || "—")}</span>${lastUpdatedBy?.name ? `<span>Last updated by ${escapeHtml(lastUpdatedBy.name)}</span>` : ""}${updatedAt ? `<span>${formatDate(updatedAt, language)}</span>` : ""}</div>` : ""}
+    ${lastUpdatedBy?.name || updatedAt ? `<div class="footer"><span>${language === 'np' ? 'तयार गर्ने:' : 'Created by'} ${escapeHtml(creator.name || "—")}</span>${lastUpdatedBy?.name ? `<span>${language === 'np' ? 'अन्तिम अद्यावधिक:' : 'Last updated by'} ${escapeHtml(lastUpdatedBy.name)}</span>` : ""}${updatedAt ? `<span>${formatDate(updatedAt, language)}</span>` : ""}</div>` : ""}
   </div>
 </body>
 </html>`;

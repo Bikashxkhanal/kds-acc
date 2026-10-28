@@ -3,13 +3,14 @@ import { amountToWords } from "../../../utils/numberToWords";
 import { formatBS } from "../../../utils/bsDate.js";
 import { useI18n } from "../../../i18n/I18nProvider.jsx";
 
-const formatDate = (value) => {
-  if (!value) return "—";
-  return formatBS(value, 'long', document.documentElement.lang || 'en');
-};
-
 const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => {
-  const { t } = useI18n();
+  const { language, t, option } = useI18n();
+
+  const formatDate = (value) => {
+    if (!value) return "—";
+    return formatBS(value, 'long', language);
+  };
+
   const {
     invoiceNumber = "DRAFT",
     billNumber = "",
@@ -31,7 +32,7 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
 
   return (
     <div className={`invoice-print-area bg-white text-slate-800 ${compact ? "text-xs" : "text-sm"}`}>
-        <div className="invoice-shell border border-slate-300 rounded-lg overflow-hidden">
+      <div className="invoice-shell border border-slate-300 rounded-lg overflow-hidden">
         {/* Header */}
         <div className="bg-[#12355b] text-white px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
@@ -57,10 +58,10 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
             {dueDate && <p>{t('invoice.due')}: {formatDate(dueDate)}</p>}
             <div className="mt-3 border-t border-white/20 pt-3 text-sm md:ml-auto md:max-w-xs">
               <p className="text-sky-200 text-xs uppercase tracking-wider">{t('invoice.billTo')}</p>
-              <p className="font-semibold">Customer Name: {customer.name || "Customer Name"}</p>
-              <p className="text-sky-100/85">Customer Address: {customer.address || "Address"}</p>
-              {customer.phone && <p className="text-sky-100/85">Phone Number: {customer.phone}</p>}
-              <p className="text-sky-100/85">PAN Number: {customer.pan || "N/A"}</p>
+              <p className="font-semibold">{t('invoice.customerName')}: {customer.name || "—"}</p>
+              <p className="text-sky-100/85">{t('invoice.customerAddress')}: {customer.address || "—"}</p>
+              {customer.phone && <p className="text-sky-100/85">{t('invoice.phoneNumber')}: {customer.phone}</p>}
+              <p className="text-sky-100/85">{t('invoice.panNumber')}: {customer.pan || "N/A"}</p>
               <p className="mt-2 text-sky-200 text-xs uppercase tracking-wider">{t('invoice.status')}</p>
               <span className="font-semibold capitalize">{t(`purchase.status.${paymentStatus === 'partial' ? 'partial' : paymentStatus}`)}</span>
             </div>
@@ -85,7 +86,7 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
               {items.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="border border-slate-200 px-4 py-6 text-center text-slate-400">
-                    Add line items to preview invoice
+                    {t('invoice.addLineItems')}
                   </td>
                 </tr>
               ) : (
@@ -97,7 +98,7 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
                       {item.description && <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>}
                     </td>
                     <td className="border border-slate-200 px-2 py-1.5 text-center">{item.quantity}</td>
-                    <td className="border border-slate-200 px-2 py-1.5 text-center">{item.unit ?? ""}</td>
+                    <td className="border border-slate-200 px-2 py-1.5 text-center">{item.unit ? option(item.unit) : ""}</td>
                     <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.rate)}</td>
                     <td className="border border-slate-200 px-2 py-1.5 text-right">{formatNumber(item.discount || 0)}</td>
                     <td className="border border-slate-200 px-2 py-1.5 text-right font-medium">{formatNumber(item.total || 0)}</td>
@@ -113,12 +114,12 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
           <div className="flex-1">
             {remarks && (
               <div className="mb-3">
-                <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Remarks</p>
+                <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{t('invoice.remarks')}</p>
                 <p className="text-slate-600 mt-1">{remarks}</p>
               </div>
             )}
             <p className="text-xs text-slate-500 italic">
-              {t('invoice.amountWords')}: <strong>{amountToWords(totals.grandTotal || 0)}</strong>
+              {t('invoice.amountWords')}: <strong>{amountToWords(totals.grandTotal || 0, language)}</strong>
             </p>
           </div>
           <div className="w-full md:w-64 space-y-1 text-sm">
@@ -142,20 +143,28 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
         {/* Signatures */}
         <div className="px-5 py-4 border-t border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
           <div>
-            <p className="text-slate-400 uppercase tracking-wider mb-6">Prepared By</p>
+            <p className="text-slate-400 uppercase tracking-wider mb-6">
+              {language === 'np' ? 'तयार गर्ने' : 'Prepared By'}
+            </p>
             <div className="border-t border-slate-400 pt-1">{displayCreator}</div>
             <p className="text-slate-400 mt-1">{formatDate(createdAt || billDate)}</p>
           </div>
           <div>
-            <p className="text-slate-400 uppercase tracking-wider mb-6">Customer Signature</p>
+            <p className="text-slate-400 uppercase tracking-wider mb-6">
+              {language === 'np' ? 'ग्राहकको हस्ताक्षर' : 'Customer Signature'}
+            </p>
             <div className="border-t border-slate-400 pt-1 h-6" />
           </div>
           <div>
-            <p className="text-slate-400 uppercase tracking-wider mb-6">Authorized Signature</p>
+            <p className="text-slate-400 uppercase tracking-wider mb-6">
+              {language === 'np' ? 'अधिकृत हस्ताक्षर' : 'Authorized Signature'}
+            </p>
             <div className="border-t border-slate-400 pt-1 h-6" />
           </div>
           <div>
-            <p className="text-slate-400 uppercase tracking-wider mb-6">Company Stamp</p>
+            <p className="text-slate-400 uppercase tracking-wider mb-6">
+              {language === 'np' ? 'कम्पनी छाप' : 'Company Stamp'}
+            </p>
             <div className="border border-dashed border-slate-300 rounded h-12" />
           </div>
         </div>
@@ -163,8 +172,14 @@ const InvoicePreview = ({ invoice = {}, creatorName = "", compact = false }) => 
         {/* Meta footer */}
         {!compact && (lastUpdatedBy?.name || updatedAt) && (
           <div className="px-6 py-3 bg-slate-50 text-xs text-slate-400 flex justify-between">
-            <span>Created by {displayCreator}</span>
-            {lastUpdatedBy?.name && <span>Last updated by {lastUpdatedBy.name}</span>}
+            <span>
+              {language === 'np' ? `सिर्जनाकर्ता: ${displayCreator}` : `Created by ${displayCreator}`}
+            </span>
+            {lastUpdatedBy?.name && (
+              <span>
+                {language === 'np' ? `पछिल्लो परिमार्जन: ${lastUpdatedBy.name}` : `Last updated by ${lastUpdatedBy.name}`}
+              </span>
+            )}
             {updatedAt && <span>{formatDate(updatedAt)}</span>}
           </div>
         )}

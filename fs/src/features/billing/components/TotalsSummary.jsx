@@ -2,14 +2,17 @@ import { formatCurrency } from "../../../utils/currency";
 import { amountToWords } from "../../../utils/numberToWords";
 import { InputBox } from "../../../components";
 import { TAX_RATE_OPTIONS } from "../../../utils/invoiceCalculations";
+import { useI18n } from "../../../i18n/I18nProvider.jsx";
 
 const TotalsSummary = ({ totals = {}, paidAmount, onPaidAmountChange, taxRate, onTaxRateChange }) => {
+  const { language, t } = useI18n();
+
   const rows = [
-    { label: "Subtotal", value: totals.subtotal },
-    { label: "Discount", value: totals.discount },
-    { label: "Taxable Amount", value: totals.taxableAmount },
-    { label: `Tax Amount (${totals.taxRate || 0}%)`, value: totals.tax },
-    { label: "Grand Total", value: totals.grandTotal, highlight: true }
+    { label: t('invoice.subtotal'), value: totals.subtotal },
+    { label: t('invoice.discount'), value: totals.discount },
+    { label: t('invoice.taxable'), value: totals.taxableAmount },
+    { label: `${t('invoice.tax')} (${totals.taxRate || 0}%)`, value: totals.tax },
+    { label: t('invoice.grandTotal'), value: totals.grandTotal, highlight: true }
   ];
 
   return (
@@ -23,10 +26,23 @@ const TotalsSummary = ({ totals = {}, paidAmount, onPaidAmountChange, taxRate, o
         ))}
       </div>
 
-      <div><label className="kds-label">Tax Rate</label><select className="kds-input" value={taxRate} onChange={(event) => onTaxRateChange?.(event.target.value)}>{TAX_RATE_OPTIONS.map((rate) => <option key={rate} value={rate}>{rate}%</option>)}</select></div>
+      <div>
+        <label className="kds-label">{t('invoice.taxRate')}</label>
+        <select
+          className="kds-input"
+          value={taxRate}
+          onChange={(event) => onTaxRateChange?.(event.target.value)}
+        >
+          {TAX_RATE_OPTIONS.map((rate) => (
+            <option key={rate} value={rate}>
+              {rate}%
+            </option>
+          ))}
+        </select>
+      </div>
 
       <InputBox
-        label="Paid Amount"
+        label={t('invoice.paid')}
         type="number"
         min="0"
         step="0.01"
@@ -36,12 +52,12 @@ const TotalsSummary = ({ totals = {}, paidAmount, onPaidAmountChange, taxRate, o
       />
 
       <div className="flex justify-between text-sm font-medium">
-        <span className="text-slate-600">Remaining Amount</span>
+        <span className="text-slate-600">{t('invoice.remainingAmount')}</span>
         <span className="text-orange-600">{formatCurrency(totals.remainingAmount || 0)}</span>
       </div>
 
       <p className="text-xs text-slate-500 italic leading-relaxed">
-        {amountToWords(totals.grandTotal || 0)}
+        {amountToWords(totals.grandTotal || 0, language)}
       </p>
     </div>
   );

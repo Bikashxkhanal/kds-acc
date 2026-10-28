@@ -15,11 +15,13 @@ import {
 import { emptyLineItem, calculateInvoiceTotals } from "../../utils/invoiceCalculations";
 import BSDateField from "../../components/common/BSDateField.jsx";
 import { bsToday, bsToIso, normalizeISODate, formatBS } from "../../utils/bsDate.js";
+import { useI18n } from "../../i18n/I18nProvider.jsx";
 
 const BillingForm = () => {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const { language, t } = useI18n();
   const { user } = useSelector((state) => state.auth);
 
   const [loading, setLoading] = useState(isEdit);
@@ -113,11 +115,11 @@ const BillingForm = () => {
   }), [existingMeta, selectedCompany, customer, billDate, dueDate, remarks, calcItems, totals, paymentStatus]);
 
   const validate = () => {
-    if (!companyId) { toast.error("Please select a company"); return false; }
-    if (!customer.name?.trim()) { toast.error("Customer name is required"); return false; }
-    if (!customer.address?.trim()) { toast.error("Customer address is required"); return false; }
-    if (!billDate) { toast.error("Bill date is required"); return false; }
-    if (calcItems.some((i) => !i.productName?.trim())) { toast.error("All line items need a product name"); return false; }
+    if (!companyId) { toast.error(t('invoice.selectCompany')); return false; }
+    if (!customer.name?.trim()) { toast.error(t('invoice.customerName')); return false; }
+    if (!customer.address?.trim()) { toast.error(t('invoice.customerAddress')); return false; }
+    if (!billDate) { toast.error(t('invoice.date')); return false; }
+    if (calcItems.some((i) => !i.productName?.trim())) { toast.error(t('invoice.addLineItems')); return false; }
     return true;
   };
 
@@ -139,7 +141,7 @@ const BillingForm = () => {
       const res = isEdit
         ? await updateBill(id, payload)
         : await createBill(payload);
-      toast.success(res?.message || "Invoice saved successfully");
+      toast.success(res?.message || t('common.save'));
       navigate(`/billings/${res?.data?._id || id}`);
     } catch (error) {
       toast.error(error?.message || "Failed to save invoice");
@@ -167,7 +169,7 @@ const BillingForm = () => {
       <main className="kds-page items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-slate-500">
           <svg className="size-8 border-3 border-[#12355b] border-t-transparent rounded-full animate-spin" viewBox="0 0 24 24" />
-          <p>Loading invoice...</p>
+          <p>{t('common.loading')}</p>
         </div>
       </main>
     );
@@ -176,13 +178,15 @@ const BillingForm = () => {
   return (
     <main className="kds-page">
       <PageHeader
-        title={isEdit ? "Edit Invoice" : "Create Invoice"}
-        subtitle="Fill in bill details and review the live preview before saving"
+        title={isEdit ? (language === 'np' ? 'बिल परिमार्जन गर्नुहोस्' : 'Edit Invoice') : t('invoice.createBill')}
+        subtitle={t('invoice.fillDetailsSubtitle')}
         actions={
           <>
-            <Button varient="secondary" size="sm" onClick={() => navigate("/billings")}>Cancel</Button>
+            <Button varient="secondary" size="sm" onClick={() => navigate("/billings")}>
+              {t('common.cancel')}
+            </Button>
             <Button varient="primary" size="sm" onClick={() => { if (validate()) setShowConfirm(true); }}>
-              <i className="bi bi-check-lg" /> Save Invoice
+              <i className="bi bi-check-lg" /> {t('common.save')}
             </Button>
           </>
         }
@@ -191,13 +195,15 @@ const BillingForm = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Form column */}
         <div className="space-y-5 no-print">
-          <Card title="Bill Information">
+          <Card title={t('invoice.billInformation')}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="kds-label">Company <span className="text-red-500">*</span></label>
+                <label className="kds-label">
+                  {t('invoice.selectCompany')} <span className="text-red-500">*</span>
+                </label>
                 <div className="flex gap-2">
                   <select className="kds-input flex-1" value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
-                    <option value="">Select company</option>
+                    <option value="">{t('invoice.selectCompany')}</option>
                     {companies.map((c) => (
                       <option key={c._id} value={c._id}>{c.name}</option>
                     ))}
@@ -210,58 +216,121 @@ const BillingForm = () => {
 
               {showCompanyForm && (
                 <div className="md:col-span-2 p-4 bg-slate-50 rounded-lg space-y-3 border border-slate-200">
-                  <p className="text-sm font-medium text-[#12355b]">Add New Company</p>
+                  <p className="text-sm font-medium text-[#12355b]">{t('invoice.addNewCompany')}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <InputBox label="Company Name" required value={newCompany.name}
-                      onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })} />
-                    <InputBox label="PAN" required value={newCompany.pan}
-                      onChange={(e) => setNewCompany({ ...newCompany, pan: e.target.value })} />
-                    <InputBox label="Address" required className="md:col-span-2" value={newCompany.address}
-                      onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })} />
-                    <InputBox label="Phone" value={newCompany.phone}
-                      onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })} />
-                    <InputBox label="Email" value={newCompany.email}
-                      onChange={(e) => setNewCompany({ ...newCompany, email: e.target.value })} />
+                    <InputBox
+                      label={t('invoice.selectCompany')}
+                      required
+                      value={newCompany.name}
+                      onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+                    />
+                    <InputBox
+                      label={t('invoice.panNumber')}
+                      required
+                      value={newCompany.pan}
+                      onChange={(e) => setNewCompany({ ...newCompany, pan: e.target.value })}
+                    />
+                    <InputBox
+                      label={t('field.address')}
+                      required
+                      className="md:col-span-2"
+                      value={newCompany.address}
+                      onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
+                    />
+                    <InputBox
+                      label={t('field.phone_number')}
+                      value={newCompany.phone}
+                      onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
+                    />
+                    <InputBox
+                      label="Email"
+                      value={newCompany.email}
+                      onChange={(e) => setNewCompany({ ...newCompany, email: e.target.value })}
+                    />
                   </div>
-                  <Button varient="primary" size="sm" onClick={handleAddCompany}>Save Company</Button>
+                  <Button varient="primary" size="sm" onClick={handleAddCompany}>
+                    {t('common.save')}
+                  </Button>
                 </div>
               )}
 
-              <InputBox label="Customer Name" required icon="bi-person" value={customer.name}
-                onChange={(e) => setCustomer({ ...customer, name: e.target.value })} />
-              <InputBox label="Phone Number" icon="bi-telephone" value={customer.phone}
-                onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
-              <InputBox label="Customer Address" required icon="bi-geo-alt" className="md:col-span-2"
-                value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} />
-              <InputBox label="Customer PAN" icon="bi-card-text" value={customer.pan}
-                onChange={(e) => setCustomer({ ...customer, pan: e.target.value })} />
-              <label className="kds-label">Bill Date<BSDateField className="kds-input mt-1" required value={billDate} onChange={setBillDate} /></label>
-              <label className="kds-label">Due Date<BSDateField className="kds-input mt-1" value={dueDate} onChange={setDueDate} /></label>
-              <InputBox label="Remarks / Notes" value={remarks}
-                onChange={(e) => setRemarks(e.target.value)} />
+              <InputBox
+                label={t('invoice.customerName')}
+                required
+                icon="bi-person"
+                value={customer.name}
+                onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+              />
+              <InputBox
+                label={t('field.phone_number')}
+                icon="bi-telephone"
+                value={customer.phone}
+                onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+              />
+              <InputBox
+                label={t('invoice.customerAddress')}
+                required
+                icon="bi-geo-alt"
+                className="md:col-span-2"
+                value={customer.address}
+                onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+              />
+              <InputBox
+                label={t('invoice.panNumber')}
+                icon="bi-card-text"
+                value={customer.pan}
+                onChange={(e) => setCustomer({ ...customer, pan: e.target.value })}
+              />
+              <label className="kds-label">
+                {t('invoice.date')}
+                <BSDateField className="kds-input mt-1" required value={billDate} onChange={setBillDate} />
+              </label>
+              <label className="kds-label">
+                {t('invoice.due')}
+                <BSDateField className="kds-input mt-1" value={dueDate} onChange={setDueDate} />
+              </label>
+              <InputBox
+                label={t('invoice.remarks')}
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+              />
 
               {isEdit && (
                 <>
-                  <InputBox label="Invoice Number" readOnly value={existingMeta.invoiceNumber || ""} />
-                  <InputBox label="Bill Number" readOnly value={existingMeta.billNumber || ""} />
+                  <InputBox label={t('invoice.number')} readOnly value={existingMeta.invoiceNumber || ""} />
+                  <InputBox label={t('invoice.billNumber')} readOnly value={existingMeta.billNumber || ""} />
                 </>
               )}
             </div>
           </Card>
 
-          <Card title="Products / Services">
+          <Card title={t('invoice.product')}>
             <LineItemsEditor items={items} onChange={setItems} />
           </Card>
 
-          <Card title="Payment Summary">
-              <TotalsSummary totals={totals} paidAmount={paidAmount} onPaidAmountChange={setPaidAmount} taxRate={taxRate} onTaxRateChange={setTaxRate} />
+          <Card title={t('invoice.paymentSummary')}>
+            <TotalsSummary
+              totals={totals}
+              paidAmount={paidAmount}
+              onPaidAmountChange={setPaidAmount}
+              taxRate={taxRate}
+              onTaxRateChange={setTaxRate}
+            />
           </Card>
 
           {user?.name && (
-            <Card title="Creator Information">
+            <Card title={t('invoice.creatorTimeline')}>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-slate-500">Creator:</span> <strong>{user.name}</strong></div>
-                <div><span className="text-slate-500">Date:</span> {formatBS(new Date(), 'long', document.documentElement.lang || 'en')}</div>
+                <div>
+                  <span className="text-slate-500">
+                    {language === 'np' ? 'सिर्जनाकर्ता:' : 'Creator:'}
+                  </span>{' '}
+                  <strong>{user.name}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">{t('purchase.date')}:</span>{' '}
+                  {formatBS(new Date(), 'long', language)}
+                </div>
               </div>
             </Card>
           )}
@@ -269,7 +338,10 @@ const BillingForm = () => {
 
         {/* Preview column */}
         <div className="xl:sticky xl:top-4 xl:self-start">
-          <Card title="Live Preview" subtitle="Updates automatically as you edit">
+          <Card
+            title={language === 'np' ? 'प्रत्यक्ष पूर्वावलोकन' : 'Live Preview'}
+            subtitle={language === 'np' ? 'परिमार्जन गर्दा स्वतः अपडेट हुन्छ' : 'Updates automatically as you edit'}
+          >
             <InvoicePreview invoice={previewInvoice} creatorName={user?.name} />
           </Card>
         </div>

@@ -168,7 +168,10 @@ export function formatBS(value, format = 'long', lang = 'en') {
   } catch { return '—'; }
 }
 
-export function formatAmount(value, lang = 'en', currency = 'Rs.') { return `${currency} ${formatNumber(value, lang)}`; }
+export function formatAmount(value, lang = 'en', currency = null) {
+  const sym = currency || (lang === 'np' ? 'रु.' : 'Rs.');
+  return `${sym} ${formatNumber(value, lang)}`;
+}
 export function formatNumber(value, lang = 'en') {
   const formatted = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0));
   return lang === 'np' ? formatted.replace(/\d/g, (digit) => devDigits[Number(digit)]) : formatted;

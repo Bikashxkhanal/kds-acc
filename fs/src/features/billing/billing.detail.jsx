@@ -15,7 +15,7 @@ import { useSelector } from 'react-redux';
 import api from '../../services/axios.js';
 
 const BillingDetail = () => {
-  const { language } = useI18n();
+  const { language, t } = useI18n();
   const isAdmin = useSelector((state) => state.auth.user?.role === 'admin');
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -26,8 +26,11 @@ const BillingDetail = () => {
   const [deleting, setDeleting] = useState(false);
 
   const printInvoice = async () => {
-    try { await printBillPDF(id); }
-    catch (error) { toast.error(error?.message || 'Unable to prepare invoice for printing. Please try again.'); }
+    try {
+      await printBillPDF(id);
+    } catch (error) {
+      toast.error(error?.message || t('receipt.error'));
+    }
   };
 
   useEffect(() => {
@@ -52,7 +55,7 @@ const BillingDetail = () => {
     setDeleting(true);
     try {
       await deleteBill(id);
-      toast.success("Invoice deleted");
+      toast.success(t('common.save'));
       navigate("/billings");
     } catch (error) {
       toast.error(error?.message || "Failed to delete");
@@ -64,7 +67,7 @@ const BillingDetail = () => {
   const handleDuplicate = async () => {
     try {
       const res = await duplicateBill(id);
-      toast.success(res?.message || "Invoice duplicated");
+      toast.success(res?.message || t('invoice.duplicate'));
       navigate(`/billings/${res?.data?._id}/edit`);
     } catch (error) {
       toast.error(error?.message || "Failed to duplicate");
@@ -85,43 +88,66 @@ const BillingDetail = () => {
     <main className="kds-page">
       <div className="no-print">
         <PageHeader
-          title={`Invoice ${invoice.invoiceNumber}`}
-          subtitle={`Bill #${invoice.billNumber} · ${invoice.company?.name}`}
+          title={`${t('invoice.title')} ${invoice.invoiceNumber}`}
+          subtitle={`${t('invoice.billNumber')}: ${invoice.billNumber || '—'} · ${invoice.company?.name || ''}`}
           actions={
             <>
-              <Badge status={invoice.paymentStatus}>{invoice.paymentStatus}</Badge>
+              <Badge status={invoice.paymentStatus}>
+                {t(`purchase.status.${invoice.paymentStatus === 'partial' ? 'partial' : invoice.paymentStatus}`)}
+              </Badge>
               <Button varient="secondary" size="sm" onClick={() => navigate("/billings")}>
-                <i className="bi bi-arrow-left" /> Back
+                <i className="bi bi-arrow-left" /> {t('supplier.back')}
               </Button>
-              {isAdmin && <Button varient="outline" size="sm" onClick={() => navigate(`/billings/${id}/edit`)}>
-                <i className="bi bi-pencil" /> Edit
-              </Button>}
-              <Button varient="outline" size="sm" onClick={() => { api.post('/api/logs/event', { action: 'print', entityId: id }).catch(() => {}); printInvoice(); }}>
-                <i className="bi bi-printer" /> Print
+              {isAdmin && (
+                <Button varient="outline" size="sm" onClick={() => navigate(`/billings/${id}/edit`)}>
+                  <i className="bi bi-pencil" /> {t('common.edit')}
+                </Button>
+              )}
+              <Button
+                varient="outline"
+                size="sm"
+                onClick={() => {
+                  api.post('/api/logs/event', { action: 'print', entityId: id }).catch(() => {});
+                  printInvoice();
+                }}
+              >
+                <i className="bi bi-printer" /> {t('receipt.print')}
               </Button>
-              <Button varient="outline" size="sm" onClick={async () => {
-                try { await downloadBillPDF(id); toast.success("PDF downloaded"); }
-                catch { toast.error("Failed to download PDF"); }
-              }}>
+              <Button
+                varient="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await downloadBillPDF(id);
+                    toast.success(t('receipt.downloadPdf'));
+                  } catch {
+                    toast.error(t('receipt.error'));
+                  }
+                }}
+              >
                 <i className="bi bi-download" /> PDF
               </Button>
-              {isAdmin && <Button varient="outline" size="sm" onClick={handleDuplicate}>
-                <i className="bi bi-copy" /> Duplicate
-              </Button>}
-              {isAdmin && <Button varient="danger" size="sm" onClick={() => setShowDelete(true)}>
-                <i className="bi bi-trash" /> Delete
-              </Button>}
+              {isAdmin && (
+                <Button varient="outline" size="sm" onClick={handleDuplicate}>
+                  <i className="bi bi-copy" /> {t('invoice.duplicate')}
+                </Button>
+              )}
+              {isAdmin && (
+                <Button varient="danger" size="sm" onClick={() => setShowDelete(true)}>
+                  <i className="bi bi-trash" /> {t('common.delete')}
+                </Button>
+              )}
             </>
           }
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <Card title="Payment Summary" className="lg:col-span-1">
+          <Card title={t('invoice.paymentSummary')} className="lg:col-span-1">
             <div className="space-y-2 text-sm">
               {[
-                ["Grand Total", invoice.totals?.grandTotal],
-                ["Paid", invoice.totals?.paidAmount],
-                ["Remaining", invoice.totals?.remainingAmount]
+                [t('invoice.grandTotal'), invoice.totals?.grandTotal],
+                [t('invoice.paid'), invoice.totals?.paidAmount],
+                [t('invoice.remaining'), invoice.totals?.remainingAmount]
               ].map(([label, val]) => (
                 <div key={label} className="flex justify-between">
                   <span className="text-slate-500">{label}</span>
@@ -131,20 +157,33 @@ const BillingDetail = () => {
             </div>
           </Card>
 
-          <Card title="Customer Details" className="lg:col-span-1">
+          <Card title={t('invoice.customerDetails')} className="lg:col-span-1">
             <div className="space-y-1 text-sm">
               <p className="font-semibold text-[#12355b]">{invoice.customer?.name}</p>
               <p className="text-slate-600">{invoice.customer?.address}</p>
-              {invoice.customer?.phone && <p className="text-slate-600">Phone: {invoice.customer.phone}</p>}
-              {invoice.customer?.pan && <p className="text-slate-600">PAN: {invoice.customer.pan}</p>}
+              {invoice.customer?.phone && (
+                <p className="text-slate-600">{t('field.phone_number')}: {invoice.customer.phone}</p>
+              )}
+              {invoice.customer?.pan && (
+                <p className="text-slate-600">{t('invoice.panNumber')}: {invoice.customer.pan}</p>
+              )}
             </div>
           </Card>
 
-          <Card title="Creator & Timeline" className="lg:col-span-1">
+          <Card title={t('invoice.creatorTimeline')} className="lg:col-span-1">
             <div className="space-y-1 text-sm mb-4">
-              <p><span className="text-slate-500">Created by:</span> {invoice.creator?.name || "—"}</p>
-              <p><span className="text-slate-500">Created:</span> {formatBS(invoice.createdAt, 'long', language)}</p>
-              <p><span className="text-slate-500">Last updated by:</span> {invoice.lastUpdatedBy?.name || "—"}</p>
+              <p>
+                <span className="text-slate-500">{language === 'np' ? 'सिर्जनाकर्ता:' : 'Created by:'}</span>{' '}
+                {invoice.creator?.name || "—"}
+              </p>
+              <p>
+                <span className="text-slate-500">{language === 'np' ? 'सिर्जना मिति:' : 'Created:'}</span>{' '}
+                {formatBS(invoice.createdAt, 'long', language)}
+              </p>
+              <p>
+                <span className="text-slate-500">{language === 'np' ? 'पछिल्लो परिमार्जन:' : 'Last updated by:'}</span>{' '}
+                {invoice.lastUpdatedBy?.name || "—"}
+              </p>
             </div>
             <div className="border-t border-slate-100 pt-3 space-y-2 max-h-40 overflow-y-auto">
               {(invoice.timeline || []).map((entry, idx) => (
@@ -159,23 +198,27 @@ const BillingDetail = () => {
         </div>
       </div>
 
-      <Card title="Invoice Preview">
+      <Card title={t('invoice.title')}>
         <InvoicePreview invoice={invoice} />
       </Card>
 
       <Modal
         open={showDelete}
         onClose={() => setShowDelete(false)}
-        title="Delete Invoice"
+        title={t('invoice.deleteInvoice')}
         footer={
           <>
-            <Button varient="secondary" size="sm" onClick={() => setShowDelete(false)}>Cancel</Button>
-            <Button varient="danger" size="sm" onClick={handleDelete} loading={deleting}>Delete</Button>
+            <Button varient="secondary" size="sm" onClick={() => setShowDelete(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button varient="danger" size="sm" onClick={handleDelete} loading={deleting}>
+              {t('common.delete')}
+            </Button>
           </>
         }
       >
         <p className="text-sm text-slate-600">
-          Are you sure you want to delete invoice <strong>{invoice.invoiceNumber}</strong>?
+          {t('invoice.deleteConfirm', { invoiceNumber: invoice.invoiceNumber })}
         </p>
       </Modal>
     </main>
