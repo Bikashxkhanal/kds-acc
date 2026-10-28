@@ -1,23 +1,31 @@
 import connectMongo from '../db/mongo.js';
 import Supplier from '../models/supplier.model.js';
 import Purchase from '../models/purchase.model.js';
+import PreviousAccountBalance from '../models/previousAccountBalance.model.js';
 import { getNextSequence } from '../utils/autoIncrement.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { parseISODate } from '../utils/isoDate.js';
 import { calculateSupplierTotals } from '../utils/supplierTotals.js';
+import { netOpeningEffect, supplierOpeningLedgerEntries } from '../utils/previousBalance.js';
 
 const summary = async (supplier) => {
-  const purchases = await Purchase.find({ supplierId: supplier._id }).sort({ date: -1 }).lean();
+  const [purchases, openings] = await Promise.all([
+    Purchase.find({ supplierId: supplier._id }).sort({ date: -1 }).lean(),
+    PreviousAccountBalance.find({ partyType: 'supplier', partyId: String(supplier._id) }).lean()
+  ]);
   const totals = calculateSupplierTotals(purchases, supplier.payments || []);
+  const openingNet = netOpeningEffect(openings, 'supplier');
+  const balance = totals.balance + openingNet;
   const ledger = [
     ...purchases.map((purchase) => ({ _id: `purchase-${purchase._id}`, date: purchase.date, description: purchase.description, debit: Number(purchase.totalValue || 0), credit: 0, kind: 'purchase', sortId: String(purchase._id) })),
-    ...(supplier.payments || []).map((payment) => ({ _id: `payment-${payment._id}`, date: payment.date, description: payment.notes || payment.receiptNo || 'Supplier payment', debit: 0, credit: Number(payment.amount || 0), kind: 'payment', sortId: String(payment._id) }))
+    ...(supplier.payments || []).map((payment) => ({ _id: `payment-${payment._id}`, date: payment.date, description: payment.notes || payment.receiptNo || 'Supplier payment', debit: 0, credit: Number(payment.amount || 0), kind: 'payment', sortId: String(payment._id) })),
+    ...supplierOpeningLedgerEntries(openings)
   ].sort((a, b) => new Date(a.date) - new Date(b.date) || a.sortId.localeCompare(b.sortId));
-  let balance = 0;
-  for (const entry of ledger) { balance += entry.debit - entry.credit; entry.balance = balance; }
-  return { ...supplier, ...totals, purchases, ledger };
+  let running = 0;
+  for (const entry of ledger) { running += entry.debit - entry.credit; entry.balance = running; }
+  return { ...supplier, ...totals, openingNet, balance, purchases, ledger };
 };
 export const listSuppliers = asyncHandler(async (_req, res) => {
   await connectMongo(); const suppliers = await Supplier.find().sort({ name: 1 }).lean();
@@ -48,8 +56,11 @@ export const addSupplierPayment = asyncHandler(async (req, res) => {
   await connectMongo(); const supplier = await Supplier.findById(req.params.id);
   if (!supplier) throw new ApiError(404, 'Supplier not found');
   const purchased = await Purchase.aggregate([{ $match: { supplierId: supplier._id } }, { $group: { _id: null, total: { $sum: '$totalValue' } } }]);
+  const openings = await PreviousAccountBalance.find({ partyType: 'supplier', partyId: String(supplier._id) }).lean();
+  const openingNet = netOpeningEffect(openings, 'supplier');
   const totalPaid = calculateSupplierTotals([], supplier.payments).totalPaid;
-  if (totalPaid + amount > (purchased[0]?.total || 0)) throw new ApiError(400, 'Payment exceeds the supplier balance');
+  const maxPayable = (purchased[0]?.total || 0) + openingNet;
+  if (totalPaid + amount > maxPayable) throw new ApiError(400, 'Payment exceeds the supplier balance');
   const seq = await getNextSequence('supplierReceipt'); const receiptNo = `SUP-${String(seq).padStart(6, '0')}`;
   supplier.payments.push({ receiptNo, amount, date, mode: req.body.mode || 'cash', notes: String(req.body.notes || '').trim() });
   await supplier.save(); res.status(201).json(new ApiResponse(201, 'Supplier payment recorded', supplier.payments.at(-1)));

@@ -2,6 +2,7 @@ import connectMongo from "../db/mongo.js";
 import Staff from "../models/staff.model.js";
 import StaffRemuneration from "../models/staffRemuneration.model.js";
 import StaffPayment from "../models/staffPayment.model.js";
+import PreviousAccountBalance from "../models/previousAccountBalance.model.js";
 import { getNextSequence } from "../utils/autoIncrement.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -10,6 +11,7 @@ import puppeteer from "puppeteer";
 import { formatBS } from '../utils/bsDate.js';
 import { buildActivityDiff } from '../services/activityLog.js';
 import { parseISODate } from '../utils/isoDate.js';
+import { staffOpeningRows } from '../utils/previousBalance.js';
 
 const getAStaffPersonalDtls = async (staff_id) => {
     await connectMongo();
@@ -17,9 +19,11 @@ const getAStaffPersonalDtls = async (staff_id) => {
     return details || null;
 }
 
-const buildStaffLedgerRows = (remunerations = [], payments = []) => {
+const buildStaffLedgerRows = (remunerations = [], payments = [], openings = []) => {
     const remuRows = remunerations.map((sr) => ({
         PaymentId: null,
+        OpeningBalanceId: null,
+        kind: 'remuneration',
         Receipt: '',
         Date: sr.date,
         Discription: `${sr.title} ${sr.discription || ""}`.trim(),
@@ -29,6 +33,8 @@ const buildStaffLedgerRows = (remunerations = [], payments = []) => {
 
     const payRows = payments.map((sp) => ({
         PaymentId: sp.id,
+        OpeningBalanceId: null,
+        kind: 'payment',
         Receipt: sp.receiptNo || '',
         Date: sp.date,
         Discription: sp.discription,
@@ -36,7 +42,9 @@ const buildStaffLedgerRows = (remunerations = [], payments = []) => {
         Debit: null
     }));
 
-    return [...remuRows, ...payRows].sort((a, b) => new Date(b.Date) - new Date(a.Date));
+    const openingRows = staffOpeningRows(openings);
+
+    return [...remuRows, ...payRows, ...openingRows].sort((a, b) => new Date(b.Date) - new Date(a.Date));
 };
 
 const getAStaffStippendAndPaymentDetailsAndTotalRowCount = async (staff_id, { limit, offset, startDate, endDate } = {}) => {
@@ -53,12 +61,17 @@ const getAStaffStippendAndPaymentDetailsAndTotalRowCount = async (staff_id, { li
         return {};
     };
 
-    const [remunerations, payments] = await Promise.all([
+    const openingDateFilter = startDate && endDate
+        ? { date: { $gte: parseISODate(startDate, 'startDate'), $lt: new Date(parseISODate(endDate, 'endDate').getTime() + 86400000) } }
+        : {};
+
+    const [remunerations, payments, openings] = await Promise.all([
         StaffRemuneration.find({ staff_id: sid, ...dateFilter("date") }).lean(),
-        StaffPayment.find({ staff_id: sid, ...dateFilter("date") }).lean()
+        StaffPayment.find({ staff_id: sid, ...dateFilter("date") }).lean(),
+        PreviousAccountBalance.find({ partyType: 'staff', partyId: String(sid), ...openingDateFilter }).lean()
     ]);
 
-    const allRows = buildStaffLedgerRows(remunerations, payments);
+    const allRows = buildStaffLedgerRows(remunerations, payments, openings);
     const totalRows = allRows.length;
 
     let result = allRows;

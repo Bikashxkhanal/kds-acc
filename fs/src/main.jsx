@@ -26,6 +26,7 @@ import UserManagementPage from './features/admin/user-management.page.jsx'
 import ChangePasswordPage from './features/auth/change-password.page.jsx'
 import DateDebug from './__date_debug.jsx'
 import SuppliersPage from './features/suppliers/suppliers.page.jsx'
+import PreviousBalancePage from './features/previousBalance/previousBalance.page.jsx'
 
 
 const router = createBrowserRouter([
@@ -66,6 +67,7 @@ const router = createBrowserRouter([
             { path: 'purchases/:id', element: <PurchasesPage /> },
             { path: 'suppliers', element: <SuppliersPage /> },
             { path: 'suppliers/:id', element: <SuppliersPage /> },
+            { path: 'previous-balances', element: <PreviousBalancePage /> },
             {
               path: 'staff/new',
               element: <StaffForm />

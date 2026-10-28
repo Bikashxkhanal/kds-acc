@@ -32,7 +32,7 @@ const HangingSideBar = ({ show = false, onClose }) => {
                         }
                     >
                         <i className={`${ICONS[sidebar]} text-lg`} />
-                        {t(`nav.${sidebar === 'customer' ? 'customers' : sidebar === 'billings' ? 'billing' : sidebar}`)}
+                        {t(`nav.${sidebar === 'customer' ? 'customers' : sidebar === 'billings' ? 'billing' : sidebar === 'opening' ? 'opening' : sidebar}`)}
                     </NavLink>
                 ))}
             </nav>

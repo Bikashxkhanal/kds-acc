@@ -36,6 +36,7 @@ import businessRouter from './routes/business.route.js'
 import activityRouter from './routes/activity.route.js'
 import supplierRouter from './routes/supplier.route.js'
 import receiptRouter from './routes/receipt.route.js'
+import previousBalanceRouter from './routes/previousBalance.route.js'
 
 app.use("/api/v1/customer", customerRouter)
 app.use("/api/v1/staff", staffRouter);
@@ -44,6 +45,7 @@ app.use("/api/v1/sysuser", sysUserRouter);
 app.use("/api/v1/business", businessRouter);
 app.use("/api/v1/suppliers", supplierRouter);
 app.use("/api/v1/receipts", receiptRouter);
+app.use("/api/v1/previous-balances", previousBalanceRouter);
 app.use("/api/logs", activityRouter);
 
 

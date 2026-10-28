@@ -3,6 +3,7 @@ import connectMongo from "../db/mongo.js";
 import Customer from "../models/customer.model.js";
 import CustomerPayment from "../models/customerPayment.model.js";
 import CustomerWork from "../models/customerWork.model.js";
+import PreviousAccountBalance from "../models/previousAccountBalance.model.js";
 import { getNextSequence } from "../utils/autoIncrement.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -11,6 +12,7 @@ import mongoose from 'mongoose';
 import { formatBS } from '../utils/bsDate.js';
 import { buildActivityDiff } from '../services/activityLog.js';
 import { parseISODate } from '../utils/isoDate.js';
+import { customerOpeningRows, netOpeningEffect } from '../utils/previousBalance.js';
 
 const normalizePhoneDigits = (value) => String(value || '').replace(/[०-९]/g, (digit) => String('०१२३४५६७८९'.indexOf(digit)));
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -117,18 +119,49 @@ const getAllCustomers = asyncHandler(async (req, res) => {
             }
         },
         {
+            $lookup: {
+                from: "previousaccountbalances",
+                let: { cid: { $toString: "$id" } },
+                pipeline: [
+                    { $match: { $expr: { $and: [
+                        { $eq: ["$partyType", "customer"] },
+                        { $eq: ["$partyId", "$$cid"] }
+                    ] } } }
+                ],
+                as: "openings"
+            }
+        },
+        {
             $addFields: {
                 Total_Paid_Amt: {
                     $ifNull: [{ $sum: "$payments.pay_amount" }, 0]
                 },
                 Total_Work_Amt: {
                     $ifNull: [{ $sum: "$works.total" }, 0]
+                },
+                Opening_Net: {
+                    $reduce: {
+                        input: "$openings",
+                        initialValue: 0,
+                        in: {
+                            $add: [
+                                "$$value",
+                                {
+                                    $cond: [
+                                        { $eq: ["$$this.type", "debit"] },
+                                        "$$this.amount",
+                                        { $multiply: ["$$this.amount", -1] }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
                 }
             }
         },
         {
             $addFields: {
-                Payable: { $subtract: ["$Total_Work_Amt", "$Total_Paid_Amt"] }
+                Payable: { $add: [{ $subtract: ["$Total_Work_Amt", "$Total_Paid_Amt"] }, "$Opening_Net"] }
             }
         },
         {
@@ -311,9 +344,11 @@ const getCustomerWorkDetails = asyncHandler(async (req, res) => {
     )
 })
 
-const buildCustomerWorkPaymentRows = (payments = [], works = []) => {
+const buildCustomerWorkPaymentRows = (payments = [], works = [], openings = []) => {
     const paymentRows = payments.map((pd) => ({
         PaymentId: pd.id,
+        OpeningBalanceId: null,
+        kind: 'payment',
         Receipt: pd.receiptNo || '',
         date: pd.payment_date,
         discription: `Payer: ${pd.payers_name} | Mode: ${pd.payment_mode}`,
@@ -323,6 +358,8 @@ const buildCustomerWorkPaymentRows = (payments = [], works = []) => {
 
     const workRows = works.map((wd) => ({
         PaymentId: null,
+        OpeningBalanceId: null,
+        kind: 'work',
         Receipt: '',
         date: wd.work_date,
         discription: `${wd.title} | ${wd.vehicle_type || `Vehicle No: ${wd.vehicle_id}`} | ${wd.description ? `${wd.description} | ` : ""}Qty: ${[wd.quantity, wd.quantity_unit_notation].filter(Boolean).join(" ")} | Rate: ${wd.rate}`,
@@ -330,7 +367,9 @@ const buildCustomerWorkPaymentRows = (payments = [], works = []) => {
         Debit: wd.total
     }));
 
-    return [...paymentRows, ...workRows].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const openingRows = customerOpeningRows(openings);
+
+    return [...paymentRows, ...workRows, ...openingRows].sort((a, b) => new Date(b.date) - new Date(a.date));
 };
 
 const getACustomerWorkAndPaymentDetails = asyncHandler(async (req, res) => {
@@ -350,12 +389,13 @@ try {
         await connectMongo();
         const cid = Number(customer_id);
 
-        const [payments, works] = await Promise.all([
+        const [payments, works, openings] = await Promise.all([
             CustomerPayment.find({ customer_id: cid }).lean(),
-            CustomerWork.find({ customer_id: cid }).lean()
+            CustomerWork.find({ customer_id: cid }).lean(),
+            PreviousAccountBalance.find({ partyType: 'customer', partyId: String(cid) }).lean()
         ]);
 
-        const allRows = buildCustomerWorkPaymentRows(payments, works);
+        const allRows = buildCustomerWorkPaymentRows(payments, works, openings);
         const metaData = [{ totalRows: allRows.length }];
         const workAndPaymentDetails = allRows.slice(offset, offset + limitNum);
 
@@ -380,7 +420,7 @@ const getACustomerWorkAndPaymentDetailsByDateRange = async ({ customer_id, start
     const cid = Number(customer_id);
     const toExclusive = new Date(to.getTime() + 86400000);
 
-    const [payments, works] = await Promise.all([
+    const [payments, works, openings] = await Promise.all([
         CustomerPayment.find({
             customer_id: cid,
             payment_date: { $gte: from, $lt: toExclusive }
@@ -388,10 +428,15 @@ const getACustomerWorkAndPaymentDetailsByDateRange = async ({ customer_id, start
         CustomerWork.find({
             customer_id: cid,
             work_date: { $gte: from, $lt: toExclusive }
+        }).lean(),
+        PreviousAccountBalance.find({
+            partyType: 'customer',
+            partyId: String(cid),
+            date: { $gte: from, $lt: toExclusive }
         }).lean()
     ]);
 
-    return buildCustomerWorkPaymentRows(payments, works);
+    return buildCustomerWorkPaymentRows(payments, works, openings);
 }
 
 const getACustomerPreviewData = asyncHandler(async (req, res) => {

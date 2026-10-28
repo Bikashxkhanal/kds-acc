@@ -11,6 +11,7 @@ import Card from "../../components/common/Card";
 import { humanizeLabel } from "../../utils/labels";
 import { getFinalCreditOrDebitValue } from "../../helpers/creditAndDebit.helper";
 import ReceiptButtons from "../../components/common/ReceiptButtons.jsx";
+import OpeningBalanceActions from "../previousBalance/OpeningBalanceActions.jsx";
 
 const PAGE_LIMIT = 10;
 
@@ -31,6 +32,7 @@ const AccountDetailsOfCustomer = () => {
   const { language, option } = useI18n();
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -49,12 +51,14 @@ const AccountDetailsOfCustomer = () => {
         toast.error(error?.message || "Unable to load customer details");
       } finally { setLoading(false); }
     })();
-  }, [customerId, page]);
+  }, [customerId, page, reloadToken]);
 
   const totals = useMemo(() => entries.reduce((summary, row) => ({
     credit: summary.credit + Number(row.Credit || 0), debit: summary.debit + Number(row.Debit || 0)
   }), { credit: 0, debit: 0 }), [entries]);
-  const headers = entries.length ? Object.keys(entries[0]).filter((key) => key !== 'PaymentId') : ["Date", "Description", "Credit", "Debit", "Balance"];
+  const headers = entries.length
+    ? [...Object.keys(entries[0]).filter((key) => !['PaymentId', 'OpeningBalanceId', 'kind', 'openingType', 'notes'].includes(key)), ...(entries.some((row) => row.OpeningBalanceId) ? ['Actions'] : [])]
+    : ["Date", "Description", "Credit", "Debit", "Balance"];
 
   const loadPreview = async () => {
     if (!bsToIso(dates.startDate) || !bsToIso(dates.endDate)) return toast.error("Select valid report dates");
@@ -89,7 +93,7 @@ const AccountDetailsOfCustomer = () => {
     </div>
 
     <Card title="Payment History" subtitle="Work entries and payments are shown in newest-first order.">
-      <div className="kds-table-scroll overflow-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="kds-table-header"><tr>{headers.map((header) => <th key={header} className="px-4 py-3 text-left font-semibold">{humanizeLabel(header)}</th>)}</tr></thead><tbody>{loading ? <tr><td colSpan={headers.length} className="p-10 text-center text-slate-400">Loading account activity…</td></tr> : entries.length ? entries.map((row, index) => <tr key={index} className="border-t border-slate-100 hover:bg-slate-50">{headers.map((header) => <td key={header} className="px-4 py-3 text-slate-700">{header==='Receipt'&&row.PaymentId?<ReceiptButtons type="customer" id={row.PaymentId}/>:header.toLowerCase().includes('date') && row[header] ? formatBS(row[header], 'long', language) : header.toLowerCase() === 'title' ? option(row[header]) : row[header] || '—'}</td>)}</tr>) : <tr><td colSpan={headers.length} className="p-10 text-center text-slate-400">No account activity yet.</td></tr>}</tbody></table></div>
+      <div className="kds-table-scroll overflow-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="kds-table-header"><tr>{headers.map((header) => <th key={header} className="px-4 py-3 text-left font-semibold">{humanizeLabel(header)}</th>)}</tr></thead><tbody>{loading ? <tr><td colSpan={headers.length} className="p-10 text-center text-slate-400">Loading account activity…</td></tr> : entries.length ? entries.map((row, index) => <tr key={index} className="border-t border-slate-100 hover:bg-slate-50">{headers.map((header) => <td key={header} className="px-4 py-3 text-slate-700">{header==='Actions'?<OpeningBalanceActions openingBalanceId={row.OpeningBalanceId} partyType="customer" onChanged={() => setReloadToken((n) => n + 1)} />:header==='Receipt'&&row.PaymentId?<ReceiptButtons type="customer" id={row.PaymentId}/>:header.toLowerCase().includes('date') && row[header] ? formatBS(row[header], 'long', language) : header.toLowerCase() === 'title' ? option(row[header]) : row[header] || '—'}</td>)}</tr>) : <tr><td colSpan={headers.length} className="p-10 text-center text-slate-400">No account activity yet.</td></tr>}</tbody></table></div>
       <PaginationBar current={page} total={totalRows} onPageChange={setPage} />
     </Card>
   </main>;

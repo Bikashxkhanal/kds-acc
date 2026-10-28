@@ -6,6 +6,7 @@ const SIDEBAR_NAVIGATION = [
         'purchases',
         'suppliers',
         'staff',
+        'opening',
         'billings',
         'activity',
         'users',
@@ -17,7 +18,8 @@ const ICONS = {
     'customer' : 'bi bi-people',
     'dashboard' : 'bi bi-speedometer2' ,
     'billings' : 'bi bi-receipt', 'activity': 'bi bi-clock-history', 'users': 'bi bi-person-gear'
-    ,'sales': 'bi bi-graph-up-arrow', 'purchases': 'bi bi-bag-check', 'suppliers': 'bi bi-truck'
+    ,'sales': 'bi bi-graph-up-arrow', 'purchases': 'bi bi-bag-check', 'suppliers': 'bi bi-truck',
+    'opening': 'bi bi-journal-bookmark'
 
 }
 
@@ -26,7 +28,7 @@ const LINKS = {
     'customer' : '/customers',
     'staff' : '/staff',
     'billings' : '/billings'
-    ,'sales': '/sales', 'purchases': '/purchases', 'suppliers': '/suppliers', 'activity': '/activity-log', 'users': '/users'
+    ,'sales': '/sales', 'purchases': '/purchases', 'suppliers': '/suppliers', 'opening': '/previous-balances', 'activity': '/activity-log', 'users': '/users'
 }
 
 export {
