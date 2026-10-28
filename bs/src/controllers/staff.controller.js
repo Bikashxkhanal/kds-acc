@@ -8,8 +8,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import puppeteer from "puppeteer";
+import mongoose from "mongoose";
 import { formatBS } from '../utils/bsDate.js';
-import { buildActivityDiff } from '../services/activityLog.js';
+import { buildActivityDiff, recordActivity } from '../services/activityLog.js';
 import { parseISODate } from '../utils/isoDate.js';
 import { staffOpeningRows } from '../utils/previousBalance.js';
 
@@ -151,15 +152,133 @@ const updateAStaff = asyncHandler(async (req, res) => {
     res.json(new ApiResponse(200, "Staff updated successfully", updated));
 });
 
+const updateStaffStatus = asyncHandler(async (req, res) => {
+    const staffId = Number(req.params.staff_id);
+    const { status } = req.body;
+    if (!Number.isInteger(staffId) || staffId <= 0) throw new ApiError(400, "Invalid staff ID");
+    if (!["Active", "Inactive"].includes(status)) throw new ApiError(400, "Status must be Active or Inactive");
+
+    await connectMongo();
+    const staff = await Staff.findOne({ id: staffId, deletedAt: { $exists: false } });
+    if (!staff) throw new ApiError(404, "Staff member not found");
+
+    const previousStatus = staff.status || "Active";
+    staff.status = status;
+    staff.statusChangedBy = req.user?.name || "Admin";
+    staff.statusChangedAt = new Date();
+    await staff.save();
+
+    await recordActivity({
+        userId: req.user?.id,
+        username: req.user?.name,
+        role: req.user?.role,
+        action: status === "Active" ? "activate" : "deactivate",
+        module: "staff",
+        entityId: String(staffId),
+        entityName: staff.name,
+        description: `Staff member ${staff.name} status changed from ${previousStatus} to ${status}`,
+        ip: req.ip,
+        userAgent: req.get("user-agent")
+    });
+    req.activityLogged = true;
+
+    return res.status(200).json(
+        new ApiResponse(200, `Staff member ${status === 'Active' ? 'activated' : 'deactivated'} successfully`, staff)
+    );
+});
+
+const getStaffDeletePreview = asyncHandler(async (req, res) => {
+    const staffId = Number(req.params.staff_id);
+    if (!Number.isInteger(staffId) || staffId <= 0) throw new ApiError(400, "Invalid staff ID");
+    await connectMongo();
+    const staff = await Staff.findOne({ id: staffId, deletedAt: { $exists: false } }).lean();
+    if (!staff) throw new ApiError(404, "Staff member not found");
+
+    const [remunerationsCount, paymentsCount, receiptsCount, openingsCount] = await Promise.all([
+        StaffRemuneration.countDocuments({ staff_id: staff.id }),
+        StaffPayment.countDocuments({ staff_id: staff.id }),
+        StaffPayment.countDocuments({ staff_id: staff.id, receiptNo: { $exists: true, $ne: "" } }),
+        PreviousAccountBalance.countDocuments({ partyType: "staff", partyId: String(staff.id) })
+    ]);
+
+    return res.status(200).json(
+        new ApiResponse(200, "Staff delete preview loaded", {
+            staffName: staff.name,
+            counts: {
+                remunerations: remunerationsCount,
+                payments: paymentsCount,
+                receipts: receiptsCount,
+                openings: openingsCount
+            }
+        })
+    );
+});
+
 const deleteAStaff = asyncHandler(async (req, res) => {
     const staffId = Number(req.params.staff_id);
     if (!Number.isInteger(staffId) || staffId <= 0) throw new ApiError(400, "Invalid staff ID");
     await connectMongo();
-    const before = await Staff.findOne({ id: staffId, deletedAt: { $exists: false } }).lean();
-    const deleted = await Staff.findOneAndUpdate({ id: staffId, deletedAt: { $exists: false } }, { status: "Inactive", deletedAt: new Date() }, { new: true });
-    if (!deleted) throw new ApiError(404, "Staff member not found");
-    req.activityDetails = { entityId: String(staffId), entityName: deleted.name, snapshot: before };
-    res.json(new ApiResponse(200, "Staff archived successfully; payment history was preserved"));
+    const staff = await Staff.findOne({ id: staffId, deletedAt: { $exists: false } });
+    if (!staff) throw new ApiError(404, "Staff member not found");
+
+    const [remunerationsCount, paymentsCount, receiptsCount, openingsCount] = await Promise.all([
+        StaffRemuneration.countDocuments({ staff_id: staff.id }),
+        StaffPayment.countDocuments({ staff_id: staff.id }),
+        StaffPayment.countDocuments({ staff_id: staff.id, receiptNo: { $exists: true, $ne: "" } }),
+        PreviousAccountBalance.countDocuments({ partyType: "staff", partyId: String(staff.id) })
+    ]);
+
+    const session = await mongoose.startSession();
+    try {
+        await session.withTransaction(async () => {
+            await StaffRemuneration.deleteMany({ staff_id: staff.id }, { session });
+            await StaffPayment.deleteMany({ staff_id: staff.id }, { session });
+            await PreviousAccountBalance.deleteMany({ partyType: "staff", partyId: String(staff.id) }, { session });
+            await Staff.deleteOne({ _id: staff._id }, { session });
+        });
+    } catch (err) {
+        await recordActivity({
+            userId: req.user?.id,
+            username: req.user?.name,
+            role: req.user?.role,
+            action: 'delete_failed',
+            module: 'staff',
+            entityId: String(staff.id),
+            entityName: staff.name,
+            description: `Failed to delete staff ${staff.name}: ${err.message}`,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+        throw new ApiError(500, `Failed to delete staff member: ${err.message}`);
+    } finally {
+        await session.endSession();
+    }
+
+    const summaryStr = `${remunerationsCount} salary/wage entries, ${paymentsCount} payments, ${receiptsCount} receipts, ${openingsCount} previous balance entries`;
+    await recordActivity({
+        userId: req.user?.id,
+        username: req.user?.name,
+        role: req.user?.role,
+        action: 'delete',
+        module: 'staff',
+        entityId: String(staff.id),
+        entityName: staff.name,
+        description: `Permanently deleted staff member ${staff.name} and removed ${summaryStr}`,
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+    });
+    req.activityLogged = true;
+
+    return res.status(200).json(
+        new ApiResponse(200, "Staff member and all associated records deleted successfully", {
+            removed: {
+                remunerations: remunerationsCount,
+                payments: paymentsCount,
+                receipts: receiptsCount,
+                openings: openingsCount
+            }
+        })
+    );
 });
 
 const getAStaffPersonalDetails = asyncHandler(async (req, res) => {
@@ -190,10 +309,11 @@ const addAStaffRemunationDetails = asyncHandler(async (req, res) => {
     if (isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
     if (amount <= 0) throw new ApiError(400, "Invalid amount, must be greater than 0")
 
-    const isExists = await isStaffExists({ staff_id })
-    if (isExists == false) throw new ApiError(400, "No staff with such id exist")
-
     await connectMongo();
+    const staff = await Staff.findOne({ id: Number(staff_id), deletedAt: { $exists: false } });
+    if (!staff) throw new ApiError(400, "No staff with such id exist");
+    if (staff.status === "Inactive") throw new ApiError(409, "Staff member is inactive. No new salary/wage entries can be added.");
+
     const id = await getNextSequence("staffRemuneration");
     await StaffRemuneration.create({
         id,
@@ -221,10 +341,11 @@ const addAStaffPayoutDetails = asyncHandler(async (req, res) => {
     if (isNaN(staff_id)) throw new ApiError(400, "Invalid staff id type")
     if (amount <= 0) throw new ApiError(400, "Invalid amount, must be greater than 0")
 
-    const staff = await isStaffExists({ staff_id })
-    if (staff == false) throw new ApiError(400, "No staff with such id exist")
-
     await connectMongo();
+    const staff = await Staff.findOne({ id: Number(staff_id), deletedAt: { $exists: false } });
+    if (!staff) throw new ApiError(400, "No staff with such id exist");
+    if (staff.status === "Inactive") throw new ApiError(409, "Staff member is inactive. No new payout entries can be added.");
+
     const id = await getNextSequence("staffPayment");
     const receiptNo = `STAFF-${String(id).padStart(6, '0')}`;
     const payment = await StaffPayment.create({
@@ -271,17 +392,19 @@ const getAStaffStippendAndPayout = asyncHandler(async (req, res) => {
 })
 
 const getSearchedStaffs = asyncHandler(async (req, res) => {
-    const { q = '' } = req?.query;
+    const { q = '', includeInactive } = req?.query;
     if (!String(q).trim() || String(q).length > 100) throw new ApiError(400, "Search must be between 1 and 100 characters");
     const search = escapeRegExp(String(q).trim());
 
     await connectMongo();
-    const response = await Staff.find({
-        $and: [
-            { $or: [{ name: { $regex: search, $options: "i" } }, { phone_number: { $regex: search, $options: "i" } }] },
-            { deletedAt: { $exists: false } }
-        ]
-    }).select("id name phone_number role assignedVehicle status").lean();
+    const conditions = [
+        { $or: [{ name: { $regex: search, $options: "i" } }, { phone_number: { $regex: search, $options: "i" } }] },
+        { deletedAt: { $exists: false } }
+    ];
+    if (includeInactive !== 'true') {
+        conditions.push({ status: { $ne: 'Inactive' } });
+    }
+    const response = await Staff.find({ $and: conditions }).select("id name phone_number role assignedVehicle status").lean();
 
     return res.status(200).json(
         new ApiResponse(200, "Staff Fetched successfully", response)
@@ -297,7 +420,7 @@ const getAllStaffs = asyncHandler(async (req, res) => {
     const finalLimit = Number(limit);
     if (String(q).length > 100) throw new ApiError(400, "Search query cannot exceed 100 characters");
     if (role && !STAFF_ROLES.includes(role)) throw new ApiError(400, "Invalid staff role filter");
-    if (status && !["Active", "Inactive"].includes(status)) throw new ApiError(400, "Invalid staff status filter");
+    if (status && !["Active", "Inactive", "all", "All"].includes(status)) throw new ApiError(400, "Invalid staff status filter");
 
     await connectMongo();
     const filter = { deletedAt: { $exists: false } };
@@ -307,12 +430,20 @@ const getAllStaffs = asyncHandler(async (req, res) => {
     }
     if (role === "Other") filter.$and = [{ $or: [{ role: "Other" }, { role: { $exists: false } }] }];
     else if (role) filter.role = role;
-    if (status === "Inactive") filter.status = "Inactive";
-    if (status === "Active") filter.$and = [...(filter.$and || []), { $or: [{ status: "Active" }, { status: { $exists: false } }] }];
+
+    const statusCode = String(status || '').trim().toLowerCase();
+    if (statusCode === "inactive") {
+        filter.status = "Inactive";
+    } else if (statusCode === "all") {
+        // no status constraint
+    } else {
+        // default: Active
+        filter.$and = [...(filter.$and || []), { $or: [{ status: "Active" }, { status: { $exists: false } }] }];
+    }
 
     const [staffDetails, staffCount] = await Promise.all([
         Staff.find(filter)
-            .select("id name phone_number address role assignedVehicle status email salary paymentType dateOfJoining")
+            .select("id name phone_number address role assignedVehicle status email salary paymentType dateOfJoining statusChangedBy statusChangedAt")
             .sort({ name: 1 })
             .skip(offset)
             .limit(finalLimit)
@@ -529,6 +660,8 @@ const downlaodAStaffStippendAndPayoutDetailsPDF = asyncHandler(async (req, res) 
 export {
     addAStaff,
     updateAStaff,
+    updateStaffStatus,
+    getStaffDeletePreview,
     deleteAStaff,
     getAStaffPersonalDetails,
     addAStaffRemunationDetails,

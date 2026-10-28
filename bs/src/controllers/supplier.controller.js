@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import connectMongo from '../db/mongo.js';
 import Supplier from '../models/supplier.model.js';
 import Purchase from '../models/purchase.model.js';
@@ -9,6 +10,7 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { parseISODate } from '../utils/isoDate.js';
 import { calculateSupplierTotals } from '../utils/supplierTotals.js';
 import { netOpeningEffect, supplierOpeningLedgerEntries } from '../utils/previousBalance.js';
+import { recordActivity } from '../services/activityLog.js';
 
 const summary = async (supplier) => {
   const [purchases, openings] = await Promise.all([
@@ -25,36 +27,161 @@ const summary = async (supplier) => {
   ].sort((a, b) => new Date(a.date) - new Date(b.date) || a.sortId.localeCompare(b.sortId));
   let running = 0;
   for (const entry of ledger) { running += entry.debit - entry.credit; entry.balance = running; }
-  return { ...supplier, ...totals, openingNet, balance, purchases, ledger };
+  return { ...supplier, status: supplier.status || 'Active', ...totals, openingNet, balance, purchases, ledger };
 };
-export const listSuppliers = asyncHandler(async (_req, res) => {
-  await connectMongo(); const suppliers = await Supplier.find().sort({ name: 1 }).lean();
+
+export const listSuppliers = asyncHandler(async (req, res) => {
+  await connectMongo();
+  const statusCode = String(req.query?.status || '').trim().toLowerCase();
+  const filter = {};
+  if (statusCode === 'inactive') {
+    filter.status = 'Inactive';
+  } else if (statusCode === 'all') {
+    // no status filter
+  } else {
+    filter.status = { $ne: 'Inactive' };
+  }
+  const suppliers = await Supplier.find(filter).sort({ name: 1 }).lean();
   const rows = await Promise.all(suppliers.map(summary));
   res.json(new ApiResponse(200, 'Suppliers loaded', rows));
 });
+
 export const createSupplier = asyncHandler(async (req, res) => {
   await connectMongo(); const name = String(req.body.name || '').trim();
   if (!name) throw new ApiError(400, 'Supplier name is required');
-  const supplier = await Supplier.create({ name, phone: req.body.phone, address: req.body.address, notes: req.body.notes });
+  const supplier = await Supplier.create({ name, phone: req.body.phone, address: req.body.address, notes: req.body.notes, status: 'Active' });
   res.status(201).json(new ApiResponse(201, 'Supplier saved', supplier));
 });
+
 export const getSupplier = asyncHandler(async (req, res) => {
   await connectMongo(); const supplier = await Supplier.findById(req.params.id).lean();
   if (!supplier) throw new ApiError(404, 'Supplier not found');
   res.json(new ApiResponse(200, 'Supplier loaded', await summary(supplier)));
 });
-export const deleteSupplier = asyncHandler(async (req, res) => {
-  await connectMongo(); const supplier = await Supplier.findById(req.params.id);
+
+export const updateSupplierStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  if (!['Active', 'Inactive'].includes(status)) throw new ApiError(400, 'Status must be Active or Inactive');
+  await connectMongo();
+  const supplier = await Supplier.findById(id);
   if (!supplier) throw new ApiError(404, 'Supplier not found');
-  const linked = await Purchase.exists({ supplierId: supplier._id });
-  if (linked || supplier.payments.length) throw new ApiError(409, 'Supplier has linked purchases or payments and cannot be deleted. Keep the record to preserve its ledger.');
-  await supplier.deleteOne(); res.json(new ApiResponse(200, 'Supplier deleted'));
+
+  const previousStatus = supplier.status || 'Active';
+  supplier.status = status;
+  supplier.statusChangedBy = req.user?.name || 'Admin';
+  supplier.statusChangedAt = new Date();
+  await supplier.save();
+
+  await recordActivity({
+    userId: req.user?.id,
+    username: req.user?.name,
+    role: req.user?.role,
+    action: status === 'Active' ? 'activate' : 'deactivate',
+    module: 'supplier',
+    entityId: String(supplier._id),
+    entityName: supplier.name,
+    description: `Supplier ${supplier.name} status changed from ${previousStatus} to ${status}`,
+    ip: req.ip,
+    userAgent: req.get('user-agent')
+  });
+  req.activityLogged = true;
+
+  res.json(new ApiResponse(200, `Supplier ${status === 'Active' ? 'activated' : 'deactivated'} successfully`, supplier));
 });
+
+export const getSupplierDeletePreview = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  await connectMongo();
+  const supplier = await Supplier.findById(id).lean();
+  if (!supplier) throw new ApiError(404, 'Supplier not found');
+
+  const [purchasesCount, openingsCount] = await Promise.all([
+    Purchase.countDocuments({ supplierId: supplier._id }),
+    PreviousAccountBalance.countDocuments({ partyType: 'supplier', partyId: String(supplier._id) })
+  ]);
+  const paymentsCount = supplier.payments?.length || 0;
+  const receiptsCount = (supplier.payments || []).filter((p) => p.receiptNo).length;
+
+  res.json(new ApiResponse(200, 'Supplier delete preview loaded', {
+    supplierName: supplier.name,
+    counts: {
+      purchases: purchasesCount,
+      payments: paymentsCount,
+      receipts: receiptsCount,
+      openings: openingsCount
+    }
+  }));
+});
+
+export const deleteSupplier = asyncHandler(async (req, res) => {
+  await connectMongo();
+  const supplier = await Supplier.findById(req.params.id);
+  if (!supplier) throw new ApiError(404, 'Supplier not found');
+
+  const [purchasesCount, openingsCount] = await Promise.all([
+    Purchase.countDocuments({ supplierId: supplier._id }),
+    PreviousAccountBalance.countDocuments({ partyType: 'supplier', partyId: String(supplier._id) })
+  ]);
+  const paymentsCount = supplier.payments?.length || 0;
+  const receiptsCount = (supplier.payments || []).filter((p) => p.receiptNo).length;
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await Purchase.deleteMany({ supplierId: supplier._id }, { session });
+      await PreviousAccountBalance.deleteMany({ partyType: 'supplier', partyId: String(supplier._id) }, { session });
+      await Supplier.deleteOne({ _id: supplier._id }, { session });
+    });
+  } catch (err) {
+    await recordActivity({
+      userId: req.user?.id,
+      username: req.user?.name,
+      role: req.user?.role,
+      action: 'delete_failed',
+      module: 'supplier',
+      entityId: String(supplier._id),
+      entityName: supplier.name,
+      description: `Failed to delete supplier ${supplier.name}: ${err.message}`,
+      ip: req.ip,
+      userAgent: req.get('user-agent')
+    });
+    throw new ApiError(500, `Failed to delete supplier: ${err.message}`);
+  } finally {
+    await session.endSession();
+  }
+
+  const summaryStr = `${purchasesCount} purchases, ${paymentsCount} payments, ${receiptsCount} receipts, ${openingsCount} previous balance entries`;
+  await recordActivity({
+    userId: req.user?.id,
+    username: req.user?.name,
+    role: req.user?.role,
+    action: 'delete',
+    module: 'supplier',
+    entityId: String(supplier._id),
+    entityName: supplier.name,
+    description: `Permanently deleted supplier ${supplier.name} and removed ${summaryStr}`,
+    ip: req.ip,
+    userAgent: req.get('user-agent')
+  });
+  req.activityLogged = true;
+
+  res.json(new ApiResponse(200, 'Supplier and all associated records deleted successfully', {
+    removed: {
+      purchases: purchasesCount,
+      payments: paymentsCount,
+      receipts: receiptsCount,
+      openings: openingsCount
+    }
+  }));
+});
+
 export const addSupplierPayment = asyncHandler(async (req, res) => {
   const amount = Number(req.body.amount); const date = parseISODate(req.body.date, 'date');
   if (!Number.isFinite(amount) || amount <= 0) throw new ApiError(400, 'Enter a valid payment amount');
   await connectMongo(); const supplier = await Supplier.findById(req.params.id);
   if (!supplier) throw new ApiError(404, 'Supplier not found');
+  if (supplier.status === 'Inactive') throw new ApiError(409, 'Supplier account is inactive. No new payments can be added.');
   const purchased = await Purchase.aggregate([{ $match: { supplierId: supplier._id } }, { $group: { _id: null, total: { $sum: '$totalValue' } } }]);
   const openings = await PreviousAccountBalance.find({ partyType: 'supplier', partyId: String(supplier._id) }).lean();
   const openingNet = netOpeningEffect(openings, 'supplier');

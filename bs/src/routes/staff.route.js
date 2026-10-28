@@ -2,34 +2,37 @@ import { Router } from "express";
 import { 
     addAStaff,
     updateAStaff,
+    updateStaffStatus,
+    getStaffDeletePreview,
     deleteAStaff,
-     getAStaffPersonalDetails,
-      addAStaffRemunationDetails,
-       getAStaffStippendAndPayout, 
-       getSearchedStaffs, 
-       addAStaffPayoutDetails, 
-       getAllStaffs, 
-       getAStaffDownloadPreviewDetails,
-        downlaodAStaffStippendAndPayoutDetailsPDF
- } from "../controllers/staff.controller.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { requireAdmin } from "../middlewares/auth.middleware.js";
+    getAStaffPersonalDetails,
+    addAStaffRemunationDetails,
+    getAStaffStippendAndPayout, 
+    getSearchedStaffs, 
+    addAStaffPayoutDetails, 
+    getAllStaffs, 
+    getAStaffDownloadPreviewDetails,
+    downlaodAStaffStippendAndPayoutDetailsPDF
+} from "../controllers/staff.controller.js";
+import { verifyJWT, requireAdmin } from "../middlewares/auth.middleware.js";
 
+const staffRouter = Router();
 
-const staffRouter = Router()
+staffRouter.route("/").post(verifyJWT, addAStaff);
+staffRouter.route("/all").get(verifyJWT, getAllStaffs);
+staffRouter.route("/").get(verifyJWT, getSearchedStaffs);
+staffRouter.route("/:staff_id/status").patch(verifyJWT, requireAdmin, updateStaffStatus);
+staffRouter.route("/:staff_id/delete-preview").get(verifyJWT, requireAdmin, getStaffDeletePreview);
+staffRouter.route("/:staff_id")
+    .get(verifyJWT, getAStaffPersonalDetails)
+    .put(verifyJWT, requireAdmin, updateAStaff)
+    .delete(verifyJWT, requireAdmin, deleteAStaff);
+staffRouter.route("/remunation").post(verifyJWT, addAStaffRemunationDetails);
+staffRouter.route("/payout").post(verifyJWT, addAStaffPayoutDetails);
+staffRouter.route("/:staff_id/remu-payout-details").get(verifyJWT, getAStaffStippendAndPayout);
+staffRouter.route("/:staff_id/preview").get(verifyJWT, getAStaffDownloadPreviewDetails);
+staffRouter.route("/:staff_id/download").get(verifyJWT, downlaodAStaffStippendAndPayoutDetailsPDF);
 
-
-staffRouter.route("/").post(verifyJWT, addAStaff)
-staffRouter.route("/all").get(verifyJWT, getAllStaffs)
-staffRouter.route("/").get(verifyJWT, getSearchedStaffs)
-staffRouter.route("/:staff_id").get(verifyJWT, getAStaffPersonalDetails).put(verifyJWT, requireAdmin, updateAStaff).delete(verifyJWT, requireAdmin, deleteAStaff)
-staffRouter.route("/remunation").post(verifyJWT, addAStaffRemunationDetails)
-staffRouter.route("/payout").post(verifyJWT, addAStaffPayoutDetails)
-staffRouter.route("/:staff_id/remu-payout-details").get(verifyJWT, getAStaffStippendAndPayout)
-staffRouter.route("/:staff_id/preview").get(verifyJWT, getAStaffDownloadPreviewDetails)
-staffRouter.route("/:staff_id/download").get(verifyJWT, downlaodAStaffStippendAndPayoutDetailsPDF)
-
-
-export{
+export {
     staffRouter
-}
+};

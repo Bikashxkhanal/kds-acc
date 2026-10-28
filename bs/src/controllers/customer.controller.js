@@ -4,13 +4,14 @@ import Customer from "../models/customer.model.js";
 import CustomerPayment from "../models/customerPayment.model.js";
 import CustomerWork from "../models/customerWork.model.js";
 import PreviousAccountBalance from "../models/previousAccountBalance.model.js";
+import Invoice from "../models/invoice.model.js";
 import { getNextSequence } from "../utils/autoIncrement.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import puppeteer from 'puppeteer';
 import mongoose from 'mongoose';
 import { formatBS } from '../utils/bsDate.js';
-import { buildActivityDiff } from '../services/activityLog.js';
+import { buildActivityDiff, recordActivity } from '../services/activityLog.js';
 import { parseISODate } from '../utils/isoDate.js';
 import { customerOpeningRows, netOpeningEffect } from '../utils/previousBalance.js';
 
@@ -44,15 +45,20 @@ const isCustomerExist = async ({ customer_id, phone_number }) => {
 
 const searchCustomer = asyncHandler(async (req, res) => {
    const q = normalizePhoneDigits(req?.query?.q || '');
+   const includeInactive = req?.query?.includeInactive === 'true';
 
    if (!q?.trim()) {
     throw new ApiError("Search params connot be empty");
    }
 
    await connectMongo();
-   const result = await Customer.find({
+   const query = {
        $or: [{ name: { $regex: escapeRegex(q.trim()), $options: "i" } }, { phone_number: { $regex: escapeRegex(q.trim()), $options: "i" } }]
-   }).select("id name phone_number").lean();
+   };
+   if (!includeInactive) {
+       query.status = { $ne: "Inactive" };
+   }
+   const result = await Customer.find(query).select("id name phone_number status").lean();
 
    return res.status(200).json(
         new ApiResponse(200, "Search successfull", result)
@@ -78,7 +84,7 @@ const getACustomer = asyncHandler(async (req, res) => {
 });
 
 const getAllCustomers = asyncHandler(async (req, res) => {
-    const { page, limit, customer_type, location = "" } = req?.query;
+    const { page, limit, customer_type, location = "", status } = req?.query;
     const q = normalizePhoneDigits(req?.query?.q || '');
 
     const pageNum = Number(page) || 1;
@@ -97,6 +103,17 @@ const getAllCustomers = asyncHandler(async (req, res) => {
             : { $in: customerTypes[typeCode] };
     }
     if (String(location).trim()) query.address = { $regex: escapeRegex(String(location).trim().slice(0, 100)), $options: "i" };
+
+    const statusCode = String(status || '').trim().toLowerCase();
+    if (statusCode === 'inactive') {
+        query.status = 'Inactive';
+    } else if (statusCode === 'all') {
+        // no status filter
+    } else {
+        // default: Active
+        query.status = { $ne: 'Inactive' };
+    }
+
     const totalCustomers = await Customer.countDocuments(query);
     const metaData = [{ totalCustomers }];
 
@@ -175,6 +192,9 @@ const getAllCustomers = asyncHandler(async (req, res) => {
                     { case: { $in: ["$customer_type", ["governmental", "Governmental"]] }, then: "governmental" },
                     { case: { $in: ["$customer_type", ["ngo", "NGO"]] }, then: "ngo" }
                 ], default: "private" } },
+                status: { $ifNull: ["$status", "Active"] },
+                statusChangedBy: 1,
+                statusChangedAt: 1,
                 Total_Paid_Amt: 1,
                 Total_Work_Amt: 1,
                 Payable: 1
@@ -199,16 +219,162 @@ const addACustomer = asyncHandler(async (req, res) => {
     if (!/^\d{10}$/.test(String(phone_number || ""))) throw new ApiError(400, "Phone number must contain 10 digits");
     await connectMongo();
     const id = await getNextSequence("customer");
-    await Customer.create({ id, name, phone_number, address, customer_type: normalizedType });
+    await Customer.create({ id, name, phone_number, address, customer_type: normalizedType, status: "Active" });
 
     res.status(200).json(
         new ApiResponse(200, "Customer created successfully")
     )
 })
 
-const deactiveACustomerAccount = asyncHandler(async (req, res, next) => {
-    //must add a column status
-})
+const updateCustomerStatus = asyncHandler(async (req, res) => {
+    const customerId = Number(req.params.customerId);
+    const { status } = req.body;
+    if (!Number.isInteger(customerId)) throw new ApiError(400, "Invalid customer ID");
+    if (!["Active", "Inactive"].includes(status)) throw new ApiError(400, "Status must be Active or Inactive");
+
+    await connectMongo();
+    const customer = await Customer.findOne({ id: customerId });
+    if (!customer) throw new ApiError(404, "Customer not found");
+
+    const previousStatus = customer.status || "Active";
+    customer.status = status;
+    customer.statusChangedBy = req.user?.name || "Admin";
+    customer.statusChangedAt = new Date();
+    await customer.save();
+
+    await recordActivity({
+        userId: req.user?.id,
+        username: req.user?.name,
+        role: req.user?.role,
+        action: status === "Active" ? "activate" : "deactivate",
+        module: "customer",
+        entityId: String(customerId),
+        entityName: customer.name,
+        description: `Customer ${customer.name} status changed from ${previousStatus} to ${status}`,
+        ip: req.ip,
+        userAgent: req.get("user-agent")
+    });
+    req.activityLogged = true;
+
+    return res.status(200).json(
+        new ApiResponse(200, `Customer ${status === 'Active' ? 'activated' : 'deactivated'} successfully`, customer)
+    );
+});
+
+const getCustomerDeletePreview = asyncHandler(async (req, res) => {
+    const customerId = Number(req.params.customerId);
+    if (!Number.isInteger(customerId)) throw new ApiError(400, "Invalid customer ID");
+    await connectMongo();
+    const customer = await Customer.findOne({ id: customerId }).lean();
+    if (!customer) throw new ApiError(404, "Customer not found");
+
+    const invoiceQuery = {
+        $or: [
+            { "customer.id": customer.id },
+            ...(customer.phone_number ? [{ "customer.phone": customer.phone_number }] : []),
+            { "customer.name": customer.name }
+        ]
+    };
+
+    const [worksCount, paymentsCount, receiptsCount, openingsCount, invoicesCount] = await Promise.all([
+        CustomerWork.countDocuments({ customer_id: customer.id }),
+        CustomerPayment.countDocuments({ customer_id: customer.id }),
+        CustomerPayment.countDocuments({ customer_id: customer.id, receiptNo: { $exists: true, $ne: "" } }),
+        PreviousAccountBalance.countDocuments({ partyType: "customer", partyId: String(customer.id) }),
+        Invoice.countDocuments(invoiceQuery)
+    ]);
+
+    return res.status(200).json(
+        new ApiResponse(200, "Customer delete preview loaded", {
+            customerName: customer.name,
+            counts: {
+                invoices: invoicesCount,
+                works: worksCount,
+                payments: paymentsCount,
+                receipts: receiptsCount,
+                openings: openingsCount
+            }
+        })
+    );
+});
+
+const deleteCustomer = asyncHandler(async (req, res) => {
+    const customerId = Number(req.params.customerId);
+    if (!Number.isInteger(customerId)) throw new ApiError(400, "Invalid customer ID");
+    await connectMongo();
+    const customer = await Customer.findOne({ id: customerId });
+    if (!customer) throw new ApiError(404, "Customer not found");
+
+    const invoiceQuery = {
+        $or: [
+            { "customer.id": customer.id },
+            ...(customer.phone_number ? [{ "customer.phone": customer.phone_number }] : []),
+            { "customer.name": customer.name }
+        ]
+    };
+
+    const [worksCount, paymentsCount, receiptsCount, openingsCount, invoicesCount] = await Promise.all([
+        CustomerWork.countDocuments({ customer_id: customer.id }),
+        CustomerPayment.countDocuments({ customer_id: customer.id }),
+        CustomerPayment.countDocuments({ customer_id: customer.id, receiptNo: { $exists: true, $ne: "" } }),
+        PreviousAccountBalance.countDocuments({ partyType: "customer", partyId: String(customer.id) }),
+        Invoice.countDocuments(invoiceQuery)
+    ]);
+
+    const session = await mongoose.startSession();
+    try {
+        await session.withTransaction(async () => {
+            await CustomerWork.deleteMany({ customer_id: customer.id }, { session });
+            await CustomerPayment.deleteMany({ customer_id: customer.id }, { session });
+            await PreviousAccountBalance.deleteMany({ partyType: "customer", partyId: String(customer.id) }, { session });
+            await Invoice.deleteMany(invoiceQuery, { session });
+            await Customer.deleteOne({ _id: customer._id }, { session });
+        });
+    } catch (err) {
+        await recordActivity({
+            userId: req.user?.id,
+            username: req.user?.name,
+            role: req.user?.role,
+            action: 'delete_failed',
+            module: 'customer',
+            entityId: String(customer.id),
+            entityName: customer.name,
+            description: `Failed to delete customer ${customer.name}: ${err.message}`,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+        throw new ApiError(500, `Failed to delete customer: ${err.message}`);
+    } finally {
+        await session.endSession();
+    }
+
+    const summary = `${worksCount} works, ${paymentsCount} payments, ${receiptsCount} receipts, ${invoicesCount} invoices, ${openingsCount} previous balance entries`;
+    await recordActivity({
+        userId: req.user?.id,
+        username: req.user?.name,
+        role: req.user?.role,
+        action: 'delete',
+        module: 'customer',
+        entityId: String(customer.id),
+        entityName: customer.name,
+        description: `Permanently deleted customer ${customer.name} and removed ${summary}`,
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+    });
+    req.activityLogged = true;
+
+    return res.status(200).json(
+        new ApiResponse(200, "Customer and all associated records deleted successfully", {
+            removed: {
+                works: worksCount,
+                payments: paymentsCount,
+                receipts: receiptsCount,
+                invoices: invoicesCount,
+                openings: openingsCount
+            }
+        })
+    );
+});
 
 const updateACustomerDetails = asyncHandler(async (req, res, next) => {
     const customerId = Number(req.params.customerId);
@@ -235,13 +401,15 @@ const addCustomerPaymentDetail = asyncHandler(async (req, res) => {
 
     if (payment_mode?.trim() === "") throw new ApiError(400, "Payment mode is required")
 
-    const customer = await isCustomerExist({ customer_id })
-
-    if (customer.length === 0) {
+    await connectMongo();
+    const customer = await Customer.findOne({ id: Number(customer_id) });
+    if (!customer) {
         throw new ApiError(400, "Invalid customer id");
     }
+    if (customer.status === "Inactive") {
+        throw new ApiError(409, "Customer account is inactive. No new payments can be added.");
+    }
 
-    await connectMongo();
     const id = await getNextSequence("customerPayment");
     const receiptNo = `CUST-${String(id).padStart(6, '0')}`;
     const result = await CustomerPayment.create({
@@ -299,8 +467,10 @@ const addCustomerWorkDetails = asyncHandler(async (req, res) => {
     const unit = quantity_unit_notation == null || quantity_unit_notation === "" ? null : String(quantity_unit_notation);
     if (unit !== null && !["tip", "hours", "cubemeter"].includes(unit)) throw new ApiError(400, "Select a valid quantity unit");
 
-    const customer = await isCustomerExist({ customer_id })
-    if (customer.length == 0) throw new ApiError(400, "Invalid customer Id");
+    await connectMongo();
+    const customer = await Customer.findOne({ id: Number(customer_id) });
+    if (!customer) throw new ApiError(400, "Invalid customer Id");
+    if (customer.status === "Inactive") throw new ApiError(409, "Customer account is inactive. No new work entries can be added.");
 
     if (quantity <= 0) throw new ApiError(400, "Quantity must be greater than 0")
     if (rate <= 0) throw new ApiError(400, "rate must be greater than 0")
@@ -636,7 +806,9 @@ const addCustomerWorkDetailsBatch = asyncHandler(async (req, res) => {
         const qty = Number(entry.quantity), rate = Number(entry.rate), vehicle = entry.vehicle_type;
         if (!Number.isInteger(Number(entry.customer_id)) || !WORK_TITLES[vehicle]?.includes(entry.title) || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(rate) || rate <= 0 || (entry.quantity_unit_notation != null && entry.quantity_unit_notation !== "" && !["tip", "hours", "cubemeter"].includes(entry.quantity_unit_notation))) throw new ApiError(400, "A sales entry has invalid customer, title, date, quantity, unit, or rate");
         parseISODate(entry.work_date, 'work_date');
-        if (!(await Customer.exists({ id: Number(entry.customer_id) }))) throw new ApiError(400, "A sales entry refers to an unknown customer");
+        const cust = await Customer.findOne({ id: Number(entry.customer_id) });
+        if (!cust) throw new ApiError(400, "A sales entry refers to an unknown customer");
+        if (cust.status === "Inactive") throw new ApiError(409, `Customer '${cust.name}' is inactive. No new sales entries can be added.`);
     }
     const session = await mongoose.startSession();
     try {
@@ -653,7 +825,9 @@ export {
     addACustomer,
     getACustomer,
     getAllCustomers,
-    deactiveACustomerAccount,
+    updateCustomerStatus,
+    getCustomerDeletePreview,
+    deleteCustomer,
     updateACustomerDetails,
     addCustomerPaymentDetail,
     getACustomerPaymentDetails,

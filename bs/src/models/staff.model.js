@@ -18,6 +18,8 @@ const staffSchema = new mongoose.Schema({
     emergencyContactName: { type: String, trim: true, default: "" },
     emergencyContactPhone: { type: String, trim: true, default: "" },
     status: { type: String, enum: ["Active", "Inactive"], default: "Active", index: true },
+    statusChangedBy: { type: String, trim: true, default: "" },
+    statusChangedAt: { type: Date, default: null },
     notes: { type: String, trim: true, default: "" },
     deletedAt: { type: Date, default: undefined, index: true },
     isDummy: { type: Boolean, default: false, index: true }

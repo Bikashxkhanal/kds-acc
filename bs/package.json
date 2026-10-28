@@ -18,6 +18,7 @@
     "migrate:activity-log": "node --import dotenv/config ./testing/migrateActivityLog.js",
     "migrate:suppliers-compensation": "node --import dotenv/config ./testing/migrateSuppliersAndCompensation.js",
     "migrate:previous-balances": "node --import dotenv/config ./testing/migratePreviousAccountBalances.js",
+    "migrate:account-status": "node --import dotenv/config ./testing/migrateAccountStatus.js",
     "user:create": "node --import dotenv/config ./testing/createSystemUser.js",
     "seed": "node ./testing/seedDummyData.js",
     "seed:clear": "node ./testing/clearDummyData.js"

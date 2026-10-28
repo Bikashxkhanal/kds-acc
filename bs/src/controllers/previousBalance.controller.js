@@ -15,19 +15,22 @@ const assertPartyExists = async (partyType, partyId) => {
   if (partyType === 'customer') {
     const id = Number(partyId);
     if (!Number.isFinite(id)) throw new ApiError(400, 'Invalid customer id');
-    const customer = await Customer.findOne({ id }).select('id name').lean();
+    const customer = await Customer.findOne({ id }).select('id name status').lean();
     if (!customer) throw new ApiError(404, 'Customer not found');
+    if (customer.status === 'Inactive') throw new ApiError(409, 'Customer account is inactive. Cannot add opening balance.');
     return { partyId: String(customer.id), partyName: customer.name };
   }
   if (partyType === 'staff') {
     const id = Number(partyId);
     if (!Number.isFinite(id)) throw new ApiError(400, 'Invalid staff id');
-    const staff = await Staff.findOne({ id, deletedAt: { $exists: false } }).select('id name').lean();
+    const staff = await Staff.findOne({ id, deletedAt: { $exists: false } }).select('id name status').lean();
     if (!staff) throw new ApiError(404, 'Staff not found');
+    if (staff.status === 'Inactive') throw new ApiError(409, 'Staff member is inactive. Cannot add opening balance.');
     return { partyId: String(staff.id), partyName: staff.name };
   }
-  const supplier = await Supplier.findById(partyId).select('_id name').lean();
+  const supplier = await Supplier.findById(partyId).select('_id name status').lean();
   if (!supplier) throw new ApiError(404, 'Supplier not found');
+  if (supplier.status === 'Inactive') throw new ApiError(409, 'Supplier account is inactive. Cannot add opening balance.');
   return { partyId: String(supplier._id), partyName: supplier.name };
 };
 

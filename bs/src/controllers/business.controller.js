@@ -29,13 +29,29 @@ export const createPurchase = asyncHandler(async (req, res) => {
   if (!['Fuel', 'Mobil (oil)', 'Parts', 'Others'].includes(title) || (title === 'Others' && !String(customTitle || description).trim())) throw new ApiError(400, 'Select a valid purchase title');
   await connectMongo();
   if (!mongoose.isValidObjectId(supplierId)) throw new ApiError(400, 'Please select a valid supplier');
-  const selectedSupplier = await Supplier.findById(supplierId).select('name');
+  const selectedSupplier = await Supplier.findById(supplierId).select('name status');
   if (!selectedSupplier) throw new ApiError(400, 'Please select a valid supplier');
+  if (selectedSupplier.status === 'Inactive') throw new ApiError(409, 'Supplier account is inactive. No new purchases can be added.');
   const purchase = await Purchase.create({ billNo, description: description.trim(), title, customTitle: title === 'Others' ? String(customTitle || description).trim() : '', supplierId: selectedSupplier._id, quantity: quantity === undefined || quantity === '' ? null : Number(quantity), rate: rate === undefined || rate === '' ? null : Number(rate), totalValue: Number(totalValue), supplier: selectedSupplier.name, date: purchaseDate, usedBy, payments: Number(paidAmount) ? [{ amount: Number(paidAmount), date: purchaseDate, note: 'Initial payment' }] : [] });
   res.status(201).json(new ApiResponse(201, 'Purchase saved', purchaseView(purchase.toObject())));
 });
 export const getPurchase = asyncHandler(async (req, res) => { await connectMongo(); const p = await Purchase.findById(req.params.id).lean(); if (!p) throw new ApiError(404, 'Purchase not found'); res.json(new ApiResponse(200, 'Purchase loaded', purchaseView(p))); });
-export const addPurchasePayment = asyncHandler(async (req, res) => { const amount = Number(req.body.amount), date = parseISODate(req.body.date, 'date'); if (!Number.isFinite(amount) || amount <= 0) throw new ApiError(400, 'Enter a valid payment amount and date'); await connectMongo(); const p = await Purchase.findById(req.params.id); if (!p) throw new ApiError(404, 'Purchase not found'); const paid = p.payments.reduce((s, x) => s + x.amount, 0); if (paid + amount > p.totalValue) throw new ApiError(400, 'Payment exceeds remaining balance'); p.payments.push({ amount, date, note: String(req.body.note || '').trim() }); await p.save(); res.json(new ApiResponse(200, 'Payment recorded', purchaseView(p.toObject()))); });
+export const addPurchasePayment = asyncHandler(async (req, res) => {
+  const amount = Number(req.body.amount), date = parseISODate(req.body.date, 'date');
+  if (!Number.isFinite(amount) || amount <= 0) throw new ApiError(400, 'Enter a valid payment amount and date');
+  await connectMongo();
+  const p = await Purchase.findById(req.params.id);
+  if (!p) throw new ApiError(404, 'Purchase not found');
+  if (p.supplierId) {
+    const s = await Supplier.findById(p.supplierId).select('status');
+    if (s && s.status === 'Inactive') throw new ApiError(409, 'Supplier account is inactive. No new payments can be added.');
+  }
+  const paid = p.payments.reduce((s, x) => s + x.amount, 0);
+  if (paid + amount > p.totalValue) throw new ApiError(400, 'Payment exceeds remaining balance');
+  p.payments.push({ amount, date, note: String(req.body.note || '').trim() });
+  await p.save();
+  res.json(new ApiResponse(200, 'Payment recorded', purchaseView(p.toObject())));
+});
 
 export const updatePurchase = asyncHandler(async (req, res) => {
   const { billNo = '', description, totalValue, supplierId, quantity, rate, title = 'Others', customTitle = '', date, usedBy } = req.body;
@@ -46,8 +62,9 @@ export const updatePurchase = asyncHandler(async (req, res) => {
   if (date) purchase.date = parseISODate(date, 'date');
   if (supplierId && String(supplierId) !== String(purchase.supplierId)) {
     if (!mongoose.isValidObjectId(supplierId)) throw new ApiError(400, 'Please select a valid supplier');
-    const selectedSupplier = await Supplier.findById(supplierId).select('name');
+    const selectedSupplier = await Supplier.findById(supplierId).select('name status');
     if (!selectedSupplier) throw new ApiError(400, 'Please select a valid supplier');
+    if (selectedSupplier.status === 'Inactive') throw new ApiError(409, 'Supplier account is inactive.');
     purchase.supplierId = selectedSupplier._id;
     purchase.supplier = selectedSupplier.name;
   }

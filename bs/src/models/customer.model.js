@@ -6,6 +6,9 @@ const customerSchema = new mongoose.Schema({
     phone_number: { type: String, required: true, trim: true, index: true },
     address: { type: String, trim: true, default: "" },
     customer_type: { type: String, enum: ["private", "governmental", "ngo"], default: "private", index: true },
+    status: { type: String, enum: ["Active", "Inactive"], default: "Active", index: true },
+    statusChangedBy: { type: String, trim: true, default: "" },
+    statusChangedAt: { type: Date, default: null },
     isDummy: { type: Boolean, default: false, index: true }
 }, { collection: "customers" });
 

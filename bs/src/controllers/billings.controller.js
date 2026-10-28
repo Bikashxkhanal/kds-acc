@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import connectMongo from "../db/mongo.js";
 import Company from "../models/company.model.js";
 import Invoice from "../models/invoice.model.js";
+import Customer from "../models/customer.model.js";
 import { launchPdfBrowser, logPdfError, logPdfStage } from "../utils/pdf.js";
 import { buildInvoiceHtml } from "../utils/invoiceTemplate.js";
 import { buildActivityDiff } from '../services/activityLog.js';
@@ -116,6 +117,16 @@ const buildInvoicePayload = async (body, user, existingInvoice) => {
     if (!companyPayload?.name?.trim()) throw new ApiError(400, "Company name is required");
     if (!body.customer?.name?.trim()) throw new ApiError(400, "Customer name is required");
     if (!body.customer?.address?.trim()) throw new ApiError(400, "Customer address is required");
+
+    if (body.customer?.phone || body.customer?.name) {
+        const custConditions = [];
+        if (body.customer.phone?.trim()) custConditions.push({ phone_number: body.customer.phone.trim() });
+        if (body.customer.name?.trim()) custConditions.push({ name: body.customer.name.trim() });
+        const existingCust = await Customer.findOne({ $or: custConditions }).lean();
+        if (existingCust && existingCust.status === 'Inactive') {
+            throw new ApiError(409, "Customer account is inactive. No new invoices can be added.");
+        }
+    }
 
     const items = calculateItems(body.items);
     const totals = calculateTotals(items, body.totals?.paidAmount ?? body.paidAmount, body.taxRate ?? body.totals?.taxRate ?? 0);

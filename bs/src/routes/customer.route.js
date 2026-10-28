@@ -10,6 +10,9 @@ import {
         addCustomerWorkDetails,
         addCustomerWorkDetailsBatch,
         updateACustomerDetails,
+        updateCustomerStatus,
+        getCustomerDeletePreview,
+        deleteCustomer,
         getCustomerWorkDetails,
         searchCustomer,
         getACustomerWorkAndPaymentDetails,
@@ -27,7 +30,9 @@ customerRouter.route("/work-details").post(verifyJWT, addCustomerWorkDetails)
 customerRouter.route("/work-details/batch").post(verifyJWT, addCustomerWorkDetailsBatch)
 customerRouter.route("/preview/:customerId").get(verifyJWT, getACustomerPreviewData)
 customerRouter.route('/download/:customerId').get(verifyJWT, downloadWorkAndPaymentDetailsInPDF)
-customerRouter.route("/:customerId").get(verifyJWT, getACustomer);
+customerRouter.route("/:customerId/status").patch(verifyJWT, requireAdmin, updateCustomerStatus);
+customerRouter.route("/:customerId/delete-preview").get(verifyJWT, requireAdmin, getCustomerDeletePreview);
+customerRouter.route("/:customerId").get(verifyJWT, getACustomer).delete(verifyJWT, requireAdmin, deleteCustomer);
 customerRouter.route("/").get(verifyJWT, getAllCustomers)
 customerRouter.route("/").post(verifyJWT, addACustomer)
 customerRouter.route("/:customerId").put(verifyJWT, requireAdmin, updateACustomerDetails)
